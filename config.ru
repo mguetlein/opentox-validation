@@ -1,12 +1,13 @@
 require 'rubygems'
 require 'sinatra'
 require 'application.rb'
+require 'fileutils'
 
-if ENV["RACK_ENV"] == 'production'
-	FileUtils.mkdir_p 'log' unless File.exists?('log')
-	log = File.new("log/sinatra.log", "a")
-	$stdout.reopen(log)
-	$stderr.reopen(log)
-end
- 
+FileUtils.mkdir_p 'log' unless File.exists?('log')
+log = File.new("log/"+FileUtils.pwd.split("/")[-1]+"-#{ENV["RACK_ENV"]}.log", "a")
+$stdout.reopen(log)
+$stderr.reopen(log)
+$stdout.sync = true
+$stderr.sync = true
+
 run Sinatra::Application
