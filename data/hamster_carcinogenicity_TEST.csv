@@ -1,0 +1,8 @@
+CC=O,true
+C12C3=C(C=CC=C3)CC1=CC(=CC=2)NC(C)=O,true
+O=C(N)\C(C2=CC=CO2)=C/C1=CC=C([N+]([O-])=O)O1,true
+C1(N=CNN=1)N,false
+Br(=O)(=O)[O-].[K+],true
+[Cl-].[Cd+2].[Cl-],false
+O=S(=O)([O-])[O-].[Cd+2],false
+ClC1=CC(=NC(=N1)SCC(=O)O)NC2=CC=CC(=C2C)C,false
