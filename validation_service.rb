@@ -91,7 +91,7 @@ class Validation
     params = {}
     if feature_service_uri
       params[:activity_dataset_uri] = @training_dataset_uri
-      params[:feature_dataset_uri] = OpenTox::Algorithm::FeatureGeneration.create(feature_service_uri, :dataset_uri => @training_dataset_uri)
+      params[:feature_dataset_uri] = RestClient.post feature_service_uri, :dataset_uri => @training_dataset_uri
     else
       params[:dataset_uri] = @training_dataset_uri
     end
@@ -109,7 +109,7 @@ class Validation
     compounds = test_dataset.compounds
     model = OpenTox::Model::LazarClassificationModel.new(@model_uri)
     
-    prediction_dataset = OpenTox::Dataset.create()
+    prediction_dataset = OpenTox::Dataset.create!
     
     count = 1
     benchmark = Benchmark.measure do 
@@ -223,7 +223,7 @@ class Crossvalidation
     (1..@num_folds).each do |n|
       
       datasetname = 'cv'+@id.to_s +
-             '_d'+orig_dataset.id.to_s +
+             #'_d'+orig_dataset.name.to_s +
              '_f'+n.to_s+'of'+@num_folds.to_s+
              '_r'+@random_seed.to_s+
              '_s'+@stratified.to_s 
@@ -309,7 +309,7 @@ module ValidationUtil
       cc.each do |c|
         data[c.uri] = orig_dataset.feature_uris(c)
       end
-      dataset = OpenTox::Dataset.create
+      dataset = OpenTox::Dataset.create!
       dataset.add_compounds(data.to_yaml)
       result[sym] = dataset.uri
     end
