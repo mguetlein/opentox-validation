@@ -176,7 +176,6 @@ class Crossvalidation
       v.validate_algorithm( @algorithm_uri, feature_service_uri )
       #break
     end
-    
   end
   
   private
@@ -210,15 +209,56 @@ class Crossvalidation
   end
   
   # creates cv folds (training and testdatasets)
-  # PENDING stratified not implemented
+  # stores uris in validation objects 
   def create_new_cv_datasets
+    
+    class_feature = "classification"
     
     LOGGER.debug "creating datasets for crossvalidation"
     orig_dataset = OpenTox::Dataset.find :uri => @dataset_uri
     halt 400, "Datset not found: "+@dataset_uri.to_s unless orig_dataset
     
-    all_compounds = orig_dataset.compounds.shuffle!( @random_seed )
-    split_compounds = all_compounds.chunk( @num_folds )
+    shuffled_compounds = orig_dataset.compounds.shuffle!( @random_seed )
+    
+    unless @stratified        
+      split_compounds = shuffled_compounds.chunk( @num_folds )
+    else
+      class_compounds = {} # "inactive" => compounds[], "active" => compounds[] .. 
+      shuffled_compounds.each do |c|
+        orig_dataset.features(c).each do |a|
+          value = OpenTox::Feature.new(:uri => a.uri).value(class_feature).to_s
+          class_compounds[value] = [] unless class_compounds.has_key?(value)
+          class_compounds[value].push(c)
+        end
+      end
+      LOGGER.debug "stratified cv: different class values: "+class_compounds.keys.join(", ")
+      LOGGER.debug "stratified cv: num instances for each class value: "+class_compounds.values.collect{|c| c.size}.join(", ")
+    
+      split_class_compounds = [] # inactive_compounds[fold_i][], active_compounds[fold_i][], ..
+      class_compounds.values.each do |compounds|
+        split_class_compounds.push( compounds.chunk( @num_folds ) )
+      end
+      LOGGER.debug "stratified cv: splits for class values: "+split_class_compounds.collect{ |c| c.collect{ |cc| cc.size }.join("/") }.join(", ")
+      
+      # we cannot just merge the splits of the different class_values of each fold
+      # this could lead to folds, which sizes differ for more than 1 compound
+      split_compounds = []
+      split_class_compounds.each do |split_comp|
+        # step 1: sort current split in ascending order
+        split_comp.sort!{|x,y| x.size <=> y.size }
+        # step 2: add splits
+        (0..@num_folds-1).each do |i|
+          unless split_compounds[i]
+            split_compounds[i] = split_comp[i]
+          else
+            split_compounds[i] += split_comp[i]
+          end
+        end
+        # step 3: sort (total) split in descending order
+        split_compounds.sort!{|x,y| y.size <=> x.size }
+      end
+    end
+    LOGGER.debug "cv: num instances for each fold: "+split_compounds.collect{|c| c.size}.join(", ")
     
     (1..@num_folds).each do |n|
       
@@ -232,20 +272,17 @@ class Crossvalidation
       train_data = {}
       
       (1..@num_folds).each do |nn|
-        test = n == nn
-        
         compounds = split_compounds.at(nn-1)
-        compounds.each do |compound|
-          if (test)
-            test_data[compound.uri] = orig_dataset.feature_uris(compound)
-          else
-            train_data[compound.uri] = orig_dataset.feature_uris(compound)
-          end
+        
+        if n == nn
+          compounds.each{ |compound| test_data[compound.uri] = orig_dataset.feature_uris(compound)}
+        else
+          compounds.each{ |compound| train_data[compound.uri] = orig_dataset.feature_uris(compound)}
         end 
       end
       
-      raise "internal error, num test compounds not correct" unless (all_compounds.size/@num_folds - test_data.size).abs <= 1 
-      raise "internal error, num train compounds not correct" unless all_compounds.size - test_data.size == train_data.size
+      raise "internal error, num test compounds not correct" unless (shuffled_compounds.size/@num_folds - test_data.size).abs <= 1 
+      raise "internal error, num train compounds not correct" unless shuffled_compounds.size - test_data.size == train_data.size
       
       LOGGER.debug "training set: "+datasetname+"_train"
       train_dataset = OpenTox::Dataset.create(:name => datasetname + '_train')
