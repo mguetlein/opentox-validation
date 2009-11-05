@@ -218,7 +218,7 @@ class Crossvalidation
     orig_dataset = OpenTox::Dataset.find :uri => @dataset_uri
     halt 400, "Datset not found: "+@dataset_uri.to_s unless orig_dataset
     
-    shuffled_compounds = orig_dataset.compounds.shuffle!( @random_seed )
+    shuffled_compounds = orig_dataset.compounds.shuffle( @random_seed )
     
     unless @stratified        
       split_compounds = shuffled_compounds.chunk( @num_folds )
