@@ -49,7 +49,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
     raise Reports::BadRequest.new "no validation found with id "+validation_id.to_s unless v
     
     (OpenTox::Validation::VAL_PROPS + OpenTox::Validation::VAL_CV_PROPS).each do |p|
-      validation.send("#{p.to_s}=".to_sym, v.send("#{p.to_s}"))        
+      validation.send("#{p.to_s}=".to_sym, v[p])
     end
     
     {OpenTox::Validation::VAL_CLASS_PROP => OpenTox::Validation::VAL_CLASS_PROPS}.each do |subset_name,subset_props|
@@ -64,7 +64,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
     raise Reports::BadRequest.new "no crossvalidation found with id "+validation.crossvalidation_id.to_s unless cv
     
     OpenTox::Validation::CROSS_VAL_PROPS.each do |p|
-      validation.send("#{p.to_s}=".to_sym, cv["#{p.to_s}".to_sym])        
+      validation.send("#{p.to_s}=".to_sym, cv[p])        
     end
   end
 
@@ -104,13 +104,13 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
     end
   
     OpenTox::Validation::VAL_PROPS.each do |p|
-      validation.send("#{p.to_s}=".to_sym, data[p])        
+      validation.send("#{p}=".to_sym, data[p])        
     end
     
     {OpenTox::Validation::VAL_CV_PROP => OpenTox::Validation::VAL_CV_PROPS,
      OpenTox::Validation::VAL_CLASS_PROP => OpenTox::Validation::VAL_CLASS_PROPS}.each do |subset_name,subset_props|
       subset = data[subset_name]
-      subset_props.each{ |prop| validation.send("#{prop.to_s}=".to_sym, subset[prop]) } if subset
+      subset_props.each{ |prop| validation.send("#{prop}=".to_sym, subset[prop]) } if subset
     end
   end
     
@@ -126,7 +126,7 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
     end
     
     OpenTox::Validation::CROSS_VAL_PROPS.each do |p|
-      validation.send("#{p.to_s}=".to_sym, data["#{p.to_s}".to_sym])        
+      validation.send("#{p.to_s}=".to_sym, data[p])        
     end
   end
 

@@ -118,18 +118,18 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
       data_uri = upload_data WS_DATA, DATA, FILE
       data_uri= WS_DATA+"/hamster"
       
-#      val_uri = create_single_validation(data_uri)
-      val_uri = create_single_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
-#      val_uri = "http://localhost:4007/validation/95"
-#      #add_resource val_uri
-      create_report(rep, val_uri, "validation")
+##      val_uri = create_single_validation(data_uri)
+#      val_uri = create_single_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
+##      val_uri = "http://localhost:4007/validation/95"
+##      #add_resource val_uri
+#      create_report(rep, val_uri, "validation")
         
-#        val_uri = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
-#       # val_uri = create_cross_validation(data_uri)
-#       # val_uri = "http://localhost:4007/crossvalidation/11"
-#       # val_uri2 = "http://localhost:4007/crossvalidation/1"
-#       # add_resource val_uri
-#        create_report(rep, val_uri, "crossvalidation")
+        val_uri = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
+       # val_uri = create_cross_validation(data_uri)
+       # val_uri = "http://localhost:4007/crossvalidation/11"
+       # val_uri2 = "http://localhost:4007/crossvalidation/1"
+       # add_resource val_uri
+        create_report(rep, val_uri, "crossvalidation")
         
 #         #val_uri2 = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
 #         #val_uri = ["http://localhost:4007/crossvalidation/6", "http://localhost:4007/crossvalidation/8"]

@@ -91,21 +91,22 @@ module Lib
       ######## ROCR ##########
       res = {}
       OpenTox::Validation::VAL_CLASS_PROPS_ROCR.each do |s|
-        R.eval 'perf <- performance(pred,"'+s+'")'
+        R.eval 'perf <- performance(pred,"'+s.to_s+'")'
         values = R.pull "perf@y.values[[1]]"
         res[s] = values.is_a?(Array) ? values[1] : values
       end
       
       ######## MANUAL ##########
-      res["num_inst"] = @predicted_values.size
+      res[:num_inst] = @predicted_values.size
       num_pos=0
       num_neg=0
       (0..num_instances-1).each{|i| actual_value(i)==1 ? num_pos+=1 : num_neg+=1}
-      res["num_pos"] = num_pos
-      res["num_neg"] = num_neg
+      res[:num_pos] = num_pos
+      res[:num_neg] = num_neg
       
-      ["tp", "fn" ].each{ |x| res[x] = (res[x+"r"] * num_pos).to_i }
-      ["tn","fp"].each{ |x| res[x] = (res[x+"r"] * num_neg).to_i }
+      [:tp, :fn].each{ |x| res[x] = (res[ (x.to_s+"r").to_sym ] * num_pos).to_i }
+      [:tn, :fp].each{ |x| res[x] = (res[ (x.to_s+"r").to_sym ] * num_neg).to_i }
+      
       return res
     end
   end

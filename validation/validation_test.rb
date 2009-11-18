@@ -27,7 +27,7 @@ WS_FEATURE_ALG=nil
 
 class ValidationTest < Test::Unit::TestCase
   include Rack::Test::Methods
-  include OpenTox::ValidationLib::TestUtil
+  include Lib::TestUtil
 
   def app
     Sinatra::Application
@@ -63,51 +63,51 @@ class ValidationTest < Test::Unit::TestCase
 #    end   
 #  end
 #  
-  def test_cv
-    begin
-      data_uri = upload_data(WS_DATA, DATA, FILE)
-      
-#      first_validation=nil
-#      2.times do 
-        
-        num_folds = 9
-        post '/crossvalidation', { :dataset_uri => data_uri,
-          :algorithm_uri => WS_CLASS_ALG, :feature_service_uri => WS_FEATURE_ALG, :num_folds => num_folds, :random_seed => 2 }
-      
-        puts "crossvalidation: "+last_response.body
-        assert last_response.ok?
-        crossvalidation_id = last_response.body.split("/")[-1]
-        add_resource("/crossvalidation/"+crossvalidation_id)
-        puts "id:"+crossvalidation_id
-      
-        get '/crossvalidation/'+crossvalidation_id
-        puts last_response.body
-        assert last_response.ok? || last_response.status==202
-        
-        get '/crossvalidation/'+crossvalidation_id+'/validations'
-        puts "validations:\n"+last_response.body
-        assert last_response.ok?
-        assert last_response.body.split("\n").size == num_folds, "num-folds:"+num_folds.to_s+" but num lines is "+last_response.body.split("\n").size.to_s
-        
-#        if first_validation
-#          # assert that both cross validaitons use the same datasets
-#          first_validation2 = last_response.body.split("\n")[0].split("/")[-1]
-#          
-#          get '/validation/'+first_validation+'/test_dataset_uri'
-#          assert last_response.ok?
-#          first_val_test_data = last_response.body
-#
-#          get '/validation/'+first_validation2+'/test_dataset_uri'
-#          assert last_response.ok?
-#          first_val2_test_data = last_response.body
-#          assert first_val_test_data==first_val2_test_data
-#        end
-#        first_validation = last_response.body.split("\n")[0].split("/")[-1]
-#      end
-    ensure
-      delete_resources
-    end
-  end
+#  def test_cv
+#    begin
+#      data_uri = upload_data(WS_DATA, DATA, FILE)
+#      
+##      first_validation=nil
+##      2.times do 
+#        
+#        num_folds = 9
+#        post '/crossvalidation', { :dataset_uri => data_uri,
+#          :algorithm_uri => WS_CLASS_ALG, :feature_service_uri => WS_FEATURE_ALG, :num_folds => num_folds, :random_seed => 2 }
+#      
+#        puts "crossvalidation: "+last_response.body
+#        assert last_response.ok?
+#        crossvalidation_id = last_response.body.split("/")[-1]
+#        add_resource("/crossvalidation/"+crossvalidation_id)
+#        puts "id:"+crossvalidation_id
+#      
+#        get '/crossvalidation/'+crossvalidation_id
+#        puts last_response.body
+#        assert last_response.ok? || last_response.status==202
+#        
+#        get '/crossvalidation/'+crossvalidation_id+'/validations'
+#        puts "validations:\n"+last_response.body
+#        assert last_response.ok?
+#        assert last_response.body.split("\n").size == num_folds, "num-folds:"+num_folds.to_s+" but num lines is "+last_response.body.split("\n").size.to_s
+#        
+##        if first_validation
+##          # assert that both cross validaitons use the same datasets
+##          first_validation2 = last_response.body.split("\n")[0].split("/")[-1]
+##          
+##          get '/validation/'+first_validation+'/test_dataset_uri'
+##          assert last_response.ok?
+##          first_val_test_data = last_response.body
+##
+##          get '/validation/'+first_validation2+'/test_dataset_uri'
+##          assert last_response.ok?
+##          first_val2_test_data = last_response.body
+##          assert first_val_test_data==first_val2_test_data
+##        end
+##        first_validation = last_response.body.split("\n")[0].split("/")[-1]
+##      end
+#    ensure
+#      delete_resources
+#    end
+#  end
 #
 #  def test_validate_model
 #    begin
@@ -144,17 +144,17 @@ class ValidationTest < Test::Unit::TestCase
 #    end
 #  end
   
-#  def test_split
-#    begin
-#      data_uri = upload_data(WS_DATA, DATA, FILE)
-#      #data_uri=WS_DATA+"/"+DATA
-#      post '/validation/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, 
-#        :feature_service_uri => WS_FEATURE_ALG, :split_ratio=>0.9, :random_seed=>2}
-#      verify_validation
-#    ensure
-#      delete_resources
-#    end
-#  end
+  def test_split
+    begin
+      data_uri = upload_data(WS_DATA, DATA, FILE)
+      #data_uri=WS_DATA+"/"+DATA
+      post '/validation/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, 
+        :feature_service_uri => WS_FEATURE_ALG, :split_ratio=>0.9, :random_seed=>2}
+      verify_validation
+    ensure
+      delete_resources
+    end
+  end
   
   private
   def verify_validation (delete=true)

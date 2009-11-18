@@ -1,6 +1,6 @@
 
 # the variance is computed when merging results for these attributes 
-VAL_ATTR_VARIANCE = [ "auc", "acc" ]
+VAL_ATTR_VARIANCE = [ :auc, :acc ]
 
 class Object
   
@@ -51,7 +51,7 @@ module Reports
     
     #VAL_ATTR.each{ |a| attr_accessor a }
     OpenTox::Validation::ALL_PROPS.each{ |a| attr_accessor a } 
-    VAL_ATTR_VARIANCE.each{ |a| attr_accessor a+"_variance" }
+    VAL_ATTR_VARIANCE.each{ |a| attr_accessor (a.to_s+"_variance").to_sym }
   
     attr_reader :predictions, :merge_count
     
@@ -107,7 +107,7 @@ module Reports
             value = (send(a) * @merge_count + validation.send(a)) / (@merge_count + 1).to_f;
             if (VAL_ATTR_VARIANCE.index(a) != nil)
               old_std_dev = 0;
-              old_std_dev = send(a +"_variance") ** 2 if send(a+"_variance")
+              old_std_dev = send((a.to_s+"_variance").to_sym) ** 2 if send((a.to_s+"_variance").to_sym)
               std_dev = (old_std_dev * (@merge_count / (@merge_count + 1.0))) + (((validation.send(a) - value) ** 2) * (1 / @merge_count))
               variance = Math.sqrt(std_dev);
             end
@@ -218,7 +218,7 @@ module Reports
       array.push(attributes)
       @validations.each do |v| 
         array.push(attributes.collect do |a|
-          variance = v.send(a+"_variance") if VAL_ATTR_VARIANCE.index(a)
+          variance = v.send( (a.to_s+"_variance").to_sym ) if VAL_ATTR_VARIANCE.index(a)
           variance = " +- "+variance.to_nice_s if variance
           v.send(a).to_nice_s + variance.to_s 
         end)

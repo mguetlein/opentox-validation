@@ -60,7 +60,9 @@ class Validation < Lib::Validation
   # PENDING: model and referenced datasets are deleted as well, keep it that way?
   def delete
   
-    OpenTox::Model::PredictionModel.new(@model_uri).destroy if @model_uri
+    model = OpenTox::Model::PredictionModel.find(@model_uri) if @model_uri
+    model.destroy if model
+    
     [@test_dataset_uri, @training_dataset_uri, @prediction_dataset_uri].each do  |d|
       dataset = OpenTox::Dataset.find(:uri => d) if d 
       dataset.delete if dataset
@@ -92,7 +94,9 @@ class Validation < Lib::Validation
     
     LOGGER.debug "validating model"
     test_dataset = OpenTox::Dataset.find(:uri => @test_dataset_uri)
+    $sinatra.halt 400, "test dataset no found" unless test_dataset
     compounds = test_dataset.compounds
+    $sinatra.halt 400, "no compounds to predict" unless compounds && compounds.size>0
     model = OpenTox::Model::LazarClassificationModel.new(@model_uri)
     
     prediction_dataset = OpenTox::Dataset.create!
@@ -193,7 +197,7 @@ class Crossvalidation < Lib::Crossvalidation
     
     LOGGER.debug "creating datasets for crossvalidation"
     orig_dataset = OpenTox::Dataset.find :uri => @dataset_uri
-    halt 400, "Datset not found: "+@dataset_uri.to_s unless orig_dataset
+    halt 400, "Dataset not found: "+@dataset_uri.to_s unless orig_dataset
     
     shuffled_compounds = orig_dataset.compounds.shuffle( @random_seed )
     
