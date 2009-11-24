@@ -9,8 +9,10 @@ load 'validation/validation_service.rb'
 # hack: store self in $sinatra to make url_for method accessible in validation_service
 # (before is executed in every rest call, problem is that the request object is not set, until the first rest-call )
 before {$sinatra = self unless $sinatra}
-LOGGER = Logger.new(STDOUT)
-LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
+unless(defined? LOGGER)
+  LOGGER = Logger.new(STDOUT)
+  LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
+end
 
 class Sinatra::Base
   # logging halts (!= 202)
@@ -48,13 +50,16 @@ end
 
 post '/crossvalidation/?' do
   LOGGER.info "creating crossvalidation "+params.inspect
-  halt 400, "alogrithm_uri and/or dataset_uri missing: "+params.inspect unless params[:dataset_uri] and params[:algorithm_uri]
+  halt 400, "dataset_uri missing" unless params[:dataset_uri]
+  halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
+  halt 400, "prediction_feature missing" unless params[:prediction_feature]
   cv_params = { :dataset_uri => params[:dataset_uri],  
-                :algorithm_uri => params[:algorithm_uri] }
+                :algorithm_uri => params[:algorithm_uri],
+                :prediction_feature => params[:prediction_feature] }
   [ :num_folds, :random_seed, :stratified ].each{ |sym| cv_params[sym] = params[sym] if params[sym] }
   cv = Crossvalidation.new cv_params
   cv.create_cv_datasets
-  cv.perform_cv params[:feature_service_uri]
+  cv.perform_cv( params[:feature_service_uri])
   cv.uri
 end
 
@@ -76,12 +81,15 @@ post '/validation/?' do
     v = Validation.new :model_uri => params[:model_uri], 
                      :test_dataset_uri => params[:test_dataset_uri]
     v.validate_model
-  elsif params[:algorithm_uri] and params[:training_dataset_uri] and params[:test_dataset_uri] and !params[:model_uri]
+  elsif params[:algorithm_uri] and params[:training_dataset_uri] and params[:test_dataset_uri] and params[:prediction_feature] and !params[:model_uri]
    v = Validation.new :training_dataset_uri => params[:training_dataset_uri], 
-                     :test_dataset_uri => params[:test_dataset_uri]
-   v.validate_algorithm( params[:algorithm_uri], params[:feature_service_uri]) 
+                      :test_dataset_uri => params[:test_dataset_uri]
+   v.validate_algorithm( params[:algorithm_uri], params[:prediction_feature], params[:feature_service_uri]) 
   else
-    halt 400, "illegal param combination, use either (model_uri and test_dataset_uri) OR (algorithm_uri and training_dataset_uri and test_dataset_uri): "+params.inspect
+    halt 400, "illegal parameter combination for validation, use either\n"+
+      "* model_uri, test_dataset_uri\n"+ 
+      "* algorithm_uri, training_dataset_uri, test_dataset_uri, prediction_feature\n"
+      "params given: "+params.inspect
   end
   
   v.uri
@@ -90,14 +98,13 @@ end
 post '/validation/training_test_split' do
   LOGGER.info "creating training test split "+params.inspect
   halt 400, "dataset_uri missing" unless params[:dataset_uri]
+  halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
+  halt 400, "prediction_feature missing" unless params[:prediction_feature]
+  
   params.merge!(ValidationUtil.train_test_dataset_split(params[:dataset_uri], params[:split_ratio], params[:random_seed]))
-  if (params[:algorithm_uri])
-     v = Validation.new :training_dataset_uri => params[:training_dataset_uri], 
-                     :test_dataset_uri => params[:test_dataset_uri]
-     v.validate_algorithm( params[:algorithm_uri], params[:feature_service_uri]) 
-  else
-    v = Validation.new :training_dataset_uri => params[:training_dataset_uri], :test_dataset_uri => params[:test_dataset_uri] 
-  end
+  v = Validation.new :training_dataset_uri => params[:training_dataset_uri], 
+                   :test_dataset_uri => params[:test_dataset_uri]
+  v.validate_algorithm( params[:algorithm_uri], params[:prediction_feature], params[:feature_service_uri]) 
   v.uri
 end
 

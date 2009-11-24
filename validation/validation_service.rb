@@ -73,9 +73,10 @@ class Validation < Lib::Validation
   
   # validates an algorithm by building a model and validating this model
   # PENDING: so far, feature_service_uri is used to construct a second dataset (first is training-dataset)
-  def validate_algorithm( algorithm_uri, feature_service_uri=nil )
+  def validate_algorithm( algorithm_uri, prediction_feature, feature_service_uri=nil )
     
-    LOGGER.debug "building model "+algorithm_uri.to_s+" "+feature_service_uri.to_s
+    LOGGER.debug "building model "+algorithm_uri.to_s+" "+prediction_feature.to_s+" "+feature_service_uri.to_s
+    # PENDING: use prediciton_feature to build model
     params = {}
     if feature_service_uri
       params[:activity_dataset_uri] = @training_dataset_uri
@@ -100,6 +101,7 @@ class Validation < Lib::Validation
     model = OpenTox::Model::LazarClassificationModel.new(@model_uri)
     
     prediction_dataset = OpenTox::Dataset.create!
+    prediction_feature = model.get_prediction_feature
     
     count = 1
     benchmark = Benchmark.measure do 
@@ -108,7 +110,7 @@ class Validation < Lib::Validation
         prediction = model.predict(c)
         LOGGER.debug "prediction "+count.to_s+"/"+compounds.size.to_s+" class: "+prediction.classification.to_s+", confidence: "+prediction.confidence.to_s+", compound: "+c.uri.to_s
         pred_feature = OpenTox::Feature.new(:name => "prediction", 
-          :classification => prediction.classification,
+          prediction_feature.to_sym => prediction.classification,
           :confidence => prediction.confidence)
         prediction_dataset.add({c.uri => [pred_feature.uri]}.to_yaml)
         count += 1
@@ -116,7 +118,7 @@ class Validation < Lib::Validation
     end
     
     LOGGER.debug "computing prediction stats"
-    update :classification_info => Lib::Predictions.new( @test_dataset_uri, prediction_dataset.uri ).compute_prediction_stats
+    update :classification_info => Lib::Predictions.new( prediction_feature, @test_dataset_uri, prediction_dataset.uri ).compute_prediction_stats
     update :prediction_dataset_uri => prediction_dataset.uri, :finished => true, :elapsedTimeTesting => benchmark.real
     #PENDING cannot estimate cpu time as this is done on another server
   end  
@@ -154,7 +156,7 @@ class Crossvalidation < Lib::Crossvalidation
     
     LOGGER.debug "perform cv validations"
     Validation.all( :crossvalidation_id => id ).each do |v|
-      v.validate_algorithm( @algorithm_uri, feature_service_uri )
+      v.validate_algorithm( @algorithm_uri, @prediction_feature, feature_service_uri )
       #break
     end
   end
@@ -164,10 +166,10 @@ class Crossvalidation < Lib::Crossvalidation
   # returns true if successfull, false otherwise
   def copy_cv_datasets()
     
-    equal_cvs = Crossvalidation.all( :dataset_uri => @dataset_uri,  
-                          :num_folds => @num_folds, 
-                          :stratified => @stratified, 
-                          :random_seed => @random_seed ).reject{ |cv| cv.id == @id }
+    equal_params =  { :dataset_uri => @dataset_uri, :num_folds => @num_folds, 
+                      :stratified => @stratified, :random_seed => @random_seed }
+    equal_params[:prediction_feature] = @prediction_feature if @stratified
+    equal_cvs = Crossvalidation.all( equal_params ).reject{ |cv| cv.id == @id }
     return false if equal_cvs.size == 0 
     
     cv = equal_cvs[0]
@@ -193,8 +195,6 @@ class Crossvalidation < Lib::Crossvalidation
   # stores uris in validation objects 
   def create_new_cv_datasets
     
-    class_feature = "classification"
-    
     LOGGER.debug "creating datasets for crossvalidation"
     orig_dataset = OpenTox::Dataset.find :uri => @dataset_uri
     halt 400, "Dataset not found: "+@dataset_uri.to_s unless orig_dataset
@@ -207,7 +207,7 @@ class Crossvalidation < Lib::Crossvalidation
       class_compounds = {} # "inactive" => compounds[], "active" => compounds[] .. 
       shuffled_compounds.each do |c|
         orig_dataset.features(c).each do |a|
-          value = OpenTox::Feature.new(:uri => a.uri).value(class_feature).to_s
+          value = OpenTox::Feature.new(:uri => a.uri).value(@prediction_feature).to_s
           class_compounds[value] = [] unless class_compounds.has_key?(value)
           class_compounds[value].push(c)
         end

@@ -27,7 +27,9 @@ load "report/external/mimeparse.rb"
 
 load "lib/prediction_util.rb"
 
-LOGGER = Logger.new(STDOUT)
-LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
+unless(defined? LOGGER)
+  LOGGER = Logger.new(STDOUT)
+  LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
+end
 
 

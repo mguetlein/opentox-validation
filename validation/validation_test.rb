@@ -1,6 +1,7 @@
 ENV['RACK_ENV'] = 'test'
 
-load 'validation/validation_application.rb'
+#load 'validation/validation_application.rb'
+load 'application.rb'
 
 require 'test/unit'
 require 'rack/test'
@@ -18,11 +19,11 @@ FILE_TRAIN= File.new("data/hamster_carcinogenicity_TRAIN.csv","r")
 DATA_TEST="hamster_test"
 FILE_TEST=File.new("data/hamster_carcinogenicity_TEST.csv","r")
 
-#WS_CLASS_ALG=@@config[:services]["opentox-algorithm"]+"lazar_classification" #"localhost:4003/lazar_classification"
-WS_CLASS_ALG=@@config[:services]["opentox-majority"]+"algorithm" #"localhost:4008/algorithm"
+WS_CLASS_ALG=@@config[:services]["opentox-algorithm"]+"lazar_classification" #"localhost:4003/lazar_classification"
+#WS_CLASS_ALG=@@config[:services]["opentox-majority"]+"algorithm" #"localhost:4008/algorithm"
 
-#WS_FEATURE_ALG=@@config[:services]["opentox-algorithm"]+"fminer" #"localhost:4003/fminer"
-WS_FEATURE_ALG=nil
+WS_FEATURE_ALG=@@config[:services]["opentox-algorithm"]+"fminer" #"localhost:4003/fminer"
+#WS_FEATURE_ALG=nil
 
 
 class ValidationTest < Test::Unit::TestCase
@@ -71,8 +72,8 @@ class ValidationTest < Test::Unit::TestCase
 ##      2.times do 
 #        
 #        num_folds = 9
-#        post '/crossvalidation', { :dataset_uri => data_uri,
-#          :algorithm_uri => WS_CLASS_ALG, :feature_service_uri => WS_FEATURE_ALG, :num_folds => num_folds, :random_seed => 2 }
+#        post '/crossvalidation', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => "classification",
+#          :feature_service_uri => WS_FEATURE_ALG, :num_folds => num_folds, :random_seed => 2 }
 #      
 #        puts "crossvalidation: "+last_response.body
 #        assert last_response.ok?
@@ -130,31 +131,37 @@ class ValidationTest < Test::Unit::TestCase
 #    end
 #  end
 #  
-#  def test_validate_algorithm
+  def test_validate_algorithm
+    begin
+      data_uri_train = upload_data(WS_DATA, DATA_TRAIN, FILE_TRAIN)
+      data_uri_test = upload_data(WS_DATA, DATA_TEST, FILE_TEST)
+      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
+      #data_uri_test = WS_DATA+"/"+DATA_TEST
+      post '/validation', { :training_dataset_uri => data_uri_train, :test_dataset_uri => data_uri_test,
+        :algorithm_uri => WS_CLASS_ALG, :prediction_feature => "classification", :feature_service_uri => WS_FEATURE_ALG}
+      verify_validation
+    ensure
+      delete_resources
+    end
+  end
+  
+#  def test_split
 #    begin
-#      data_uri_train = upload_data(WS_DATA, DATA_TRAIN, FILE_TRAIN)
-#      data_uri_test = upload_data(WS_DATA, DATA_TEST, FILE_TEST)
-#      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
-#      #data_uri_test = WS_DATA+"/"+DATA_TEST
-#      post '/validation', { :training_dataset_uri => data_uri_train, :test_dataset_uri => data_uri_test,
-#        :algorithm_uri => WS_CLASS_ALG, :feature_service_uri => WS_FEATURE_ALG}
+#      data_uri = upload_data(WS_DATA, DATA, FILE)
+#      #data_uri=WS_DATA+"/"+DATA
+#      post '/validation/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => "classification",
+#        :feature_service_uri => WS_FEATURE_ALG, :split_ratio=>0.9, :random_seed=>2}
 #      verify_validation
 #    ensure
 #      delete_resources
 #    end
 #  end
   
-  def test_split
-    begin
-      data_uri = upload_data(WS_DATA, DATA, FILE)
-      #data_uri=WS_DATA+"/"+DATA
-      post '/validation/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, 
-        :feature_service_uri => WS_FEATURE_ALG, :split_ratio=>0.9, :random_seed=>2}
-      verify_validation
-    ensure
-      delete_resources
-    end
-  end
+#  def test_nothing
+#    puts "testing nothing"
+#    get ''
+#    puts last_response.body
+#  end
   
   private
   def verify_validation (delete=true)

@@ -148,14 +148,15 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
     val_params = { 
         :dataset_uri => data_uri, 
         :algorithm_uri => ws_class_alg, 
-        :split_ratio=>0.9 }
+        :split_ratio=>0.9,
+        :prediction_feature => "classification",}
     val_params[:feature_service_uri] = ws_feat_alg if ws_feat_alg
     RestClient.post WS_VAL+"/validation/training_test_split", val_params
   end
   
   def create_cross_validation(data_uri, ws_class_alg=WS_CLASS_ALG, ws_feat_alg=WS_FEATURE_ALG)
     puts "cross-validating"
-    ext("curl -X POST -d dataset_uri="+data_uri+" -d algorithm_uri="+ws_class_alg+
+    ext("curl -X POST -d dataset_uri="+data_uri+" -d algorithm_uri="+ws_class_alg+" -d prediction_feature=classification"+
         (ws_feat_alg ? " -d feature_service_uri="+ws_feat_alg : "")+
         " "+WS_VAL+"/crossvalidation",nil)
   end

@@ -7,17 +7,18 @@ module Lib
     
   class Predictions
     
-    attr_accessor :predicted_values, :actual_values, :confidence_values, :compounds
+    attr_accessor :prediction_feature, :predicted_values, :actual_values, :confidence_values, :compounds
     
     # pending: only classification supported so far
-    def initialize(test_dataset_uri, prediction_dataset_uri)
+    def initialize(prediction_feature, test_dataset_uri, prediction_dataset_uri)
       
-      LOGGER.debug("loading prediciton via test-dateset:'"+test_dataset_uri.to_s+"' and prediction-dataset:'"+prediction_dataset_uri.to_s+"'")
+      LOGGER.debug("loading prediciton via test-dateset:'"+test_dataset_uri.to_s+"' and prediction-dataset:'"+prediction_dataset_uri.to_s+"', prediction_feature: '"+prediction_feature.to_s+"'")
       
       test_dataset = OpenTox::Dataset.find(:uri => test_dataset_uri)
       prediction_dataset = OpenTox::Dataset.find(:uri => prediction_dataset_uri)
       raise "test dataset not found: "+test_dataset_uri.to_s unless test_dataset
       raise "prediction dataset not found: "+prediction_dataset_uri.to_s unless prediction_dataset
+      @prediction_feature = prediction_feature
       
       @predicted_values = []
       @actual_values = []
@@ -30,7 +31,7 @@ module Lib
       
         {prediction_dataset => @predicted_values, test_dataset => @actual_values}.each do |d, v|
           d.features(c).each do |a|
-            case OpenTox::Feature.new(:uri => a.uri).value('classification').to_s
+            case OpenTox::Feature.new(:uri => a.uri).value(prediction_feature).to_s
             when 'true'
               v.push(1.0)  
             when 'false'

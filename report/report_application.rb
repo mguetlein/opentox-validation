@@ -2,7 +2,7 @@ load "report/environment.rb"
 
 def perform
   begin
-    $rep = Reports::ReportService.new(url_for("", :full)) unless $rep
+    $rep = Reports::ReportService.new(url_for("/report", :full)) unless $rep
     yield( $rep )
   rescue Reports::NotFound => ex
     halt 404, ex.message

@@ -48,12 +48,13 @@ module Reports
       check_report_type(type)
       
       #step 0.5: replace cv-uris with list of validation-uris
-      LOGGER.debug "validation uri list '"+uri_list.inspect+"'"
+      raise Reports::BadRequest.new("validation uri_list missing") unless uri_list
+      LOGGER.debug "validation uri_list: '"+uri_list.inspect+"'"
       uri_list = Reports.validation_access.resolve_cv_uris(uri_list)
   
       # step1: load validations
       validation_set = Reports::ValidationSet.new(uri_list)
-      raise Reports::BadRequest.new("no validations found") unless validation_set and validation_set.size > 0
+      raise Reports::BadRequest.new("cannot get validations from uri_list '"+uri_list.inspect+"'") unless validation_set and validation_set.size > 0
       LOGGER.debug "loaded "+validation_set.size.to_s+" validation/s"
       
       #step 2: create report of type

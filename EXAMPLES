@@ -1,0 +1,43 @@
+API-Definition 
+====================================
+
+see http://www.opentox.org/dev/apis
+
+
+API-Examples
+====================================
+
+get list of available validations
+------------------------------------
+
+>>> curl <validation_service>/validations
+
+result (accept-header: application/rdf-xml)			
+<<< TODO
+
+result (accept-header: text/uri-list)
+<<< <validation_service>/validation/<validation_id>
+<<< <validation_service>/validation/validation_id_i
+<<< <validation_service>/validation/validation_id_j
+	
+validate model on test-dateset
+------------------------------------	
+
+>>> curl -X POST -d model_uri="<model_service>/model/<model_id>" \
+                 -d dataset_uri="<dataset_service>/dataset/<dataset_id>" \
+                 <validation_service>/validation
+	
+result (accept-header: application/rdf-xml)			
+<<< TODO
+
+result (accept-header: text/uri-list)
+<<< <validation_service>/validation/<id>
+
+
+validate an algorithm on a training- and test-dataset
+------------------------------------
+
+
+
+
+

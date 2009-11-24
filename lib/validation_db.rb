@@ -32,6 +32,7 @@ module Lib
     property :algorithm_uri, String, :length => 255
     property :dataset_uri, String, :length => 255
     property :num_folds, Integer, :default => 10
+    property :prediction_feature, String, :length => 255
     property :stratified, Boolean, :default => false
     property :random_seed, Integer, :default => 1
     property :finished, Boolean, :default => false

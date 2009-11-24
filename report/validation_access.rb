@@ -16,7 +16,7 @@ class Reports::ValidationAccess
     raise "not implemented"
   end
   
-  def get_predictions( test_dataset_uri, prediction_dataset_uri)
+  def get_predictions( prediction_feature, test_dataset_uri, prediction_dataset_uri)
     raise "not implemented"
   end
   
@@ -52,6 +52,10 @@ class Reports::ValidationDB < Reports::ValidationAccess
       validation.send("#{p.to_s}=".to_sym, v[p])
     end
     
+    model = OpenTox::Model::LazarClassificationModel.new(v[:model_uri])
+    raise "cannot access model '"+v[:model_uri].to_s+"'" unless model
+    validation.prediction_feature = model.get_prediction_feature
+    
     {OpenTox::Validation::VAL_CLASS_PROP => OpenTox::Validation::VAL_CLASS_PROPS}.each do |subset_name,subset_props|
       subset = v[subset_name]
       subset_props.each{ |prop| validation.send("#{prop.to_s}=".to_sym, subset[prop]) } if subset
@@ -68,8 +72,8 @@ class Reports::ValidationDB < Reports::ValidationAccess
     end
   end
 
-  def get_predictions( test_dataset_uri, prediction_dataset_uri)
-    Lib::Predictions.new( test_dataset_uri, prediction_dataset_uri)
+  def get_predictions( prediction_feature, test_dataset_uri, prediction_dataset_uri)
+    Lib::Predictions.new( prediction_feature, test_dataset_uri, prediction_dataset_uri)
   end
 end
 
@@ -107,6 +111,10 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
       validation.send("#{p}=".to_sym, data[p])        
     end
     
+    model = OpenTox::Model::LazarClassificationModel.new(v[:model_uri])
+    raise "cannot access model '"+v[:model_uri].to_s+"'" unless model
+    validation.prediction_feature = model.get_prediction_feature
+    
     {OpenTox::Validation::VAL_CV_PROP => OpenTox::Validation::VAL_CV_PROPS,
      OpenTox::Validation::VAL_CLASS_PROP => OpenTox::Validation::VAL_CLASS_PROPS}.each do |subset_name,subset_props|
       subset = data[subset_name]
@@ -130,8 +138,8 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
     end
   end
 
-  def get_predictions( test_dataset_uri, prediction_dataset_uri)
-    Lib::Predictions.new( test_dataset_uri, prediction_dataset_uri)
+  def get_predictions( prediction_feature, test_dataset_uri, prediction_dataset_uri)
+    Lib::Predictions.new( prediction_feature, test_dataset_uri, prediction_dataset_uri)
   end
 end
 
@@ -197,6 +205,8 @@ class Reports::ValidationMockLayer < Reports::ValidationAccess
     validation.training_dataset_uri = @datasets[@count]
     validation.test_dataset_uri = @datasets[@count]
     
+    validation.prediction_feature = "classification"
+    
     @count += 1
   end
   
@@ -212,7 +222,7 @@ class Reports::ValidationMockLayer < Reports::ValidationAccess
     #validation.CV_dataset_name = @datasets[validation.crossvalidation_id.to_i * NUM_FOLDS]
   end
   
-  def get_predictions(test_dataset_uri, prediction_dataset_uri)
+  def get_predictions( prediction_feature, test_dataset_uri, prediction_dataset_uri)
   
     p = Array.new
     c = Array.new

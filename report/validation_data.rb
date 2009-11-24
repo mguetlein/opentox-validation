@@ -71,7 +71,7 @@ module Reports
         LOGGER.info("no predictions available, prediction_dataset_uri not set")
         return nil
       end
-      @predictions = Reports.validation_access.get_predictions( @test_dataset_uri, @prediction_dataset_uri )
+      @predictions = Reports.validation_access.get_predictions( @prediction_feature, @test_dataset_uri, @prediction_dataset_uri )
     end
     
     # loads all crossvalidation attributes, of the corresponding cv into this object 
