@@ -14,7 +14,7 @@ module Reports::ReportFormat
   RF_HTML = "html"
   RF_PDF = "pdf"
   REPORT_FORMATS = [RF_XML, RF_HTML, RF_PDF]
-  CONTENT_TYPES = {"*/xml"=>RF_XML,"*/html"=>RF_HTML,"*/pdf"=>RF_PDF}
+  CONTENT_TYPES = {"text/xml"=>RF_XML,"text/html"=>RF_HTML,"application/pdf"=>RF_PDF}
   
   # returns report-format, according to header value
   def self.get_format(accept_header_value)

@@ -84,8 +84,8 @@ class Reports::XMLReport
     media = Element.new("mediaobject")
     image = Element.new("imageobject")
     imagedata = Reports::XMLReportUtil.attribute_element("imagedata",{"contentwidth" => "75%", "fileref" => path, "format"=>filetype})
+    #imagedata = Reports::XMLReportUtil.attribute_element("imagedata",{"width" => "6in", "fileref" => path, "format"=>filetype})
     @resource_path_elements[imagedata] = "fileref"
-    #imagedata = XMLReportUtil.attribute_element("imagedata",{"width" => "6in", "fileref" => path, "format"=>filetype})
     image << imagedata
     media << image
     media << Reports::XMLReportUtil.text_element("caption", caption) if caption

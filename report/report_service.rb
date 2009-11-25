@@ -76,7 +76,7 @@ module Reports
     def get_report( type, id, accept_header_value="text/xml" )
       
       LOGGER.info "get report '"+id.to_s+"' of type '"+type.to_s+"' (accept-header-value: '"+accept_header_value.to_s+"')"
-      
+      check_report_type(type)
       format = Reports::ReportFormat.get_format(accept_header_value)
       return @persistance.get_report(type, id, format)
     end
@@ -89,6 +89,7 @@ module Reports
     def get_report_resource( type, id, resource )
       
       LOGGER.info "get resource '"+resource+"' for report '"+id.to_s+"' of type '"+type.to_s+"'"
+      check_report_type(type)
       return @persistance.get_report_resource(type, id, resource)
     end
     
@@ -101,6 +102,7 @@ module Reports
     def delete_report( type, id )
       
       LOGGER.info "delete report '"+id.to_s+"' of type '"+type.to_s+"'"
+      check_report_type(type)
       @persistance.delete_report(type, id)
     end
     

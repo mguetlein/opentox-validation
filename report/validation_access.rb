@@ -16,7 +16,7 @@ class Reports::ValidationAccess
     raise "not implemented"
   end
   
-  def get_predictions( prediction_feature, test_dataset_uri, prediction_dataset_uri)
+  def get_predictions(validation)
     raise "not implemented"
   end
   
@@ -72,8 +72,8 @@ class Reports::ValidationDB < Reports::ValidationAccess
     end
   end
 
-  def get_predictions( prediction_feature, test_dataset_uri, prediction_dataset_uri)
-    Lib::Predictions.new( prediction_feature, test_dataset_uri, prediction_dataset_uri)
+  def get_predictions(validation)
+    Lib::Predictions.new( validation.prediction_feature, validation.test_dataset_uri, validation.prediction_dataset_uri)
   end
 end
 
@@ -138,8 +138,8 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
     end
   end
 
-  def get_predictions( prediction_feature, test_dataset_uri, prediction_dataset_uri)
-    Lib::Predictions.new( prediction_feature, test_dataset_uri, prediction_dataset_uri)
+  def get_predictions(validation)
+    Lib::Predictions.new( validation.prediction_feature, validation.test_dataset_uri, validation.prediction_dataset_uri)
   end
 end
 
@@ -222,7 +222,7 @@ class Reports::ValidationMockLayer < Reports::ValidationAccess
     #validation.CV_dataset_name = @datasets[validation.crossvalidation_id.to_i * NUM_FOLDS]
   end
   
-  def get_predictions( prediction_feature, test_dataset_uri, prediction_dataset_uri)
+  def get_predictions(validation)
   
     p = Array.new
     c = Array.new

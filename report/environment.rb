@@ -8,6 +8,7 @@ require 'rest_client'
 require 'yaml'
 require 'opentox-ruby-api-wrapper'
 require 'fileutils'
+require 'mime/types'
 
 module Reports
 end

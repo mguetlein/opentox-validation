@@ -28,14 +28,19 @@ module Reports
     @@validation_access
   end
   
-  def self.reset_validation_access
-    case ENV['REPORT_VALIDATION_ACCESS']
-    when "mock_layer"
-      @@validation_access = Reports::ValidationMockLayer.new
-    when "webservice"
-      @@validation_access = Reports::ValidationWebservice.new
-    else #default
-      @@validation_access = Reports::ValidationDB.new
+  def self.reset_validation_access( validation_access=nil )
+    
+    if validation_access
+      @@validation_access=validation_access
+    else
+      case ENV['REPORT_VALIDATION_ACCESS']
+      when "mock_layer"
+        @@validation_access = Reports::ValidationMockLayer.new
+      when "webservice"
+        @@validation_access = Reports::ValidationWebservice.new
+      else #default
+        @@validation_access = Reports::ValidationDB.new
+      end
     end
   end
   
@@ -71,7 +76,7 @@ module Reports
         LOGGER.info("no predictions available, prediction_dataset_uri not set")
         return nil
       end
-      @predictions = Reports.validation_access.get_predictions( @prediction_feature, @test_dataset_uri, @prediction_dataset_uri )
+      @predictions = Reports.validation_access.get_predictions( self )
     end
     
     # loads all crossvalidation attributes, of the corresponding cv into this object 

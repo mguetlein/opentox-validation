@@ -31,8 +31,14 @@ get '/report/:type/:id' do
 end
 
 get '/report/:type/:id/:resource' do
-  #hack: using request.env['REQUEST_URI'].split("/")[-1] instead of params[:resource] because the file extension is lost 
-  perform{ |rs| result = body(File.new(rs.get_report_resource(params[:type],params[:id],request.env['REQUEST_URI'].split("/")[-1]))) }
+  #hack: using request.env['REQUEST_URI'].split("/")[-1] instead of params[:resource] because the file extension is lost
+
+  perform do |rs|
+    filepath = rs.get_report_resource(params[:type],params[:id],request.env['REQUEST_URI'].split("/")[-1])
+    types = MIME::Types.type_for(filepath)
+    content_type(types[0].content_type) if types and types.size>0 and types[0]
+    result = body(File.new(filepath))
+  end
 end
 
 delete '/report/:type/:id' do
