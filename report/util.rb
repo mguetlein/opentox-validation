@@ -78,7 +78,7 @@ module Reports::Util
             break
           end
         end
-        raise Reports::BadRequest.new("no match found for "+o.to_s) unless match
+        raise Reports::BadRequest.new("no match found for "+inspect_attributes(o, match_attributes)) unless match
       end
     end
   end
@@ -97,6 +97,13 @@ module Reports::Util
       tmp_file_path = ENV['TMP_DIR']+"/#{tmp_file_name}.#{Time.now.strftime("%Y-%-m-%d_%H-%M-%S")}.#{rand(11111).to_s}"
     end
     return tmp_file_path
+  end
+  
+  protected
+  def self.inspect_attributes(object, attributes)
+    res = object.class.to_s+" ("
+    res += attributes.collect{ |a| a.to_s+"->"+object.send(a).inspect }.join(", ")
+    res += ")"
   end
 
 end

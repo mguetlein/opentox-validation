@@ -2,3 +2,6 @@ api_key.rb
 *.sqlite3
 tmp/*
 log/*
+.project
+dist
+reports

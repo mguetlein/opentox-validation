@@ -24,7 +24,7 @@ module Reports::RPlotFactory
     validation_set.validations.each do |v|
       b.add_data(v.send(title_attribute), value_attributes.collect{|a| v.send(a)})
     end
-    b.build_plot(value_attributes)
+    b.build_plot(value_attributes.collect{|a| a.to_s})
   end
   
   # creates a roc plot (result is plotted into out_file)

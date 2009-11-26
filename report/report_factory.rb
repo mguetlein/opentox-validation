@@ -1,10 +1,10 @@
 
 # selected attributes of interest when generating the report for a train-/test-evaluation                      
-VAL_ATTR_TRAIN_TEST = [ "model_uri", "training_dataset_uri", "test_dataset_uri" ]
+VAL_ATTR_TRAIN_TEST = [ :model_uri, :training_dataset_uri, :test_dataset_uri ]
 # selected attributes of interest when generating the crossvalidation report
-VAL_ATTR_CV = [ "algorithm_uri", "dataset_uri", "num_folds", "crossvalidation_fold" ]
+VAL_ATTR_CV = [ :algorithm_uri, :dataset_uri, :num_folds, :crossvalidation_fold ]
 # selected attributes of interest when performing classification
-VAL_ATTR_CLASS = [ "auc", "acc", "sens", "spec" ]
+VAL_ATTR_CLASS = [ :auc, :acc, :sens, :spec ]
 
 
 # = Reports::ReportFactory 
@@ -63,14 +63,16 @@ module Reports::ReportFactory
     raise Reports::BadRequest.new("num validations ("+validation_set.size.to_s+") is not equal to num folds ("+validation_set.first.num_folds.to_s+")") unless validation_set.first.num_folds==validation_set.size
     raise Reports::BadRequest.new("num different folds is not equal to num validations") unless validation_set.num_different_values(:crossvalidation_fold)==validation_set.size
     merged = validation_set.merge([:crossvalidation_id])
+    
+    puts merged.get_values(:acc_variance, false).inspect
      
     report = Reports::ReportContent.new("Crossvalidation report")
     report.add_section_result(merged, VAL_ATTR_CV+VAL_ATTR_CLASS-["crossvalidation_fold"],"Mean Results","Mean Results")
     report.add_section_roc_plot(validation_set)
     report.add_section_confusion_matrix(merged.first)
-    report.add_section_result(validation_set, VAL_ATTR_CV+VAL_ATTR_CLASS-["CV_num_folds"], "Results","Results")
+    report.add_section_result(validation_set, VAL_ATTR_CV+VAL_ATTR_CLASS-[:num_folds], "Results","Results")
     report.add_section_result(validation_set, OpenTox::Validation::ALL_PROPS, "All Results", "All Results")
-    report.add_section_predictions( validation_set, ["crossvalidation_fold"] ) 
+    report.add_section_predictions( validation_set, [:crossvalidation_fold] ) 
     return report
   end
   
@@ -87,19 +89,33 @@ module Reports::ReportFactory
       raise Reports::BadRequest.new("number of different algorithms <2") if validation_set.num_different_values(:algorithm_uri)<2
       
       if validation_set.num_different_values(:dataset_uri)>1
-        raise Reports::BadRequest.new("so far, algorithm comparison is only supported for 1 dataset")
+        # groups results into sets with equal dataset 
+        dataset_grouping = Reports::Util.group(validation_set.validations, [:dataset_uri])
+        # check if equal values in each group exist
+        Reports::Util.check_group_matching(dataset_grouping, [:algorithm_uri, :crossvalidation_fold, :num_folds, :stratified, :random_seed])
+        # we only checked that equal validations exist in each dataset group, now check for each algorithm
+        dataset_grouping.each do |validations|
+          algorithm_grouping = Reports::Util.group(validations, [:algorithm_uri])
+          Reports::Util.check_group_matching(algorithm_grouping, [:crossvalidation_fold, :num_folds, :stratified, :random_seed])
+        end
+        
+        merged = validation_set.merge([:algorithm_uri, :dataset_uri])
+        report = Reports::ReportContent.new("Algorithm comparison report - Many datasets")
+        report.add_section_result(merged,VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold],"Mean Results","Mean Results")
+        report.add_section_ranking_plots(merged, :algorithm_uri, :dataset_uri, [:acc, :auc, :sens, :spec])
+        return report
       else
         # this groups all validations in x different groups (arrays) according to there algorithm-uri
-        algorithm_grouping = Reports::Util.group(validation_set.validations, ["algorithm_uri"])
+        algorithm_grouping = Reports::Util.group(validation_set.validations, [:algorithm_uri])
         # we check if there are corresponding validations in each group that have equal attributes (folds, num-folds,..)
         Reports::Util.check_group_matching(algorithm_grouping, [:crossvalidation_fold, :num_folds, :dataset_uri, :stratified, :random_seed])
         merged = validation_set.merge([:algorithm_uri]) 
         
         report = Reports::ReportContent.new("Algorithm comparison report")
-        report.add_section_bar_plot(merged,"algorithm_uri",VAL_ATTR_CLASS)   
-        report.add_section_roc_plot(validation_set, "algorithm_uri")
-        report.add_section_result(merged,VAL_ATTR_CV+VAL_ATTR_CLASS-["crossvalidation_fold"],"Mean Results","Mean Results")
-        report.add_section_result(validation_set,VAL_ATTR_CV+VAL_ATTR_CLASS-["num_folds"],"Results","Results")
+        report.add_section_bar_plot(merged,:algorithm_uri,VAL_ATTR_CLASS)   
+        report.add_section_roc_plot(validation_set, :algorithm_uri)
+        report.add_section_result(merged,VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold],"Mean Results","Mean Results")
+        report.add_section_result(validation_set,VAL_ATTR_CV+VAL_ATTR_CLASS-[:num_folds],"Results","Results")
         
         return report
       end
@@ -147,7 +163,7 @@ class Reports::ReportContent
     #PENDING rexml strings in tables not working when >66  
     vals = vals.collect{|a| a.collect{|v| v.to_s[0,66] }}
     #transpose values if there more than 8 columns
-    transpose = vals[0].size>8 
+    transpose = vals[0].size>8 && vals[0].size>vals.size
     @xml_report.add_table(section_table, table_title, vals, !transpose, transpose)   
   end
   
@@ -181,6 +197,34 @@ class Reports::ReportContent
     else
       @xml_report.add_paragraph(section_roc, "No prediction info for roc plot available.")
     end
+    
+  end
+  
+  def add_section_ranking_plots( validation_set,
+                            compare_attribute,
+                            equal_attribute,
+                            rank_attributes,
+                            section_title="Ranking Plots",
+                            section_text="This section contains the ranking plots.")
+    
+    section_rank = @xml_report.add_section(@xml_report.get_root_element, section_title)
+    @xml_report.add_paragraph(section_rank, section_text) if section_text
+
+    rank_attributes.each{|a| add_ranking_plot(section_rank, validation_set, compare_attribute, equal_attribute, a, a.to_s+"-ranking.svg")}
+  end
+  
+  def add_ranking_plot( report_section, 
+                        validation_set,
+                        compare_attribute,
+                        equal_attribute,
+                        rank_attribute,
+                        plot_file_name="ranking.svg", 
+                        image_title="Ranking Plot",
+                        image_caption=nil)
+    
+    plot_file_path = add_tmp_file(plot_file_name)
+    Reports::PlotFactory::create_ranking_plot(plot_file_path, validation_set, compare_attribute, equal_attribute, rank_attribute)
+    @xml_report.add_imagefigure(report_section, image_title, plot_file_name, "SVG", image_caption)
     
   end
   

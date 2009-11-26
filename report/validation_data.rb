@@ -1,6 +1,7 @@
 
 # the variance is computed when merging results for these attributes 
 VAL_ATTR_VARIANCE = [ :auc, :acc ]
+VAL_ATTR_RANKING = [ :auc, :acc, :spec, :sens ]
 
 class Object
   
@@ -54,9 +55,11 @@ module Reports
   #
   class Validation
     
-    #VAL_ATTR.each{ |a| attr_accessor a }
-    OpenTox::Validation::ALL_PROPS.each{ |a| attr_accessor a } 
-    VAL_ATTR_VARIANCE.each{ |a| attr_accessor (a.to_s+"_variance").to_sym }
+    @@validation_attributes = OpenTox::Validation::ALL_PROPS + 
+      VAL_ATTR_VARIANCE.collect{ |a| (a.to_s+"_variance").to_sym } +
+      VAL_ATTR_RANKING.collect{ |a| (a.to_s+"_ranking").to_sym }
+    
+    @@validation_attributes.each{ |a| attr_accessor a } 
   
     attr_reader :predictions, :merge_count
     
@@ -85,6 +88,13 @@ module Reports
       Reports.validation_access.init_cv(self)
     end
     
+    def clone_validation
+      new_val = clone
+      VAL_ATTR_VARIANCE.each { |a| new_val.send((a.to_s+"_variance=").to_sym,nil) }
+      new_val.set_merge_count(1)
+      return new_val
+    end
+    
     # merges this validation and another validation object to a new validation object
     # * v1.att = "a", v2.att = "a" => r.att = "a"
     # * v1.att = "a", v2.att = "b" => r.att = "a / b"
@@ -98,10 +108,10 @@ module Reports
   
       new_validation = Reports::Validation.new
       raise "not working" if validation.merge_count > 1
+
+      @@validation_attributes.each do |a|
+        next if a.to_s =~ /_variance$/
       
-      OpenTox::Validation::ALL_PROPS.each do |a|
-        next if a =~ /_variance$/ 
-  
         if (equal_attributes.index(a) != nil)
           new_validation.send("#{a.to_s}=".to_sym, send(a))
         else
@@ -109,12 +119,16 @@ module Reports
           variance = nil
   
           if (send(a).is_a?(Float) || send(a).is_a?(Integer))
+            old_value = send(a)
             value = (send(a) * @merge_count + validation.send(a)) / (@merge_count + 1).to_f;
             if (VAL_ATTR_VARIANCE.index(a) != nil)
-              old_std_dev = 0;
-              old_std_dev = send((a.to_s+"_variance").to_sym) ** 2 if send((a.to_s+"_variance").to_sym)
-              std_dev = (old_std_dev * (@merge_count / (@merge_count + 1.0))) + (((validation.send(a) - value) ** 2) * (1 / @merge_count))
-              variance = Math.sqrt(std_dev);
+              # use revursiv formular for computing the variance
+              # ( see Tysiak, Folgen: explizit und rekursiv, ISSN: 0025-5866
+              #  http://www.frl.de/tysiakpapers/07_TY_Papers.pdf )
+              old_variance = 0 unless (old_variance = send((a.to_s+"_variance").to_sym))  
+              variance = old_variance*(@merge_count-1)/@merge_count +
+                         (value-old_value)**2 +
+                         (validation.send(a)-value)**2/@merge_count
             end
           else
             if send(a).to_s != validation.send(a).to_s
@@ -245,7 +259,7 @@ module Reports
   
       #merge
       grouping.each do |g|
-        new_set.validations.push(g[0].clone)
+        new_set.validations.push(g[0].clone_validation)
         g[1..-1].each do |v|
           new_set.validations[-1] = new_set.validations[-1].merge(v, equal_attributes)
         end
@@ -253,7 +267,68 @@ module Reports
       
       return new_set
     end
+    
+    # creates a new validaiton set, that contains a ranking for __ranking_attribute__
+    # (i.e. for ranking attribute :acc, :acc_ranking is calculated)
+    # all validation with equal values for __equal_attributes__ are compared
+    # (the one with highest value of __ranking_attribute__ has rank 1, and so on) 
+    #
+    # call-seq:
+    #   compute_ranking(equal_attributes, ranking_attribute) => array
+    # 
+    def compute_ranking(equal_attributes, ranking_attribute)
+    
+      new_set = Reports::ValidationSet.new
+      (0..@validations.size-1).each do |i|
+        new_set.validations.push(@validations[i].clone_validation)
+      end
+      
+      grouping = Reports::Util.group(new_set.validations, equal_attributes)
+      grouping.each do |group|
   
+        # put indices and ranking values for current group into hash
+        rank_hash = {}
+        (0..group.size-1).each do |i|
+          rank_hash[i] = group[i].send(ranking_attribute)
+        end
+              
+        # sort group accrording to second value (= ranking value)
+        rank_array = rank_hash.sort { |a, b| b[1] <=> a[1] } 
+        
+        # create ranks array
+        ranks = Array.new
+        (0..rank_array.size-1).each do |j|
+          
+          val = rank_array.at(j)[1]
+          rank = j+1
+          ranks.push(rank.to_f)
+          
+          # check if previous ranks have equal value
+          equal_count = 1;
+          equal_rank_sum = rank;
+          
+          while ( j - equal_count >= 0 && (val - rank_array.at(j - equal_count)[1]).abs < 0.0001 )
+            equal_rank_sum += ranks.at(j - equal_count);
+            equal_count += 1;
+          end
+          
+          # if previous ranks have equal values -> replace with avg rank
+          if (equal_count > 1)
+            (0..equal_count-1).each do |k|
+              ranks[j-k] = equal_rank_sum / equal_count.to_f;            
+            end
+          end
+        end
+        
+        # set rank as validation value
+        (0..rank_array.size-1).each do |j|
+          index = rank_array.at(j)[0]
+          group[index].send( (ranking_attribute.to_s+"_ranking=").to_sym, ranks[j])
+        end
+      end
+      
+      return new_set
+    end
     
     def size
       return @validations.size

@@ -14,6 +14,7 @@ module Reports
 end
 
 load "report/r_plot_factory.rb"
+load "report/plot_factory.rb"
 load "report/xml_report.rb"
 load "report/xml_report_util.rb"
 load "report/report_persistance.rb"
