@@ -1,21 +1,26 @@
 API-Definition 
 ====================================
 
-see http://www.opentox.org/dev/apis
+see http://opentox.org/dev/apis/api-1.1/Validation
 
 
 API-Examples
 ====================================
+
+how to
+------------------------------------
+the examples listed below can be performed with the command line tool curl 
+
 
 get list of available validations
 ------------------------------------
 
 >>> curl <validation_service>/validations
 
-result (accept-header: application/rdf-xml)			
+result example (accept-header: application/rdf-xml)			
 <<< TODO
 
-result (accept-header: text/uri-list)
+result example (accept-header: text/uri-list)
 <<< <validation_service>/validation/<validation_id>
 <<< <validation_service>/validation/validation_id_i
 <<< <validation_service>/validation/validation_id_j
@@ -27,17 +32,48 @@ validate model on test-dateset
                  -d dataset_uri="<dataset_service>/dataset/<dataset_id>" \
                  <validation_service>/validation
 	
-result (accept-header: application/rdf-xml)			
+result example (accept-header: application/rdf-xml)			
 <<< TODO
 
-result (accept-header: text/uri-list)
+result example (accept-header: text/uri-list)
 <<< <validation_service>/validation/<id>
 
 
 validate an algorithm on a training- and test-dataset
 ------------------------------------
 
+>>> curl -X POST -d algorithm_uri="<model_service>/model/<model_id>" \
+                 -d training_dataset_uri="<dataset_service>/dataset/<dataset_id>" \
+                 -d test_dataset_uri="<dataset_service>/dataset/<dataset_id>" \
+                 -d prediction_feature="<prediction_feature>" \
+                 <validation_service>/validation
+	
+result example (accept-header: application/rdf-xml)			
+<<< TODO
 
+result example (accept-header: text/uri-list)
+<<< <validation_service>/validation/<id>
+
+
+validate an algorithm on a dataset via training-test-split
+------------------------------------
+
+>>> curl -X POST -d algorithm_uri="<model_service>/model/<model_id>" \
+                 -d dataset_uri="<dataset_service>/dataset/<dataset_id>" \
+                 -d prediction_feature="<prediction_feature>" \
+                 -d split_ratio=0.9 \
+                 -d random_seed=2 \
+                 <validation_service>/validation/training-test-split
+
+optional params:
+split_ratio, default is 0.67
+random_seed, default is 1
+	
+result example (accept-header: application/rdf-xml)			
+<<< TODO
+
+result example (accept-header: text/uri-list)
+<<< <validation_service>/validation/<id>
 
 
 

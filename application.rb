@@ -7,7 +7,7 @@ load "report/report_application.rb"
   require lib
 end
 
-get '/?' do
+get '/examples/?' do
   
   transform_example
 end

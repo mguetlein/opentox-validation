@@ -1,4 +1,10 @@
 OpenTox Validation
 ==================
 
-* An OpenTox REST Webservice
+* An OpenTox REST Webservice for validation and reporting
+
+* see http://opentox.org/dev/apis/api-1.1/Validation for a current version of the  API
+
+* online test-service not yet available
+
+* see EXAMPLES file for examples using curl, a version without placeholders (in <> brackets) will be available soon   
