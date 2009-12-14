@@ -7,11 +7,17 @@ module Lib
     
     # updloads a dataset
     def upload_data(ws, name, file)
-      data_uri = RestClient.post ws, :name => name
-      puts "created dataset "+data_uri.to_s
+      begin
+        data_uri = RestClient.post ws, :name => name
+        puts "created dataset "+data_uri.to_s
+        assert data_uri==ext("curl -X PUT -F 'file=@"+file.path+";type=text/csv' -F compound_format=smiles "+data_uri+"/import",nil)
+      rescue RestClient::RequestFailed => ex
+        raise "could not upload dataset "+ex.message unless ex.message =~ /.*403.*/
+        data_uri = File.join(ws,name)
+        puts "already uploaded "+data_uri.to_s
+      end
+        
       add_resource(data_uri)
-      
-      assert data_uri==ext("curl -X PUT -F 'file=@"+file.path+";type=text/csv' -F compound_format=smiles "+data_uri+"/import",nil)
       return data_uri
     end
 
@@ -38,12 +44,12 @@ module Lib
     # execute an external program like curl
     def ext(call, indent="  ")
       response = "" 
-      IO.popen(call.to_s+" 2> /dev/null") do |f|
+      IO.popen(call.to_s+" 2> /dev/null") do |f| 
         while line = f.gets
           response += indent.to_s+line
         end
       end
-      assert $?==0
+      assert $?==0, "returns error "+call+" "+response
       return response
     end
 

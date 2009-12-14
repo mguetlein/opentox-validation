@@ -1,5 +1,5 @@
 
-[ 'rubygems', 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper', 'logger' ].each do |lib|
+[ 'rubygems', 'sinatra', 'sinatra/url_for', 'sinatra/respond_to', 'opentox-ruby-api-wrapper', 'logger' ].each do |lib|
   require lib
 end
 
@@ -54,11 +54,10 @@ post '/crossvalidation/?' do
   halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
   halt 400, "prediction_feature missing" unless params[:prediction_feature]
   cv_params = { :dataset_uri => params[:dataset_uri],  
-                :algorithm_uri => params[:algorithm_uri],
-                :prediction_feature => params[:prediction_feature] }
+                :algorithm_uri => params[:algorithm_uri] }
   [ :num_folds, :random_seed, :stratified ].each{ |sym| cv_params[sym] = params[sym] if params[sym] }
   cv = Crossvalidation.new cv_params
-  cv.create_cv_datasets
+  cv.create_cv_datasets( params[:prediction_feature] )
   cv.perform_cv( params[:feature_service_uri])
   cv.uri
 end
@@ -69,25 +68,37 @@ get '/validations/?' do
 end
 
 get '/validation/:id' do
-  LOGGER.info "get validation with id "+params[:id].to_s
+  LOGGER.info "get validation with id "+params[:id].to_s+" '"+request.env['HTTP_ACCEPT'].to_s+"'"
   halt 404, "Validation #{params[:id]} not found." unless validation = Validation.get(params[:id])
-  halt 202, validation.to_yaml  unless validation.finished
-  validation.to_yaml
+  
+  case request.env['HTTP_ACCEPT']
+  when "application/rdf+xml"
+    result = validation.to_rdf
+  when "text/x-yaml"
+    result = validation.to_yaml
+  else
+    halt 400, "MIME type "+request.env['HTTP_ACCEPT']+" not supported."
+  end
+  
+  halt 202, result unless validation.finished
+  result
 end
 
 post '/validation/?' do
   LOGGER.info "creating validation "+params.inspect
-  if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri]
+  if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri] and params[:prediction_feature]
     v = Validation.new :model_uri => params[:model_uri], 
-                     :test_dataset_uri => params[:test_dataset_uri]
+                     :test_dataset_uri => params[:test_dataset_uri],
+                     :prediction_feature => params[:prediction_feature]
     v.validate_model
   elsif params[:algorithm_uri] and params[:training_dataset_uri] and params[:test_dataset_uri] and params[:prediction_feature] and !params[:model_uri]
    v = Validation.new :training_dataset_uri => params[:training_dataset_uri], 
-                      :test_dataset_uri => params[:test_dataset_uri]
-   v.validate_algorithm( params[:algorithm_uri], params[:prediction_feature], params[:feature_service_uri]) 
+                      :test_dataset_uri => params[:test_dataset_uri],
+                      :prediction_feature => params[:prediction_feature]
+   v.validate_algorithm( params[:algorithm_uri], params[:feature_service_uri]) 
   else
     halt 400, "illegal parameter combination for validation, use either\n"+
-      "* model_uri, test_dataset_uri\n"+ 
+      "* model_uri, test_dataset_uri, prediction_feature\n"+ 
       "* algorithm_uri, training_dataset_uri, test_dataset_uri, prediction_feature\n"
       "params given: "+params.inspect
   end
@@ -103,8 +114,9 @@ post '/validation/training_test_split' do
   
   params.merge!(ValidationUtil.train_test_dataset_split(params[:dataset_uri], params[:split_ratio], params[:random_seed]))
   v = Validation.new :training_dataset_uri => params[:training_dataset_uri], 
-                   :test_dataset_uri => params[:test_dataset_uri]
-  v.validate_algorithm( params[:algorithm_uri], params[:prediction_feature], params[:feature_service_uri]) 
+                   :test_dataset_uri => params[:test_dataset_uri],
+                   :prediction_feature => params[:prediction_feature]
+  v.validate_algorithm( params[:algorithm_uri], params[:feature_service_uri]) 
   v.uri
 end
 

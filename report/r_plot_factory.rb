@@ -17,12 +17,21 @@ module Reports::RPlotFactory
   # creates a bar plot (result is plotted into out_file), 
   # one category for each attribute in value_attributes, title_attribute is used for the legend
   #
-  def self.create_bar_plot( out_file, validation_set, title_attribute, value_attributes )
+  def self.create_bar_plot( out_file, validation_set, class_value, title_attribute, value_attributes )
   
     LOGGER.debug "creating bar plot, out-file:"+out_file.to_s
     b = Reports::BarPlot.new( out_file )
     validation_set.validations.each do |v|
-      b.add_data(v.send(title_attribute), value_attributes.collect{|a| v.send(a)})
+      values = []
+      value_attributes.collect do |a|
+        value = v.send(a)
+        if value.is_a?(Hash)
+          raise "bar plat value is hash, but no entry for class-value ("+class_value.to_s+")" unless value.key?(class_value)
+          value = value[class_value]
+        end
+        values.push(value)
+      end
+      b.add_data(v.send(title_attribute), values)
     end
     b.build_plot(value_attributes.collect{|a| a.to_s})
   end
@@ -35,19 +44,19 @@ module Reports::RPlotFactory
   #   * the validation set is splitted into sets of validation_sets with equal attribute values
   #   * each of theses validation sets is plotted as a roc-curve  
   #
-  def self.create_roc_plot( out_file, validation_set, split_set_attribute=nil, show_single_curves=false )
+  def self.create_roc_plot( out_file, validation_set, class_value, split_set_attribute=nil, show_single_curves=false )
     
     LOGGER.debug "creating roc plot, out-file:"+out_file.to_s
     r = Reports::RocPlot.new( out_file )
     if split_set_attribute
         attribute_values = validation_set.get_values(split_set_attribute)
         attribute_values.each do |value|
-        p = transform_predictions(validation_set.filter({split_set_attribute => value}))
+        p = transform_predictions(validation_set.filter({split_set_attribute => value}), class_value)
         r.plot_predictions(value, p[0], p[1], false)
       end
       r.add_legend
     else
-      p = transform_predictions(validation_set)
+      p = transform_predictions(validation_set, class_value)
       r.plot_predictions("", p[0], p[1], show_single_curves)
     end  
   end
@@ -79,18 +88,18 @@ module Reports::RPlotFactory
   end
   
   private
-  def self.transform_predictions(validation_set)
+  def self.transform_predictions(validation_set, class_value)
 
     predict_array = Array.new
     actual_array = Array.new
     if (validation_set.size > 1)
       (0..validation_set.size-1).each do |i|
-        predict_array.push(validation_set.get(i).get_predictions.confidence_values)
-        actual_array.push(validation_set.get(i).get_predictions.actual_values)
+        predict_array.push(validation_set.get(i).get_predictions.roc_confidence_values(class_value))
+        actual_array.push(validation_set.get(i).get_predictions.roc_actual_values(class_value))
       end
     else
-      predict_array = validation_set.first.get_predictions.confidence_values
-      actual_array = validation_set.first.get_predictions.actual_values
+      predict_array = validation_set.first.get_predictions.roc_confidence_values(class_value)
+      actual_array = validation_set.first.get_predictions.roc_actual_values(class_value)
     end
     return [ predict_array, actual_array ]
   end
@@ -158,7 +167,7 @@ class Reports::RocPlot < Reports::RPlot
   
     if (predict_array[0].is_a?(Array)) #multi-dim-arrays
       
-      # PENDING: very in-efficient
+      # PENDING: very in-efficient, add new type to r-in-ruby 
       preds = ""
       actual = ""
       (0..predict_array.size-1).each do |i|
@@ -175,8 +184,14 @@ class Reports::RocPlot < Reports::RPlot
     end
     
     R.eval("library(ROCR)", false)
-    R.eval "pred <- prediction(prediction_values,actual_values)"
+    R.eval("pred <- prediction(prediction_values,actual_values)")
     R.eval 'perf <- performance(pred,"tpr","fpr")'
+    begin 
+      # WORKAROUND to check weather the r calls worked out so far 
+      R.pull "perf@x.name"
+    rescue => ex
+      raise "error while creating roc plot ("+ex.message.to_s+")"
+    end
     
     add_plot = @titles.size > 0 ? "add=TRUE" : "add=FALSE"
     avg = predict_array[0].is_a?(Array) ? 'avg="threshold",' : '' 
@@ -185,6 +200,11 @@ class Reports::RocPlot < Reports::RPlot
     R.eval 'plot(perf, '+avg+' col="'+R_PLOT_COLORS[@titles.size]+'", '+add_plot+')'
     R.eval 'plot(perf, ,col="grey82", add=TRUE)' if show_single_curves
     @titles.push(title)
+    
+    R.eval "prediction_values <- NULL"
+    R.eval "actual_values <- NULL"
+    R.eval "pred <- NULL"
+    R.eval "perf <- NULL"
   end
   
 end

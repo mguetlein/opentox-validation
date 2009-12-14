@@ -1,3 +1,4 @@
+require "fileutils"
 ENV['RACK_ENV'] = 'test'
 
 require 'report/report_application.rb'
@@ -115,30 +116,30 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
       ENV['REPORT_VALIDATION_ACCESS'] = nil
       Reports.reset_validation_access
       
-      data_uri = upload_data WS_DATA, DATA, FILE
-      data_uri= WS_DATA+"/hamster"
+      #data_uri = upload_data WS_DATA, DATA, FILE
+      #data_uri= WS_DATA+"/hamster"
       
-##      val_uri = create_single_validation(data_uri)
+#      #val_uri = create_single_validation(data_uri)
 #      val_uri = create_single_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
-##      val_uri = "http://localhost:4007/validation/95"
+#      #val_uri = "http://localhost:4007/validation/49"
 ##      #add_resource val_uri
 #      create_report(rep, val_uri, "validation")
         
-        val_uri = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
-       # val_uri = create_cross_validation(data_uri)
-       # val_uri = "http://localhost:4007/crossvalidation/11"
-       # val_uri2 = "http://localhost:4007/crossvalidation/1"
-       # add_resource val_uri
-        create_report(rep, val_uri, "crossvalidation")
+#       #val_uri = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
+#       #val_uri = create_cross_validation(data_uri)
+#       val_uri = "http://localhost:4007/crossvalidation/7"
+#       #val_uri2 = "http://localhost:4007/crossvalidation/14"
+#       # add_resource val_uri
+#       create_report(rep, val_uri, "crossvalidation")
         
 #         #val_uri2 = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
 #         #val_uri = ["http://localhost:4007/crossvalidation/6", "http://localhost:4007/crossvalidation/8"]
-#         val_uri = ["http://localhost:4007/crossvalidation/2", "http://localhost:4007/crossvalidation/1"]
+         val_uri = ["http://localhost:4007/crossvalidation/7", "http://localhost:4007/crossvalidation/8"]
 #         #add_resource val_uri
-#         create_report(rep, val_uri, "algorithm_comparison")
+         create_report(rep, val_uri, "algorithm_comparison")
       
     ensure
-      delete_resources
+     # delete_resources
     end
   end
   
@@ -148,15 +149,19 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
     val_params = { 
         :dataset_uri => data_uri, 
         :algorithm_uri => ws_class_alg, 
-        :split_ratio=>0.9,
+        :split_ratio=>0.7,
         :prediction_feature => "classification",}
     val_params[:feature_service_uri] = ws_feat_alg if ws_feat_alg
-    RestClient.post WS_VAL+"/validation/training_test_split", val_params
+    begin
+      RestClient.post WS_VAL+"/validation/training_test_split", val_params
+    rescue => ex
+      raise "error validating "+WS_VAL+"/validation/training_test_split\n "+val_params.inspect+" \n -> "+ex.message
+    end
   end
   
   def create_cross_validation(data_uri, ws_class_alg=WS_CLASS_ALG, ws_feat_alg=WS_FEATURE_ALG)
     puts "cross-validating"
-    ext("curl -X POST -d dataset_uri="+data_uri+" -d algorithm_uri="+ws_class_alg+" -d prediction_feature=classification"+
+    ext("curl -X POST -d num_folds=3 -d dataset_uri="+data_uri+" -d algorithm_uri="+ws_class_alg+" -d prediction_feature=classification"+
         (ws_feat_alg ? " -d feature_service_uri="+ws_feat_alg : "")+
         " "+WS_VAL+"/crossvalidation",nil)
   end

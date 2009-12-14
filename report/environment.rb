@@ -27,7 +27,7 @@ load "report/predictions.rb"
 load "report/util.rb"
 load "report/external/mimeparse.rb"
 
-load "lib/prediction_util.rb"
+load "lib/ot_predictions.rb"
 
 unless(defined? LOGGER)
   LOGGER = Logger.new(STDOUT)

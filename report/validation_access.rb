@@ -23,6 +23,11 @@ class Reports::ValidationAccess
   def resolve_cv_uris(uri_list)
     raise "not implemented"
   end
+  
+  def get_prediction_feature_values(prediction_feature)
+    raise "not implemented"
+  end
+  
 end
 
 class Reports::ValidationDB < Reports::ValidationAccess
@@ -52,9 +57,9 @@ class Reports::ValidationDB < Reports::ValidationAccess
       validation.send("#{p.to_s}=".to_sym, v[p])
     end
     
-    model = OpenTox::Model::LazarClassificationModel.new(v[:model_uri])
-    raise "cannot access model '"+v[:model_uri].to_s+"'" unless model
-    validation.prediction_feature = model.get_prediction_feature
+    #model = OpenTox::Model::LazarClassificationModel.new(v[:model_uri])
+    #raise "cannot access model '"+v[:model_uri].to_s+"'" unless model
+    #validation.prediction_feature = model.get_prediction_feature
     
     {OpenTox::Validation::VAL_CLASS_PROP => OpenTox::Validation::VAL_CLASS_PROPS}.each do |subset_name,subset_props|
       subset = v[subset_name]
@@ -73,8 +78,14 @@ class Reports::ValidationDB < Reports::ValidationAccess
   end
 
   def get_predictions(validation)
-    Lib::Predictions.new( validation.prediction_feature, validation.test_dataset_uri, validation.prediction_dataset_uri)
+    Lib::OTPredictions.new( validation.prediction_feature, validation.test_dataset_uri, validation.prediction_dataset_uri)
   end
+  
+  def get_prediction_feature_values(prediction_feature)
+    #TODO: get feature range from ontology
+    return  ["true", "false"]
+  end
+  
 end
 
 
@@ -111,9 +122,9 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
       validation.send("#{p}=".to_sym, data[p])        
     end
     
-    model = OpenTox::Model::LazarClassificationModel.new(v[:model_uri])
-    raise "cannot access model '"+v[:model_uri].to_s+"'" unless model
-    validation.prediction_feature = model.get_prediction_feature
+    #model = OpenTox::Model::LazarClassificationModel.new(v[:model_uri])
+    #raise "cannot access model '"+v[:model_uri].to_s+"'" unless model
+    #validation.prediction_feature = model.get_prediction_feature
     
     {OpenTox::Validation::VAL_CV_PROP => OpenTox::Validation::VAL_CV_PROPS,
      OpenTox::Validation::VAL_CLASS_PROP => OpenTox::Validation::VAL_CLASS_PROPS}.each do |subset_name,subset_props|

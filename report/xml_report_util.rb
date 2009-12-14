@@ -6,19 +6,50 @@
 module Reports::XMLReportUtil
   
   # creates a confusion matrix as array (to be used as input for Reports::XMLReport::add_table)
+  # input is confusion matrix as returned by Lib::Predictions.confusion_matrix
   #
   # call-seq:
-  #   create_confusion_matrix( tp, fp, fn, tn ) => array
+  #   create_confusion_matrix( confusion_matrix ) => array
   #
-  def self.create_confusion_matrix( tp, fp, fn, tn )
+  def self.create_confusion_matrix( confusion_matrix )
+    
+    num_classes = Math.sqrt(confusion_matrix.size)
+    class_values = []
+    confusion_matrix.each{ |key_map,value| class_values.push(key_map[:actual]) if class_values.index(key_map[:actual])==nil }
+    raise "confusion matrix invalid "+confusion_matrix.inspect unless num_classes.to_i == num_classes and class_values.size == num_classes 
+
+    sum_predicted = {}
+    sum_actual = {}
+    class_values.each do |class_value|
+      sum_pred = 0
+      sum_act = 0
+      confusion_matrix.each do |key_map,value|
+        sum_pred += value if key_map[:predicted]==class_value
+        sum_act += value if key_map[:actual]==class_value
+      end
+      sum_predicted[class_value] = sum_pred
+      sum_actual[class_value] = sum_act
+    end
     
     confusion = []
-    confusion.push([  "",           "",         "actual",     "",           ""])
-    confusion.push([  "",           "",         "pos",        "neg",        "total"])
-    confusion.push([  "predicted",  "pos'",     tp.to_s,      fp.to_s,      (tp+fp).to_s])
-    confusion.push([  "",           "neg'",     fn.to_s,      tn.to_s,      (tn+fn).to_s])
-    confusion.push([  "",           "total",    (tp+fn).to_s, (fp+tn).to_s, ""])
-    return confusion;
+    confusion.push( [ "", "", "actual" ] + [""] * num_classes )
+    confusion.push( [ "", "" ] + class_values +  [ "total"])
+    
+    class_values.each do |predicted|
+      row =  [ (confusion.size==2 ? "predicted" : ""), predicted ]
+      class_values.each do |actual|
+        row.push( confusion_matrix[{:actual => actual, :predicted => predicted}].to_nice_s )   
+      end
+      row.push( sum_predicted[predicted].to_nice_s )
+      confusion.push( row )  
+    end
+    last_row = [ "", "total" ] 
+    class_values.each do |actual|
+        last_row.push( sum_actual[actual].to_nice_s )  
+    end
+    confusion.push( last_row )
+    
+    return confusion
   end
   
   def self.text_element(name, text)

@@ -1,14 +1,17 @@
 
 # the variance is computed when merging results for these attributes 
-VAL_ATTR_VARIANCE = [ :auc, :acc ]
-VAL_ATTR_RANKING = [ :auc, :acc, :spec, :sens ]
+VAL_ATTR_VARIANCE = [ :area_under_roc, :percent_correct ]
+VAL_ATTR_RANKING = [ :area_under_roc, :percent_correct, :true_positive_rate, :true_negative_rate ]
 
 class Object
   
   def to_nice_s
     return "%.2f" % self if is_a?(Float)
+    return collect{ |i| i.to_nice_s  }.join(", ") if is_a?(Array)
+    return collect{ |i,j| i.to_nice_s+": "+j.to_nice_s  }.join(", ") if is_a?(Hash)
     return to_s
   end
+  
   
   # checks weather an object has equal values as stored in the map
   # example o.att = "a", o.att2 = 12, o.has_values?({ att => a }) is true
@@ -82,6 +85,13 @@ module Reports
       @predictions = Reports.validation_access.get_predictions( self )
     end
     
+    # returns the predictions feature values (i.e. the range of the class attribute)
+    #
+    def get_prediction_feature_values
+      return @prediction_feature_values if @prediction_feature_values
+      @prediction_feature_values = Reports.validation_access.get_prediction_feature_values(:prediction_feature) 
+    end
+    
     # loads all crossvalidation attributes, of the corresponding cv into this object 
     def load_cv_attributes
       raise "crossvalidation-id not set" unless @crossvalidation_id
@@ -104,7 +114,7 @@ module Reports
     # call-seq:
     #   merge( validation, equal_attributes) => Reports::Validation
     # 
-    def merge( validation, equal_attributes)
+    def merge_validation( validation, equal_attributes)
   
       new_validation = Reports::Validation.new
       raise "not working" if validation.merge_count > 1
@@ -115,32 +125,13 @@ module Reports
         if (equal_attributes.index(a) != nil)
           new_validation.send("#{a.to_s}=".to_sym, send(a))
         else
-          value = nil
-          variance = nil
-  
-          if (send(a).is_a?(Float) || send(a).is_a?(Integer))
-            old_value = send(a)
-            value = (send(a) * @merge_count + validation.send(a)) / (@merge_count + 1).to_f;
-            if (VAL_ATTR_VARIANCE.index(a) != nil)
-              # use revursiv formular for computing the variance
-              # ( see Tysiak, Folgen: explizit und rekursiv, ISSN: 0025-5866
-              #  http://www.frl.de/tysiakpapers/07_TY_Papers.pdf )
-              old_variance = 0 unless (old_variance = send((a.to_s+"_variance").to_sym))  
-              variance = old_variance*(@merge_count-1)/@merge_count +
-                         (value-old_value)**2 +
-                         (validation.send(a)-value)**2/@merge_count
-            end
-          else
-            if send(a).to_s != validation.send(a).to_s
-              value = send(a).to_s + "/" + validation.send(a).to_s
-            else
-              value = validation.send(a).to_s
-            end
-          end
-  
-          #value = "test"
-          new_validation.send("#{a.to_s}=".to_sym, value)
-          new_validation.send("#{a.to_s+"_variance"}=".to_sym, variance) if variance
+          
+          compute_variance = VAL_ATTR_VARIANCE.index(a)!=nil
+          old_variance = compute_variance ? send((a.to_s+"_variance").to_sym) : nil 
+          m = Validation::merge_value( send(a), @merge_count, compute_variance, old_variance, validation.send(a) )
+          
+          new_validation.send("#{a.to_s}=".to_sym, m[:value])
+          new_validation.send("#{a.to_s+"_variance"}=".to_sym, m[:variance]) if compute_variance
         end
       end
   
@@ -156,7 +147,45 @@ module Reports
     def set_merge_count(c)
       @merge_count = c
     end
-   
+    
+    # merges to values (value1 and value2), value1 has weight weight1, value2 has weight 1,
+    # computes variance if corresponding params are set
+    #
+    # return hash with merge value (:value) and :variance (if necessary)
+    # 
+    def self.merge_value( value1, weight1, compute_variance, variance1, value2 )
+      
+      if (value1.is_a?(Numeric))
+        value = (value1 * weight1 + value2) / (weight1 + 1).to_f;
+        if compute_variance
+          variance1 = 0 if variance1==nil
+          # use revursiv formular for computing the variance
+          # ( see Tysiak, Folgen: explizit und rekursiv, ISSN: 0025-5866
+          #  http://www.frl.de/tysiakpapers/07_TY_Papers.pdf )
+          variance = variance1*(weight1-1)/weight1.to_f +
+                     (value-value1)**2 +
+                     (value2-value)**2/weight1.to_f
+        end
+      elsif value1.is_a?(Array)
+        raise "not yet implemented : merging arrays"
+      elsif value1.is_a?(Hash)
+        value = {}
+        variance = {}
+        value1.keys.each do |k|
+          m = merge_value( value1[k], weight1, compute_variance, variance1==nil ? nil : variance1[k], value2[k] )
+          value[k] = m[:value]
+          variance[k] = m[:variance] if compute_variance
+        end
+      else
+        if value1.to_s != value2.to_s
+          value = value1.to_s + "/" + value2.to_s
+        else
+          value = value2.to_s
+        end
+      end
+      
+      {:value => value, :variance => (compute_variance ? variance : nil) }
+    end    
   end
   
   # = Reports:ValidationSet
@@ -210,8 +239,24 @@ module Reports
       return false
     end
     
+    # loads the attributes of the related crossvalidation into all validation objects
+    #
     def load_cv_attributes
       @validations.each{ |v| v.load_cv_attributes }
+    end
+    
+    # checks weather all validations are classification validations
+    #
+    def all_classification?
+      @validations.each{ |v| return false if v.percent_correct==nil }
+      true
+    end
+
+    # checks weather all validations are regression validations
+    #
+    def all_regression?
+      @validations.each{ |v| return false if v.root_mean_squared_error==nil }
+      true
     end
     
     # returns a new set with all validation that have values as specified in the map
@@ -261,7 +306,7 @@ module Reports
       grouping.each do |g|
         new_set.validations.push(g[0].clone_validation)
         g[1..-1].each do |v|
-          new_set.validations[-1] = new_set.validations[-1].merge(v, equal_attributes)
+          new_set.validations[-1] = new_set.validations[-1].merge_validation(v, equal_attributes)
         end
       end
       

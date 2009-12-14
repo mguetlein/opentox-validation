@@ -1,6 +1,9 @@
 
+
+require "rdf/redland"
+
 load "lib/validation_db.rb"
-load "lib/prediction_util.rb"
+load "lib/ot_predictions.rb"
 
 class Array
   
@@ -27,7 +30,7 @@ end
 
 class Validation < Lib::Validation
   
-  # overwrite to_yaml, as the crossvalidaion settings should have their own 'sub-section'
+  # overwrite to_yaml, as the crossvalidation settings should have their own 'sub-section'
   def to_yaml
     h = {}
     OpenTox::Validation::VAL_PROPS.each{|p| h[p] = self.send(p)}
@@ -36,13 +39,21 @@ class Validation < Lib::Validation
       OpenTox::Validation::VAL_CV_PROPS.each{ |p| cv[p] = self.send(p)}
       h[OpenTox::Validation::VAL_CV_PROP] = cv
     end
-    if classification_info 
+    if classification_statistics 
       clazz = {}
-      OpenTox::Validation::VAL_CLASS_PROPS.each{ |p| clazz[p] = classification_info[p]}
+      OpenTox::Validation::VAL_CLASS_PROPS.each{ |p| clazz[p] = classification_statistics[p]}
       h[OpenTox::Validation::VAL_CLASS_PROP] = clazz
+    elsif regression_statistics
+      regr = {}
+      OpenTox::Validation::VAL_REGR_PROPS.each{ |p| regr[p] = regression_statistics[p]}
+      h[OpenTox::Validation::VAL_REGR_PROP] = regr
     end
-    
     h.to_yaml  
+  end
+  
+  def to_rdf
+    
+    raise "not yet implemented"
   end
   
   # constructs a validation object, sets id und uri
@@ -73,10 +84,10 @@ class Validation < Lib::Validation
   
   # validates an algorithm by building a model and validating this model
   # PENDING: so far, feature_service_uri is used to construct a second dataset (first is training-dataset)
-  def validate_algorithm( algorithm_uri, prediction_feature, feature_service_uri=nil )
+  def validate_algorithm( algorithm_uri, feature_service_uri=nil )
     
     LOGGER.debug "building model "+algorithm_uri.to_s+" "+prediction_feature.to_s+" "+feature_service_uri.to_s
-    # PENDING: use prediciton_feature to build model
+    # PENDING: use prediction_feature to build model
     params = {}
     if feature_service_uri
       params[:activity_dataset_uri] = @training_dataset_uri
@@ -101,7 +112,6 @@ class Validation < Lib::Validation
     model = OpenTox::Model::LazarClassificationModel.new(@model_uri)
     
     prediction_dataset = OpenTox::Dataset.create!
-    prediction_feature = model.get_prediction_feature
     
     count = 1
     benchmark = Benchmark.measure do 
@@ -110,7 +120,7 @@ class Validation < Lib::Validation
         prediction = model.predict(c)
         LOGGER.debug "prediction "+count.to_s+"/"+compounds.size.to_s+" class: "+prediction.classification.to_s+", confidence: "+prediction.confidence.to_s+", compound: "+c.uri.to_s
         pred_feature = OpenTox::Feature.new(:name => "prediction", 
-          prediction_feature.to_sym => prediction.classification,
+          @prediction_feature.to_sym => prediction.classification,
           :confidence => prediction.confidence)
         prediction_dataset.add({c.uri => [pred_feature.uri]}.to_yaml)
         count += 1
@@ -118,9 +128,20 @@ class Validation < Lib::Validation
     end
     
     LOGGER.debug "computing prediction stats"
-    update :classification_info => Lib::Predictions.new( prediction_feature, @test_dataset_uri, prediction_dataset.uri ).compute_prediction_stats
-    update :prediction_dataset_uri => prediction_dataset.uri, :finished => true, :elapsedTimeTesting => benchmark.real
-    #PENDING cannot estimate cpu time as this is done on another server
+    prediction = Lib::OTPredictions.new( @prediction_feature, @test_dataset_uri, prediction_dataset.uri )
+    if prediction.classification?
+      update :classification_statistics => prediction.compute_classification_stats
+    else
+      update :regression_statistics => prediction.compute_regression_stats
+    end
+    update :prediction_dataset_uri => prediction_dataset.uri, 
+           :finished => true, 
+           :real_runtime => benchmark.real,
+           :num_instances => count,
+           :num_without_class => prediction.num_without_class,
+           :percent_without_class => prediction.percent_without_class,
+           :num_unpredicted => prediction.num_unpredicted,
+           :percent_unpredicted => prediction.percent_unpredicted
   end  
 end
 
@@ -146,9 +167,9 @@ class Crossvalidation < Lib::Crossvalidation
   
   # creates the cv folds
   # PENDING copying datasets of an equal (same dataset, same params) crossvalidation is disabled for now 
-  def create_cv_datasets
+  def create_cv_datasets( prediction_feature )
 
-     create_new_cv_datasets #unless copy_cv_datasets
+     create_new_cv_datasets( prediction_feature ) #unless copy_cv_datasets( prediction_feature )
   end
   
   # executes the cross-validation (build models and validates them)
@@ -156,7 +177,7 @@ class Crossvalidation < Lib::Crossvalidation
     
     LOGGER.debug "perform cv validations"
     Validation.all( :crossvalidation_id => id ).each do |v|
-      v.validate_algorithm( @algorithm_uri, @prediction_feature, feature_service_uri )
+      v.validate_algorithm( @algorithm_uri, feature_service_uri )
       #break
     end
   end
@@ -164,22 +185,20 @@ class Crossvalidation < Lib::Crossvalidation
   private
   # copies datasets from an older crossvalidation on the same dataset and the same folds
   # returns true if successfull, false otherwise
-  def copy_cv_datasets()
+  def copy_cv_datasets( prediction_feature )
     
-    equal_params =  { :dataset_uri => @dataset_uri, :num_folds => @num_folds, 
-                      :stratified => @stratified, :random_seed => @random_seed }
-    equal_params[:prediction_feature] = @prediction_feature if @stratified
-    equal_cvs = Crossvalidation.all( equal_params ).reject{ |cv| cv.id == @id }
+    equal_cvs = Crossvalidation.all( { :dataset_uri => @dataset_uri, :num_folds => @num_folds, 
+                                        :stratified => @stratified, :random_seed => @random_seed } ).reject{ |cv| cv.id == @id }
     return false if equal_cvs.size == 0 
-    
     cv = equal_cvs[0]
-    LOGGER.debug "copying dataset uris from cv "+cv.uri.to_s
-    
     Validation.all( :crossvalidation_id => cv.id ).each do |v|
-
+      
+      if @stratified and v.prediction_feature != prediction_feature
+        return false;
+      end
       unless (OpenTox::Dataset.find(:uri => v.training_dataset_uri) and 
             OpenTox::Dataset.find(:uri => v.test_dataset_uri))
-        LOGGER.debug "dataset uris obsolete, aborting"
+        LOGGER.debug "dataset uris obsolete, aborting copy of datasets"
         Validation.all( :crossvalidation_id => @id ).each{ |v| v.delete }
         return false
       end
@@ -188,16 +207,17 @@ class Crossvalidation < Lib::Crossvalidation
                                   :training_dataset_uri => v.training_dataset_uri, 
                                   :test_dataset_uri => v.test_dataset_uri
     end
+    LOGGER.debug "copyied dataset uris from cv "+cv.uri.to_s
     return true
   end
   
   # creates cv folds (training and testdatasets)
   # stores uris in validation objects 
-  def create_new_cv_datasets
+  def create_new_cv_datasets( prediction_feature )
     
     LOGGER.debug "creating datasets for crossvalidation"
     orig_dataset = OpenTox::Dataset.find :uri => @dataset_uri
-    halt 400, "Dataset not found: "+@dataset_uri.to_s unless orig_dataset
+    $sinatra.halt 400, "Dataset not found: "+@dataset_uri.to_s unless orig_dataset
     
     shuffled_compounds = orig_dataset.compounds.shuffle( @random_seed )
     
@@ -207,7 +227,7 @@ class Crossvalidation < Lib::Crossvalidation
       class_compounds = {} # "inactive" => compounds[], "active" => compounds[] .. 
       shuffled_compounds.each do |c|
         orig_dataset.features(c).each do |a|
-          value = OpenTox::Feature.new(:uri => a.uri).value(@prediction_feature).to_s
+          value = OpenTox::Feature.new(:uri => a.uri).value(prediction_feature).to_s
           class_compounds[value] = [] unless class_compounds.has_key?(value)
           class_compounds[value].push(c)
         end
@@ -275,13 +295,11 @@ class Crossvalidation < Lib::Crossvalidation
     
       validation = Validation.new :training_dataset_uri => train_dataset.uri.to_s, 
                                   :test_dataset_uri => test_dataset.uri.to_s,
-                                  :crossvalidation_id => @id, :crossvalidation_fold => n
+                                  :crossvalidation_id => @id, :crossvalidation_fold => n,
+                                  :prediction_feature => prediction_feature
     end
   end
 end
-
-
-
 
 
 module ValidationUtil
@@ -294,12 +312,12 @@ module ValidationUtil
     random_seed=1 unless random_seed
     
     orig_dataset = OpenTox::Dataset.find :uri => orig_dataset_uri
-    halt 400, "Dataset not found: "+orig_dataset_uri.to_s unless orig_dataset
-    halt 400, "split ratio invalid: "+split_ratio unless split_ratio and split_ratio=split_ratio.to_f
-    halt 400, "split ratio not >0 and <1" unless split_ratio>0 && split_ratio<1
+    $sinatra.halt 400, "Dataset not found: "+orig_dataset_uri.to_s unless orig_dataset
+    $sinatra.halt 400, "split ratio invalid: "+split_ratio unless split_ratio and split_ratio=split_ratio.to_f
+    $sinatra.halt 400, "split ratio not >0 and <1" unless split_ratio>0 && split_ratio<1
     
     compounds = orig_dataset.compounds
-    halt 400, "Dataset size < 2" if compounds.size<2
+    $sinatra.halt 400, "Dataset size < 2" if compounds.size<2
     split = (compounds.size*split_ratio).to_i
     split = [split,1].max
     split = [split,compounds.size-2].min

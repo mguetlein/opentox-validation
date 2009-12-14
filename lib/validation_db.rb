@@ -14,12 +14,20 @@ module Lib
     property :training_dataset_uri, String, :length => 255
     property :test_dataset_uri, String, :length => 255
     property :prediction_dataset_uri, String, :length => 255
+    property :prediction_feature, String, :length => 255
     property :finished, Boolean, :default => false
     property :created_at, DateTime
-    property :elapsedTimeTesting, Float
-    property :CPUTimeTesting, Float
+    property :real_runtime, Float
+    #property :cpu_runtime, Float
     
-    property :classification_info, Object #Hash
+    property :num_instances, Integer
+    property :num_without_class, Integer
+    property :percent_without_class, Integer
+    property :num_unpredicted, Integer
+    property :percent_unpredicted, Integer
+        
+    property :classification_statistics, Object #Hash
+    property :regression_statistics, Object
     
     property :crossvalidation_id, Integer
     property :crossvalidation_fold, Integer
@@ -32,7 +40,6 @@ module Lib
     property :algorithm_uri, String, :length => 255
     property :dataset_uri, String, :length => 255
     property :num_folds, Integer, :default => 10
-    property :prediction_feature, String, :length => 255
     property :stratified, Boolean, :default => false
     property :random_seed, Integer, :default => 1
     property :finished, Boolean, :default => false
