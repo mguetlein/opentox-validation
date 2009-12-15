@@ -25,7 +25,14 @@ module Lib
         confidence_values = []
         @compounds = []
          
-        class_values = [] 
+        #PENDING: classification or regresssion?
+        if (true)
+          is_classification = true
+          class_values = ["true", "false"]
+        else
+          is_classification = false
+          class_values = nil
+        end
          
         test_dataset.compounds.each do |c|
           
@@ -35,8 +42,13 @@ module Lib
             d.features(c).each do |a|
               val = OpenTox::Feature.new(:uri => a.uri).value(prediction_feature).to_s
               val = nil if val.to_s.size==0
-              class_values.push(val)  if val!=nil and class_values.index(val)==nil
-              v.push(class_values.index(val)) 
+              if is_classification
+                raise "illegal class_value "+val.to_s unless val==nil or class_values.index(val)!=nil
+                v.push(class_values.index(val)) 
+              else
+                val = val.to_f unless val==nil or val.is_a?(Numeric)
+                v.push(val)
+              end
             end
           end
           
@@ -45,20 +57,18 @@ module Lib
           end
         end
         
-        super(predicted_values, actual_values, confidence_values, prediction_feature, true, class_values)
+        super(predicted_values, actual_values, confidence_values, prediction_feature, is_classification, class_values)
         raise "illegal num compounds "+num_info if  @compounds.size != @predicted_values.size
     end
     
 
-    def compute_classification_stats
+    def compute_stats
     
       res = {}
       if @is_classification
-        (OpenTox::Validation::VAL_CLASS_PROPS_SINGLE + OpenTox::Validation::VAL_CLASS_PROPS_PER_CLASS).each do |s|
-          res[s] = send(s)  
-        end
+        (OpenTox::Validation::VAL_CLASS_PROPS_SINGLE + OpenTox::Validation::VAL_CLASS_PROPS_PER_CLASS).each{ |s| res[s] = send(s)}  
       else
-        raise "regression not yet implemented"
+        (OpenTox::Validation::VAL_REGR_PROPS).each{ |s| res[s] = send(s) }  
       end
       return res
     end

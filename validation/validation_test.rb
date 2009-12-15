@@ -11,7 +11,8 @@ load 'lib/test_util.rb'
 WS_DATA=@@config[:services]["opentox-dataset"] #"localhost:4002"
 
 DATA="hamster"
-FILE=File.new("data/hamster_carcinogenicity.csv","r")
+#FILE=File.new("data/hamster_carcinogenicity.csv","r")
+FILE=File.new("data/hamster_carcinogenicity_REG.csv","r")
 
 DATA_TRAIN="hamster_train"
 FILE_TRAIN= File.new("data/hamster_carcinogenicity_TRAIN.csv","r")

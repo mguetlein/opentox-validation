@@ -116,27 +116,27 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
       ENV['REPORT_VALIDATION_ACCESS'] = nil
       Reports.reset_validation_access
       
-      #data_uri = upload_data WS_DATA, DATA, FILE
+      data_uri = upload_data WS_DATA, DATA, FILE
       #data_uri= WS_DATA+"/hamster"
       
-#      #val_uri = create_single_validation(data_uri)
-#      val_uri = create_single_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
-#      #val_uri = "http://localhost:4007/validation/49"
-##      #add_resource val_uri
-#      create_report(rep, val_uri, "validation")
+      #val_uri = create_single_validation(data_uri)
+      #val_uri = create_single_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
+      #val_uri = "http://localhost:4007/validation/49"
+#      #add_resource val_uri
+      #create_report(rep, val_uri, "validation")
         
-#       #val_uri = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
+       val_uri = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
 #       #val_uri = create_cross_validation(data_uri)
-#       val_uri = "http://localhost:4007/crossvalidation/7"
+   #    val_uri = "http://localhost:4007/crossvalidation/7"
 #       #val_uri2 = "http://localhost:4007/crossvalidation/14"
 #       # add_resource val_uri
-#       create_report(rep, val_uri, "crossvalidation")
+       create_report(rep, val_uri, "crossvalidation")
         
 #         #val_uri2 = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
 #         #val_uri = ["http://localhost:4007/crossvalidation/6", "http://localhost:4007/crossvalidation/8"]
-         val_uri = ["http://localhost:4007/crossvalidation/7", "http://localhost:4007/crossvalidation/8"]
+         #val_uri = ["http://localhost:4007/crossvalidation/7", "http://localhost:4007/crossvalidation/8"]
 #         #add_resource val_uri
-         create_report(rep, val_uri, "algorithm_comparison")
+         #create_report(rep, val_uri, "algorithm_comparison")
       
     ensure
      # delete_resources

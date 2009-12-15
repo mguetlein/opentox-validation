@@ -130,9 +130,9 @@ class Validation < Lib::Validation
     LOGGER.debug "computing prediction stats"
     prediction = Lib::OTPredictions.new( @prediction_feature, @test_dataset_uri, prediction_dataset.uri )
     if prediction.classification?
-      update :classification_statistics => prediction.compute_classification_stats
+      update :classification_statistics => prediction.compute_stats
     else
-      update :regression_statistics => prediction.compute_regression_stats
+      update :regression_statistics => prediction.compute_stats
     end
     update :prediction_dataset_uri => prediction_dataset.uri, 
            :finished => true, 

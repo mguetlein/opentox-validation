@@ -4,6 +4,18 @@ ENV['PATH'] = ENV['R_HOME']+":"+ENV['PATH'] unless ENV['PATH'].split(":").index(
 require 'rinruby'
 
 module Lib
+
+  module Util
+    
+    def self.compute_variance( old_variance, n, new_mean, old_mean, new_value )
+      # use revursiv formular for computing the variance
+      # ( see Tysiak, Folgen: explizit und rekursiv, ISSN: 0025-5866
+      #  http://www.frl.de/tysiakpapers/07_TY_Papers.pdf )
+      return (n>1 ? old_variance * (n-2)/(n-1) : 0) +
+             (new_mean - old_mean)**2 +
+             (n>1 ? (new_value - new_mean)**2/(n-1) : 0 )
+    end
+  end
   
   class Predictions
   
@@ -33,10 +45,15 @@ module Lib
         @num_classes = @prediction_feature_values.size
         raise "num classes < 2" if @num_classes<2
         { "predicted"=>@predicted_values, "actual"=>@actual_values }.each do |s,values|
-          values.each{ |v| raise "illegal "+s+" index ("+v.to_s+"), has to be either nill or index of predicted-values" if v!=nil and (v<0 or v>@num_classes)}
+          values.each{ |v| raise "illegal "+s+" classification-value ("+v.to_s+"),"+
+            "has to be either nil or index of predicted-values" if v!=nil and (v<0 or v>@num_classes)}
         end
       else
         raise "prediction_feature_values != nil while performing regression" if @prediction_feature_values
+        { "predicted"=>@predicted_values, "actual"=>@actual_values }.each do |s,values|
+          values.each{ |v| raise "illegal "+s+" regression-value ("+v.to_s+"),"+
+            "has to be either nil or number" unless v==nil or v.is_a?(Numeric)}
+        end
       end
       
       init_stats
@@ -61,7 +78,15 @@ module Lib
         @num_correct = 0
         @num_incorrect = 0
       else
-        raise "regression not yet implemented"
+        @sum_error = 0
+        @sum_abs_error = 0
+        @sum_squared_error = 0
+        
+        @prediction_mean = 0
+        @actual_mean = 0
+        
+        @variance_predicted = 0
+        @variance_actual = 0
       end
     end
     
@@ -85,11 +110,23 @@ module Lib
               @num_incorrect += 1
             end
           else
-            raise "regression not yet implemented"
+            delta = predicted_value - actual_value
+            @sum_error += delta
+            @sum_abs_error += delta.abs
+            @sum_squared_error += delta**2
+            
+            old_prediction_mean = @prediction_mean
+            @prediction_mean = (@prediction_mean * (@num_predicted-1) + predicted_value) / @num_predicted.to_f
+            old_actual_mean = @actual_mean
+            @actual_mean = (@actual_mean * (@num_predicted-1) + actual_value) / @num_predicted.to_f
+
+            @variance_predicted = Util.compute_variance( @variance_predicted, @num_predicted, 
+              @prediction_mean, old_prediction_mean, predicted_value )
+            @variance_actual = Util.compute_variance( @variance_actual, @num_predicted, 
+              @actual_mean, old_actual_mean, actual_value )
           end
         end
       end
-      
     end
     
     def percent_correct
@@ -318,6 +355,21 @@ module Lib
       return incorrect
     end
     
+    
+    ########################################################################################
+    
+    def root_mean_squared_error
+      Math.sqrt(@sum_squared_error / (@num_with_actual_value - @num_unpredicted).to_f)
+    end
+    
+    def mean_absolute_error
+      Math.sqrt(@sum_abs_error / (@num_with_actual_value - @num_unpredicted).to_f)
+    end
+    
+    def r_square
+      return @variance_predicted / @variance_actual
+    end
+    
     ########################################################################################
     
     def roc_confidence_values(class_value)
@@ -349,11 +401,19 @@ module Lib
     end
   
     def predicted_value(instance_index)
-      @predicted_values[instance_index]==nil ? nil : @prediction_feature_values[@predicted_values[instance_index]]
+      if @is_classification
+        @predicted_values[instance_index]==nil ? nil : @prediction_feature_values[@predicted_values[instance_index]]
+      else
+        @predicted_values[instance_index]
+      end
     end
     
     def actual_value(instance_index)
-      @actual_values[instance_index]==nil ? nil : @prediction_feature_values[@actual_values[instance_index]]
+      if @is_classification
+        @actual_values[instance_index]==nil ? nil : @prediction_feature_values[@actual_values[instance_index]]
+      else
+        @actual_values[instance_index]
+      end
     end
     
     def confidence_value(instance_index)

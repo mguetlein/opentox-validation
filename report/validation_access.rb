@@ -61,7 +61,8 @@ class Reports::ValidationDB < Reports::ValidationAccess
     #raise "cannot access model '"+v[:model_uri].to_s+"'" unless model
     #validation.prediction_feature = model.get_prediction_feature
     
-    {OpenTox::Validation::VAL_CLASS_PROP => OpenTox::Validation::VAL_CLASS_PROPS}.each do |subset_name,subset_props|
+    {OpenTox::Validation::VAL_CLASS_PROP => OpenTox::Validation::VAL_CLASS_PROPS, 
+     OpenTox::Validation::VAL_REGR_PROP => OpenTox::Validation::VAL_REGR_PROPS}.each do |subset_name,subset_props|
       subset = v[subset_name]
       subset_props.each{ |prop| validation.send("#{prop.to_s}=".to_sym, subset[prop]) } if subset
     end

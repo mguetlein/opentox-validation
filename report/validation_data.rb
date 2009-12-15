@@ -1,6 +1,6 @@
 
 # the variance is computed when merging results for these attributes 
-VAL_ATTR_VARIANCE = [ :area_under_roc, :percent_correct ]
+VAL_ATTR_VARIANCE = [ :area_under_roc, :percent_correct, :root_mean_squared_error, :mean_absolute_error, :r_square ]
 VAL_ATTR_RANKING = [ :area_under_roc, :percent_correct, :true_positive_rate, :true_negative_rate ]
 
 class Object
@@ -158,13 +158,7 @@ module Reports
       if (value1.is_a?(Numeric))
         value = (value1 * weight1 + value2) / (weight1 + 1).to_f;
         if compute_variance
-          variance1 = 0 if variance1==nil
-          # use revursiv formular for computing the variance
-          # ( see Tysiak, Folgen: explizit und rekursiv, ISSN: 0025-5866
-          #  http://www.frl.de/tysiakpapers/07_TY_Papers.pdf )
-          variance = variance1*(weight1-1)/weight1.to_f +
-                     (value-value1)**2 +
-                     (value2-value)**2/weight1.to_f
+          variance = Lib::Util::compute_variance( variance1!=nil ? variance1 : 0, weight1+1, value, value1, value2 )
         end
       elsif value1.is_a?(Array)
         raise "not yet implemented : merging arrays"
@@ -275,17 +269,26 @@ module Reports
     # * other rows are values
     #
     # call-seq:
-    #   to_array(attributes) => array
+    #   to_array(attributes, remove_nil_attributes) => array
     # 
-    def to_array(attributes)
+    def to_array(attributes, remove_nil_attributes=true)
       array = Array.new
       array.push(attributes)
-      @validations.each do |v| 
+      attribute_not_nil = Array.new(attributes.size)
+      @validations.each do |v|
+        index = 0
         array.push(attributes.collect do |a|
           variance = v.send( (a.to_s+"_variance").to_sym ) if VAL_ATTR_VARIANCE.index(a)
           variance = " +- "+variance.to_nice_s if variance
-          v.send(a).to_nice_s + variance.to_s 
+          attribute_not_nil[index] = true if remove_nil_attributes and v.send(a)!=nil
+          index += 1
+          v.send(a).to_nice_s + variance.to_s
         end)
+      end
+      if remove_nil_attributes #delete in reverse order to avoid shifting of indices
+        (0..attribute_not_nil.size-1).to_a.reverse.each do |i|
+          array.each{|row| row.delete_at(i)} unless attribute_not_nil[i]
+        end
       end
       return array
     end

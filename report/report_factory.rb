@@ -5,6 +5,7 @@ VAL_ATTR_TRAIN_TEST = [ :model_uri, :training_dataset_uri, :test_dataset_uri, :p
 VAL_ATTR_CV = [ :algorithm_uri, :dataset_uri, :num_folds, :crossvalidation_fold ]
 # selected attributes of interest when performing classification
 VAL_ATTR_CLASS = [ :area_under_roc, :percent_correct, :true_positive_rate, :true_negative_rate ]
+VAL_ATTR_REGR = [ :root_mean_squared_error, :mean_absolute_error, :r_square ]
 
 
 # = Reports::ReportFactory 
@@ -47,16 +48,17 @@ module Reports::ReportFactory
     val = validation_set.validations[0]
     
     report = Reports::ReportContent.new("Validation report")
-    report.add_section_result(validation_set, VAL_ATTR_TRAIN_TEST + VAL_ATTR_CLASS, "Results", "Results")
     
     if (val.percent_correct != nil) #classification
+      report.add_section_result(validation_set, VAL_ATTR_TRAIN_TEST + VAL_ATTR_CLASS, "Results", "Results")
       val.get_prediction_feature_values.each do |class_value|
         report.add_section_roc_plot(validation_set, class_value, nil, "roc-plot-"+class_value+".svg")
       end
       report.add_section_confusion_matrix(validation_set.first)
-    else
-      raise "regression not yet implemented"
+    else #regression
+      report.add_section_result(validation_set, VAL_ATTR_TRAIN_TEST + VAL_ATTR_REGR, "Results", "Results")
     end
+    
     report.add_section_result(validation_set, OpenTox::Validation::ALL_PROPS, "All Results", "All Results")
     report.add_section_predictions( validation_set ) 
     return report
@@ -86,7 +88,8 @@ module Reports::ReportFactory
       report.add_section_confusion_matrix(merged.first)
       report.add_section_result(validation_set, VAL_ATTR_CV+VAL_ATTR_CLASS-[:num_folds], "Results","Results")
     else #regression
-      raise "regression not yet implemented"
+      report.add_section_result(merged, VAL_ATTR_CV+VAL_ATTR_REGR-[:crossvalidation_fold],"Mean Results","Mean Results")
+      report.add_section_result(validation_set, VAL_ATTR_CV+VAL_ATTR_REGR-[:num_folds], "Results","Results")
     end
       
     report.add_section_result(validation_set, OpenTox::Validation::ALL_PROPS, "All Results", "All Results")
@@ -121,8 +124,14 @@ module Reports::ReportFactory
         
         merged = validation_set.merge([:algorithm_uri, :dataset_uri])
         report = Reports::ReportContent.new("Algorithm comparison report - Many datasets")
-        report.add_section_result(merged,VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold],"Mean Results","Mean Results")
-        report.add_section_ranking_plots(merged, :algorithm_uri, :dataset_uri, [:acc, :auc, :sens, :spec])
+        
+        if (validation_set.validations[0].percent_correct!=nil) #classification
+          report.add_section_result(merged,VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold],"Mean Results","Mean Results")
+          report.add_section_ranking_plots(merged, :algorithm_uri, :dataset_uri, [:acc, :auc, :sens, :spec])
+        else # regression
+          report.add_section_result(merged,VAL_ATTR_CV+VAL_ATTR_REGR-[:crossvalidation_fold],"Mean Results","Mean Results")
+        end
+        
         return report
       else
         # this groups all validations in x different groups (arrays) according to there algorithm-uri
@@ -139,10 +148,11 @@ module Reports::ReportFactory
             report.add_section_roc_plot(validation_set, class_value, :algorithm_uri, "roc-plot-"+class_value+".svg")
           end
           report.add_section_result(merged,VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold],"Mean Results","Mean Results")
+          report.add_section_result(validation_set,VAL_ATTR_CV+VAL_ATTR_CLASS-[:num_folds],"Results","Results")
         else #regression
-          raise "regression not yet implemented"
+          report.add_section_result(merged, VAL_ATTR_CV+VAL_ATTR_REGR-[:crossvalidation_fold],"Mean Results","Mean Results")
+          report.add_section_result(validation_set, VAL_ATTR_CV+VAL_ATTR_REGR-[:num_folds], "Results","Results")
         end
-        report.add_section_result(validation_set,VAL_ATTR_CV+VAL_ATTR_CLASS-[:num_folds],"Results","Results")
         
         return report
       end
