@@ -1,5 +1,5 @@
 
-load "lib/validation_db.rb"
+require "lib/validation_db.rb"
 
 # = Reports::ValidationAccess
 # 
@@ -53,7 +53,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
     v = Lib::Validation.get(validation_id)
     raise Reports::BadRequest.new "no validation found with id "+validation_id.to_s unless v
     
-    (OpenTox::Validation::VAL_PROPS + OpenTox::Validation::VAL_CV_PROPS).each do |p|
+    (Lib::VAL_PROPS + Lib::VAL_CV_PROPS).each do |p|
       validation.send("#{p.to_s}=".to_sym, v[p])
     end
     
@@ -61,8 +61,8 @@ class Reports::ValidationDB < Reports::ValidationAccess
     #raise "cannot access model '"+v[:model_uri].to_s+"'" unless model
     #validation.prediction_feature = model.get_prediction_feature
     
-    {OpenTox::Validation::VAL_CLASS_PROP => OpenTox::Validation::VAL_CLASS_PROPS, 
-     OpenTox::Validation::VAL_REGR_PROP => OpenTox::Validation::VAL_REGR_PROPS}.each do |subset_name,subset_props|
+    {Lib::VAL_CLASS_PROP => Lib::VAL_CLASS_PROPS, 
+     Lib::VAL_REGR_PROP => Lib::VAL_REGR_PROPS}.each do |subset_name,subset_props|
       subset = v[subset_name]
       subset_props.each{ |prop| validation.send("#{prop.to_s}=".to_sym, subset[prop]) } if subset
     end
@@ -73,7 +73,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
     cv = Lib::Crossvalidation.get(validation.crossvalidation_id)
     raise Reports::BadRequest.new "no crossvalidation found with id "+validation.crossvalidation_id.to_s unless cv
     
-    OpenTox::Validation::CROSS_VAL_PROPS.each do |p|
+    Lib::CROSS_VAL_PROPS.each do |p|
       validation.send("#{p.to_s}=".to_sym, cv[p])        
     end
   end
@@ -119,7 +119,7 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
       raise Reports::BadRequest.new "cannot get validation at '"+uri.to_s+"', error msg: "+ex.message
     end
   
-    OpenTox::Validation::VAL_PROPS.each do |p|
+    Lib::VAL_PROPS.each do |p|
       validation.send("#{p}=".to_sym, data[p])        
     end
     
@@ -127,8 +127,8 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
     #raise "cannot access model '"+v[:model_uri].to_s+"'" unless model
     #validation.prediction_feature = model.get_prediction_feature
     
-    {OpenTox::Validation::VAL_CV_PROP => OpenTox::Validation::VAL_CV_PROPS,
-     OpenTox::Validation::VAL_CLASS_PROP => OpenTox::Validation::VAL_CLASS_PROPS}.each do |subset_name,subset_props|
+    {Lib::VAL_CV_PROP => Lib::VAL_CV_PROPS,
+     Lib::VAL_CLASS_PROP => Lib::VAL_CLASS_PROPS}.each do |subset_name,subset_props|
       subset = data[subset_name]
       subset_props.each{ |prop| validation.send("#{prop}=".to_sym, subset[prop]) } if subset
     end
@@ -145,7 +145,7 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
       raise Reports::BadRequest.new "cannot get crossvalidation at '"+cv_uri.to_s+"', error msg: "+ex.message
     end
     
-    OpenTox::Validation::CROSS_VAL_PROPS.each do |p|
+    Lib::CROSS_VAL_PROPS.each do |p|
       validation.send("#{p.to_s}=".to_sym, data[p])        
     end
   end

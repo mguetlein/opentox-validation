@@ -6,17 +6,11 @@ module Lib
   module TestUtil
     
     # updloads a dataset
-    def upload_data(ws, name, file)
-      begin
-        data_uri = RestClient.post ws, :name => name
-        puts "created dataset "+data_uri.to_s
-        assert data_uri==ext("curl -X PUT -F 'file=@"+file.path+";type=text/csv' -F compound_format=smiles "+data_uri+"/import",nil)
-      rescue RestClient::RequestFailed => ex
-        raise "could not upload dataset "+ex.message unless ex.message =~ /.*403.*/
-        data_uri = File.join(ws,name)
-        puts "already uploaded "+data_uri.to_s
-      end
-        
+    def upload_data(ws, file)
+         
+      data = File.read(file.path)
+      data_uri = RestClient.post ws, data, :content_type => "application/rdf+xml"
+      puts "created dataset "+data_uri.to_s
       add_resource(data_uri)
       return data_uri
     end

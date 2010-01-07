@@ -175,8 +175,8 @@ module Lib
       res = {}
       (0..@num_classes-1).each do |actual|
           (0..@num_classes-1).each do |predicted|
-            res[{:actual => @prediction_feature_values[actual],
-                 :predicted => @prediction_feature_values[predicted]}] = @confusion_matrix[actual][predicted]
+            res[{:confusion_matrix_actual => @prediction_feature_values[actual],
+                 :confusion_matrix_predicted => @prediction_feature_values[predicted]}] = @confusion_matrix[actual][predicted]
         end
       end
       return res
@@ -374,10 +374,10 @@ module Lib
     
     def roc_confidence_values(class_value)
       class_index = @prediction_feature_values.index(class_value)
-      raise "class not found "+class_value.to_s if class_index==nil
+      raise "class not found "+class_value.to_s if class_index==nil and class_value!=nil
       res =  []
       (0..@predicted_values.size-1).each do |i|
-        res.push(@confidence_values[i]) if @predicted_values[i]==class_index
+        res.push(@confidence_values[i]) if (class_value==nil or @predicted_values[i]==class_index) 
       end
       return res
     end
@@ -387,8 +387,10 @@ module Lib
       raise "class not found "+class_value.to_s if class_index==nil
       res =  []
       (0..@predicted_values.size-1).each do |i|
-        if @predicted_values[i]==class_index
-          res.push( @actual_values[i]==class_index ? 1 : 0 )
+        if class_value!=nil
+          res.push( @actual_values[i]==class_index ? 1 : 0 ) if @predicted_values[i]==class_index
+        else
+          res.push( @actual_values[i]==@predicted_values[i] ? 1 : 0 )
         end
       end
       return res

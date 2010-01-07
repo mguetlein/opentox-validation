@@ -58,7 +58,7 @@ module Reports
   #
   class Validation
     
-    @@validation_attributes = OpenTox::Validation::ALL_PROPS + 
+    @@validation_attributes = Lib::ALL_PROPS + 
       VAL_ATTR_VARIANCE.collect{ |a| (a.to_s+"_variance").to_sym } +
       VAL_ATTR_RANKING.collect{ |a| (a.to_s+"_ranking").to_sym }
     

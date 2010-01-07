@@ -1,4 +1,4 @@
 
-#load "validation/validation_test.rb"
+require "validation/validation_test.rb"
 
-load "report/report_test.rb"
+#require "report/report_test.rb"

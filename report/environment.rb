@@ -13,21 +13,21 @@ require 'mime/types'
 module Reports
 end
 
-load "report/r_plot_factory.rb"
-load "report/plot_factory.rb"
-load "report/xml_report.rb"
-load "report/xml_report_util.rb"
-load "report/report_persistance.rb"
-load "report/report_factory.rb"
-load "report/report_service.rb"
-load "report/report_format.rb"
-load "report/validation_access.rb"
-load "report/validation_data.rb"
-load "report/predictions.rb"
-load "report/util.rb"
-load "report/external/mimeparse.rb"
+require "report/r_plot_factory.rb"
+require "report/plot_factory.rb"
+require "report/xml_report.rb"
+require "report/xml_report_util.rb"
+require "report/report_persistance.rb"
+require "report/report_factory.rb"
+require "report/report_service.rb"
+require "report/report_format.rb"
+require "report/validation_access.rb"
+require "report/validation_data.rb"
+require "report/prediction_util.rb"
+require "report/util.rb"
+require "report/external/mimeparse.rb"
 
-load "lib/ot_predictions.rb"
+require "lib/ot_predictions.rb"
 
 unless(defined? LOGGER)
   LOGGER = Logger.new(STDOUT)

@@ -5,7 +5,7 @@ require 'report/report_application.rb'
 require 'test/unit'
 require 'rack/test'
 
-load 'lib/test_util.rb'
+require "'lib/test_util.rb"
 
 
 #class Reports::ApplicationTest < Test::Unit::TestCase
@@ -151,7 +151,7 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
         :algorithm_uri => ws_class_alg, 
         :split_ratio=>0.7,
         :prediction_feature => "classification",}
-    val_params[:feature_service_uri] = ws_feat_alg if ws_feat_alg
+    val_params[:feature_generation_uri] = ws_feat_alg if ws_feat_alg
     begin
       RestClient.post WS_VAL+"/validation/training_test_split", val_params
     rescue => ex
@@ -162,7 +162,7 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
   def create_cross_validation(data_uri, ws_class_alg=WS_CLASS_ALG, ws_feat_alg=WS_FEATURE_ALG)
     puts "cross-validating"
     ext("curl -X POST -d num_folds=3 -d dataset_uri="+data_uri+" -d algorithm_uri="+ws_class_alg+" -d prediction_feature=classification"+
-        (ws_feat_alg ? " -d feature_service_uri="+ws_feat_alg : "")+
+        (ws_feat_alg ? " -d feature_generation_uri="+ws_feat_alg : "")+
         " "+WS_VAL+"/crossvalidation",nil)
   end
   

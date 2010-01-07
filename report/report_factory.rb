@@ -59,7 +59,7 @@ module Reports::ReportFactory
       report.add_section_result(validation_set, VAL_ATTR_TRAIN_TEST + VAL_ATTR_REGR, "Results", "Results")
     end
     
-    report.add_section_result(validation_set, OpenTox::Validation::ALL_PROPS, "All Results", "All Results")
+    report.add_section_result(validation_set, Lib::ALL_PROPS, "All Results", "All Results")
     report.add_section_predictions( validation_set ) 
     return report
   end
@@ -92,7 +92,7 @@ module Reports::ReportFactory
       report.add_section_result(validation_set, VAL_ATTR_CV+VAL_ATTR_REGR-[:num_folds], "Results","Results")
     end
       
-    report.add_section_result(validation_set, OpenTox::Validation::ALL_PROPS, "All Results", "All Results")
+    report.add_section_result(validation_set, Lib::ALL_PROPS, "All Results", "All Results")
     report.add_section_predictions( validation_set, [:crossvalidation_fold] ) 
     return report
   end
@@ -216,14 +216,21 @@ class Reports::ReportContent
   end
 
   def add_section_roc_plot( validation_set,
-                            class_value,
+                            class_value = nil,
                             split_set_attribute = nil,
                             plot_file_name="roc-plot.svg", 
                             section_title="Roc Plot",
                             section_text="This section contains the roc plot.",
                             image_title=nil,
                             image_caption=nil)
-    image_title = "Roc Plot for class-value '"+class_value+"'" unless image_title
+    unless image_title
+      if class_value
+        image_title = "Roc Plot for class-value '"+class_value+"'"
+      else
+        image_title = "Roc Plot for all classes"
+      end
+    end
+    
     
     section_roc = @xml_report.add_section(@xml_report.get_root_element, section_title)
     if validation_set.first.get_predictions

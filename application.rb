@@ -1,6 +1,6 @@
 
-load "validation/validation_application.rb"
-load "report/report_application.rb"
+require "validation/validation_application.rb"
+require "report/report_application.rb"
 
 
 [ 'rubygems', 'sinatra', 'sinatra/url_for' ].each do |lib|

@@ -2,8 +2,11 @@
 
 require "rdf/redland"
 
-load "lib/validation_db.rb"
-load "lib/ot_predictions.rb"
+require "lib/wrapper.rb"
+require "lib/validation_db.rb"
+require "lib/ot_predictions.rb"
+
+require "validation/validation_format.rb"
 
 class Array
   
@@ -29,33 +32,8 @@ end
 
 
 class Validation < Lib::Validation
-  
-  # overwrite to_yaml, as the crossvalidation settings should have their own 'sub-section'
-  def to_yaml
-    h = {}
-    OpenTox::Validation::VAL_PROPS.each{|p| h[p] = self.send(p)}
-    if crossvalidation_id
-      cv = {}
-      OpenTox::Validation::VAL_CV_PROPS.each{ |p| cv[p] = self.send(p)}
-      h[OpenTox::Validation::VAL_CV_PROP] = cv
-    end
-    if classification_statistics 
-      clazz = {}
-      OpenTox::Validation::VAL_CLASS_PROPS.each{ |p| clazz[p] = classification_statistics[p]}
-      h[OpenTox::Validation::VAL_CLASS_PROP] = clazz
-    elsif regression_statistics
-      regr = {}
-      OpenTox::Validation::VAL_REGR_PROPS.each{ |p| regr[p] = regression_statistics[p]}
-      h[OpenTox::Validation::VAL_REGR_PROP] = regr
-    end
-    h.to_yaml  
-  end
-  
-  def to_rdf
+        #include OpenTox::Owl
     
-    raise "not yet implemented"
-  end
-  
   # constructs a validation object, sets id und uri
   def initialize( params={} )
     
@@ -74,29 +52,25 @@ class Validation < Lib::Validation
     model = OpenTox::Model::PredictionModel.find(@model_uri) if @model_uri
     model.destroy if model
     
-    [@test_dataset_uri, @training_dataset_uri, @prediction_dataset_uri].each do  |d|
-      dataset = OpenTox::Dataset.find(:uri => d) if d 
-      dataset.delete if dataset
-    end
+    #[@test_dataset_uri, @training_dataset_uri, @prediction_dataset_uri].each do  |d|
+      #dataset = OpenTox::Dataset.find(d) if d 
+      #dataset.delete if dataset
+    #end
     destroy
     "Successfully deleted validation "+@id.to_s+"."
   end
   
   # validates an algorithm by building a model and validating this model
-  # PENDING: so far, feature_service_uri is used to construct a second dataset (first is training-dataset)
-  def validate_algorithm( algorithm_uri, feature_service_uri=nil )
+  # PENDING: so far, :feature_generation_uri is used to construct a second dataset (first is training-dataset)
+  def validate_algorithm( algorithm_uri, feature_generation_uri=nil )
     
-    LOGGER.debug "building model "+algorithm_uri.to_s+" "+prediction_feature.to_s+" "+feature_service_uri.to_s
-    # PENDING: use prediction_feature to build model
-    params = {}
-    if feature_service_uri
-      params[:activity_dataset_uri] = @training_dataset_uri
-      params[:feature_dataset_uri] = RestClient.post feature_service_uri, :dataset_uri => @training_dataset_uri
-    else
-      params[:dataset_uri] = @training_dataset_uri
-    end
-    model = OpenTox::Model::PredictionModel.create algorithm_uri, params
-    update :model_uri => model.uri
+    params = { :dataset_uri => @training_dataset_uri, :feature_uri => @prediction_feature }
+    params[:feature_generation_uri] = feature_generation_uri if feature_generation_uri
+    LOGGER.debug "building model '"+algorithm_uri.to_s+"' "+params.inspect
+    
+    model_uri = RestClient.post algorithm_uri,params
+    update :model_uri => model_uri
+    
     validate_model
   end
   
@@ -104,40 +78,29 @@ class Validation < Lib::Validation
   # PENDING: a new dataset is created to store the predictions, this should be optional: STORE predictions yes/no
   def validate_model
     
-    LOGGER.debug "validating model"
-    test_dataset = OpenTox::Dataset.find(:uri => @test_dataset_uri)
-    $sinatra.halt 400, "test dataset no found" unless test_dataset
-    compounds = test_dataset.compounds
-    $sinatra.halt 400, "no compounds to predict" unless compounds && compounds.size>0
-    model = OpenTox::Model::LazarClassificationModel.new(@model_uri)
+    LOGGER.debug "validating model '"+@model_uri+"'"
+    test_dataset = OpenTox::Dataset.find @test_dataset_uri
+    $sinatra.halt 400, "test dataset no found: "+@test_dataset_uri.to_s unless test_dataset
     
-    prediction_dataset = OpenTox::Dataset.create!
+    model = OpenTox::Model::PredictionModel.find(@model_uri)
+    $sinatra.halt 400, "model not found: "+@model_uri.to_s unless model
     
-    count = 1
+    prediction_dataset_uri = ""
     benchmark = Benchmark.measure do 
-      compounds.each do |c|
-        
-        prediction = model.predict(c)
-        LOGGER.debug "prediction "+count.to_s+"/"+compounds.size.to_s+" class: "+prediction.classification.to_s+", confidence: "+prediction.confidence.to_s+", compound: "+c.uri.to_s
-        pred_feature = OpenTox::Feature.new(:name => "prediction", 
-          @prediction_feature.to_sym => prediction.classification,
-          :confidence => prediction.confidence)
-        prediction_dataset.add({c.uri => [pred_feature.uri]}.to_yaml)
-        count += 1
-      end
+      prediction_dataset_uri = model.predict_dataset(@test_dataset_uri)
     end
     
     LOGGER.debug "computing prediction stats"
-    prediction = Lib::OTPredictions.new( @prediction_feature, @test_dataset_uri, prediction_dataset.uri )
+    prediction = Lib::OTPredictions.new( model.classification?, @prediction_feature, @test_dataset_uri, prediction_dataset_uri )
     if prediction.classification?
       update :classification_statistics => prediction.compute_stats
     else
       update :regression_statistics => prediction.compute_stats
     end
-    update :prediction_dataset_uri => prediction_dataset.uri, 
+    update :prediction_dataset_uri => prediction_dataset_uri, 
            :finished => true, 
            :real_runtime => benchmark.real,
-           :num_instances => count,
+           :num_instances => prediction.num_instances,
            :num_without_class => prediction.num_without_class,
            :percent_without_class => prediction.percent_without_class,
            :num_unpredicted => prediction.num_unpredicted,
@@ -173,11 +136,11 @@ class Crossvalidation < Lib::Crossvalidation
   end
   
   # executes the cross-validation (build models and validates them)
-  def perform_cv ( feature_service_uri=nil )
+  def perform_cv ( feature_generation_uri=nil )
     
     LOGGER.debug "perform cv validations"
     Validation.all( :crossvalidation_id => id ).each do |v|
-      v.validate_algorithm( @algorithm_uri, feature_service_uri )
+      v.validate_algorithm( @algorithm_uri, feature_generation_uri )
       #break
     end
   end
@@ -196,8 +159,8 @@ class Crossvalidation < Lib::Crossvalidation
       if @stratified and v.prediction_feature != prediction_feature
         return false;
       end
-      unless (OpenTox::Dataset.find(:uri => v.training_dataset_uri) and 
-            OpenTox::Dataset.find(:uri => v.test_dataset_uri))
+      unless (OpenTox::Dataset.find(v.training_dataset_uri) and 
+            OpenTox::Dataset.find(v.test_dataset_uri))
         LOGGER.debug "dataset uris obsolete, aborting copy of datasets"
         Validation.all( :crossvalidation_id => @id ).each{ |v| v.delete }
         return false
@@ -216,7 +179,7 @@ class Crossvalidation < Lib::Crossvalidation
   def create_new_cv_datasets( prediction_feature )
     
     LOGGER.debug "creating datasets for crossvalidation"
-    orig_dataset = OpenTox::Dataset.find :uri => @dataset_uri
+    orig_dataset = OpenTox::Dataset.find(@dataset_uri)
     $sinatra.halt 400, "Dataset not found: "+@dataset_uri.to_s unless orig_dataset
     
     shuffled_compounds = orig_dataset.compounds.shuffle( @random_seed )
@@ -261,6 +224,8 @@ class Crossvalidation < Lib::Crossvalidation
     end
     LOGGER.debug "cv: num instances for each fold: "+split_compounds.collect{|c| c.size}.join(", ")
     
+    data = orig_dataset.data
+    
     (1..@num_folds).each do |n|
       
       datasetname = 'cv'+@id.to_s +
@@ -268,33 +233,32 @@ class Crossvalidation < Lib::Crossvalidation
              '_f'+n.to_s+'of'+@num_folds.to_s+
              '_r'+@random_seed.to_s+
              '_s'+@stratified.to_s 
+      source = $sinatra.url_for('/validation/crossvalidation',:full)
       
-      test_data = {}
-      train_data = {}
+      test_compounds = []
+      train_compounds = []
       
       (1..@num_folds).each do |nn|
         compounds = split_compounds.at(nn-1)
         
         if n == nn
-          compounds.each{ |compound| test_data[compound.uri] = orig_dataset.feature_uris(compound)}
+          compounds.each{ |compound| test_compounds.push(compound)}
         else
-          compounds.each{ |compound| train_data[compound.uri] = orig_dataset.feature_uris(compound)}
+          compounds.each{ |compound| train_compounds.push(compound)}
         end 
       end
       
-      raise "internal error, num test compounds not correct" unless (shuffled_compounds.size/@num_folds - test_data.size).abs <= 1 
-      raise "internal error, num train compounds not correct" unless shuffled_compounds.size - test_data.size == train_data.size
+      raise "internal error, num test compounds not correct" unless (shuffled_compounds.size/@num_folds - test_compounds.size).abs <= 1 
+      raise "internal error, num train compounds not correct" unless shuffled_compounds.size - test_compounds.size == train_compounds.size
       
       LOGGER.debug "training set: "+datasetname+"_train"
-      train_dataset = OpenTox::Dataset.create(:name => datasetname + '_train')
-      train_dataset.add_compounds(train_data.to_yaml)
+      train_dataset_uri = ValidationUtil::create_new_dataset( data, train_compounds, datasetname + '_train', source ) 
       
       LOGGER.debug "test set:     "+datasetname+"_test"
-      test_dataset = OpenTox::Dataset.create(:name => datasetname + '_test')
-      test_dataset.add_compounds(test_data.to_yaml)
+      test_dataset_uri = ValidationUtil::create_new_dataset( data, test_compounds, datasetname + '_test', source )
     
-      validation = Validation.new :training_dataset_uri => train_dataset.uri.to_s, 
-                                  :test_dataset_uri => test_dataset.uri.to_s,
+      validation = Validation.new :training_dataset_uri => train_dataset_uri, 
+                                  :test_dataset_uri => test_dataset_uri,
                                   :crossvalidation_id => @id, :crossvalidation_fold => n,
                                   :prediction_feature => prediction_feature
     end
@@ -303,6 +267,39 @@ end
 
 
 module ValidationUtil
+  
+  
+  def self.create_new_dataset( orig_dataset_data, compounds, title, source )
+    
+    dataset = OpenTox::Dataset.new
+    dataset.title = title
+    dataset.source = source
+    
+    compounds.each do |c|
+      
+      compound = dataset.find_or_create_compound(c.to_s)
+      featureValuesArray = orig_dataset_data[c]
+      
+      featureValuesArray.each do |featureValues|
+        featureValues.each do |f, v|
+        
+          raise "null value not handled yet" if v==nil
+          if v.is_a?(Hash)
+            tuple = dataset.create_tuple(f,v)
+            dataset.add_tuple(compound,tuple)
+          else
+            dataset.add(compound,f,v)
+          end
+        end
+      end
+    end
+
+    uri = dataset.save
+    raise "no dataset uri" if uri==nil || uri.to_s.length<1
+    return uri
+    
+  end
+  
 
   # splits a dataset into test and training dataset
   # returns map with training_dataset_uri and test_dataset_uri
@@ -311,36 +308,45 @@ module ValidationUtil
     split_ratio=0.67 unless split_ratio
     random_seed=1 unless random_seed
     
-    orig_dataset = OpenTox::Dataset.find :uri => orig_dataset_uri
+    orig_dataset = OpenTox::Dataset.find orig_dataset_uri
     $sinatra.halt 400, "Dataset not found: "+orig_dataset_uri.to_s unless orig_dataset
-    $sinatra.halt 400, "split ratio invalid: "+split_ratio unless split_ratio and split_ratio=split_ratio.to_f
-    $sinatra.halt 400, "split ratio not >0 and <1" unless split_ratio>0 && split_ratio<1
+    $sinatra.halt 400, "Split ratio invalid: "+split_ratio unless split_ratio and split_ratio=split_ratio.to_f
+    $sinatra.halt 400, "Split ratio not >0 and <1" unless split_ratio>0 && split_ratio<1
     
     compounds = orig_dataset.compounds
+    
     $sinatra.halt 400, "Dataset size < 2" if compounds.size<2
     split = (compounds.size*split_ratio).to_i
     split = [split,1].max
     split = [split,compounds.size-2].min
     
-    LOGGER.debug "splitting shuffled "+orig_dataset_uri+
+    LOGGER.debug "splitting dataset "+orig_dataset_uri+
                   " into train:0-"+split.to_s+" and test:"+(split+1).to_s+"-"+(compounds.size-1).to_s+
-                  " (seed "+random_seed.to_s+")"
+                  " (shuffled with seed "+random_seed.to_s+")"
     
     compounds.shuffle!( random_seed )
     train_compounds = compounds[0..split]
     test_compounds = compounds[(split+1)..-1]
     
+    data = orig_dataset.data
+    
     result = {}
-    {"training_dataset_uri" => train_compounds, "test_dataset_uri" => test_compounds}.each do |sym, cc|
+    {:training_dataset_uri => train_compounds, :test_dataset_uri => test_compounds}.each do |sym, compound_array|
       
-      data = {} 
-      cc.each do |c|
-        data[c.uri] = orig_dataset.feature_uris(c)
+      if sym == :training_dataset_uri
+        title = "Training dataset split of "+orig_dataset.title.to_s
+      else
+        title = "Test dataset split of "+orig_dataset.title.to_s
       end
-      dataset = OpenTox::Dataset.create!
-      dataset.add_compounds(data.to_yaml)
-      result[sym] = dataset.uri
+      source = $sinatra.url_for('/validation/training_test_split',:full)
+      result[sym] = create_new_dataset( data, compound_array, title, source )
     end
+    
+    $sinatra.halt 400, "Training dataset not found: '"+result[:training_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:training_dataset_uri]
+    $sinatra.halt 400, "Test dataset not found: '"+result[:test_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:test_dataset_uri]
+    
+    LOGGER.debug "split done, training dataset: '"+result[:training_dataset_uri].to_s+"', test dataset: '"+result[:test_dataset_uri].to_s+"'"
+    
     return result
   end
 

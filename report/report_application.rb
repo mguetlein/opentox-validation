@@ -1,4 +1,4 @@
-load "report/environment.rb"
+require "report/environment.rb"
 
 def perform
   begin

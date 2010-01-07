@@ -1,5 +1,5 @@
 
-load "lib/predictions.rb"
+require "lib/predictions.rb"
 
 module Lib
   
@@ -9,54 +9,75 @@ module Lib
       return @compounds[instance_index]
     end
   
-    def initialize(prediction_feature, test_dataset_uri, prediction_dataset_uri)
+    def initialize(is_classification, prediction_feature, test_dataset_uri, prediction_dataset_uri)
       
         LOGGER.debug("loading prediciton via test-dateset:'"+test_dataset_uri.to_s+
           "' and prediction-dataset:'"+prediction_dataset_uri.to_s+
           "', prediction_feature: '"+prediction_feature.to_s+"'")
         
-        test_dataset = OpenTox::Dataset.find(:uri => test_dataset_uri)
-        prediction_dataset = OpenTox::Dataset.find(:uri => prediction_dataset_uri)
-        raise "test dataset not found: "+test_dataset_uri.to_s unless test_dataset
-        raise "prediction dataset not found: "+prediction_dataset_uri.to_s unless prediction_dataset
+        test_dataset = OpenTox::Dataset.find test_dataset_uri
+        prediction_dataset = OpenTox::Dataset.find prediction_dataset_uri
+        raise "test dataset not found: '"+test_dataset_uri.to_s+"'" unless test_dataset
+        raise "prediction dataset not found: '"+prediction_dataset_uri.to_s+"'" unless prediction_dataset
         
-        predicted_values = []
+        class_values = OpenTox::Feature.range(prediction_feature)
+        
         actual_values = []
-        confidence_values = []
         @compounds = []
-         
-        #PENDING: classification or regresssion?
-        if (true)
-          is_classification = true
-          class_values = ["true", "false"]
-        else
-          is_classification = false
-          class_values = nil
-        end
-         
-        test_dataset.compounds.each do |c|
-          
-          @compounds.push(c.smiles)
-        
-          {prediction_dataset => predicted_values, test_dataset => actual_values}.each do |d, v|
-            d.features(c).each do |a|
-              val = OpenTox::Feature.new(:uri => a.uri).value(prediction_feature).to_s
-              val = nil if val.to_s.size==0
-              if is_classification
-                raise "illegal class_value "+val.to_s unless val==nil or class_values.index(val)!=nil
-                v.push(class_values.index(val)) 
-              else
-                val = val.to_f unless val==nil or val.is_a?(Numeric)
-                v.push(val)
+        test_dataset.data.each do |compound,featuresValues|
+          @compounds.push compound
+  
+          featuresValues.each do | featureValue |
+            featureValue.each do |feature, value|
+              if feature == prediction_feature
+                value = nil if value.to_s.size==0
+                if is_classification
+                  raise "illegal class_value "+value.to_s unless value==nil or class_values.index(value)!=nil
+                  actual_values.push class_values.index(value) 
+                else
+                  value = value.to_f unless value==nil or value.is_a?(Numeric)
+                  actual_values.push value
+                end
               end
             end
           end
-          
-          prediction_dataset.features(c).each do |a|
-            confidence_values.push OpenTox::Feature.new(:uri => a.uri).value('confidence').to_f
-          end
         end
         
+        predicted_values = Array.new(actual_values.size)
+        confidence_values = Array.new(actual_values.size)
+        
+        prediction_dataset.data.each do |compound,featuresValues|
+      
+          index = @compounds.index(compound)
+          raise "compound "+compound.to_s+" not found in\n"+@compounds.inspect if index==nil
+    
+          featuresValues.each do | featureValue |
+            featureValue.each do |feature, value|
+              if feature == prediction_feature
+                value = nil if value.to_s.size==0
+                if is_classification
+                  
+                  ### PENDING ####
+                  confidence = nil
+                  if value.is_a?(Hash)
+                    confidence = value["confidence"] if value.has_key?("confidence")
+                    value = value["classification"] if value.has_key?("classification")
+                  end
+                  ################
+                  
+                  raise "illegal class_value "+value.to_s unless value==nil or class_values.index(value)!=nil
+                  predicted_values[index] = class_values.index(value) 
+                  confidence_values[index] = confidence if confidence!=nil
+                else
+                  value = value.to_f unless value==nil or value.is_a?(Numeric)
+                  predicted_values[index] = value
+                end
+              end
+            end
+          end
+          index += 1
+        end
+
         super(predicted_values, actual_values, confidence_values, prediction_feature, is_classification, class_values)
         raise "illegal num compounds "+num_info if  @compounds.size != @predicted_values.size
     end
@@ -66,9 +87,9 @@ module Lib
     
       res = {}
       if @is_classification
-        (OpenTox::Validation::VAL_CLASS_PROPS_SINGLE + OpenTox::Validation::VAL_CLASS_PROPS_PER_CLASS).each{ |s| res[s] = send(s)}  
+        (Lib::VAL_CLASS_PROPS).each{ |s| res[s] = send(s)}  
       else
-        (OpenTox::Validation::VAL_REGR_PROPS).each{ |s| res[s] = send(s) }  
+        (Lib::VAL_REGR_PROPS).each{ |s| res[s] = send(s) }  
       end
       return res
     end

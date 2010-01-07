@@ -3,7 +3,7 @@
   require lib
 end
 
-load 'validation/validation_service.rb'
+require 'validation/validation_service.rb'
 
 
 # hack: store self in $sinatra to make url_for method accessible in validation_service
@@ -22,7 +22,6 @@ class Sinatra::Base
   end
 end
 
-
 ## REST API
 get '/crossvalidations/?' do
   LOGGER.info "list all crossvalidations"
@@ -32,8 +31,18 @@ end
 get '/crossvalidation/:id' do
   LOGGER.info "get crossvalidation with id "+params[:id].to_s
   halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Crossvalidation.get(params[:id])
-  halt 202, crossvalidation.to_yaml  unless crossvalidation.finished
-  crossvalidation.to_yaml
+  
+  case request.env['HTTP_ACCEPT'].to_s
+  when "application/rdf+xml"
+    result = crossvalidation.to_rdf
+  when /text\/x-yaml|\*\/\*|/ # matches 'text/x-yaml', '*/*', ''
+    result = crossvalidation.to_yaml
+  else
+    halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported."
+  end
+  
+  halt 202, result unless crossvalidation.finished
+  result
 end
 
 delete '/crossvalidation/:id/?' do
@@ -58,7 +67,7 @@ post '/crossvalidation/?' do
   [ :num_folds, :random_seed, :stratified ].each{ |sym| cv_params[sym] = params[sym] if params[sym] }
   cv = Crossvalidation.new cv_params
   cv.create_cv_datasets( params[:prediction_feature] )
-  cv.perform_cv( params[:feature_service_uri])
+  cv.perform_cv( params[:feature_generation_uri])
   cv.uri
 end
 
@@ -71,13 +80,13 @@ get '/validation/:id' do
   LOGGER.info "get validation with id "+params[:id].to_s+" '"+request.env['HTTP_ACCEPT'].to_s+"'"
   halt 404, "Validation #{params[:id]} not found." unless validation = Validation.get(params[:id])
   
-  case request.env['HTTP_ACCEPT']
+  case request.env['HTTP_ACCEPT'].to_s
   when "application/rdf+xml"
     result = validation.to_rdf
-  when "text/x-yaml"
+  when /text\/x-yaml|\*\/\*|/ # matches 'text/x-yaml', '*/*', ''
     result = validation.to_yaml
   else
-    halt 400, "MIME type "+request.env['HTTP_ACCEPT']+" not supported."
+    halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported."
   end
   
   halt 202, result unless validation.finished
@@ -95,7 +104,7 @@ post '/validation/?' do
    v = Validation.new :training_dataset_uri => params[:training_dataset_uri], 
                       :test_dataset_uri => params[:test_dataset_uri],
                       :prediction_feature => params[:prediction_feature]
-   v.validate_algorithm( params[:algorithm_uri], params[:feature_service_uri]) 
+   v.validate_algorithm( params[:algorithm_uri], params[:feature_generation_uri]) 
   else
     halt 400, "illegal parameter combination for validation, use either\n"+
       "* model_uri, test_dataset_uri, prediction_feature\n"+ 
@@ -116,7 +125,7 @@ post '/validation/training_test_split' do
   v = Validation.new :training_dataset_uri => params[:training_dataset_uri], 
                    :test_dataset_uri => params[:test_dataset_uri],
                    :prediction_feature => params[:prediction_feature]
-  v.validate_algorithm( params[:algorithm_uri], params[:feature_service_uri]) 
+  v.validate_algorithm( params[:algorithm_uri], params[:feature_generation_uri]) 
   v.uri
 end
 

@@ -5,6 +5,31 @@ end
 
 
 module Lib
+
+  VAL_PROPS = [ :id, :uri, :model_uri, :training_dataset_uri, :prediction_feature,
+                :test_dataset_uri, :prediction_dataset_uri, :finished, 
+                :created_at, :real_runtime, # :cpu_runtime, 
+                :num_instances, :num_without_class, :percent_without_class, :num_unpredicted, :percent_unpredicted ] 
+  
+  # :crossvalidation_info
+  VAL_CV_PROPS = [ :crossvalidation_id, :crossvalidation_fold ]
+  
+  # :classification_statistics
+  VAL_CLASS_PROPS_SINGLE = [ :num_correct, :num_incorrect, :percent_correct, :percent_incorrect ]
+  # :class_value_statistics
+  VAL_CLASS_PROPS_PER_CLASS = [ :area_under_roc, :false_negative_rate, :false_positive_rate,
+                                :f_measure, :num_false_positives, :num_false_negatives, 
+                                :num_true_positives, :num_true_negatives, :precision, 
+                                :recall, :true_negative_rate, :true_positive_rate ]
+  VAL_CLASS_PROPS = VAL_CLASS_PROPS_SINGLE + VAL_CLASS_PROPS_PER_CLASS + [ :confusion_matrix ]
+
+  # :regression_statistics
+  VAL_REGR_PROPS = [ :root_mean_squared_error, :mean_absolute_error, :r_square ]
+  
+  CROSS_VAL_PROPS = [:algorithm_uri, :dataset_uri, :num_folds, :stratified, :random_seed]
+  
+  ALL_PROPS = VAL_PROPS + VAL_CV_PROPS + VAL_CLASS_PROPS + VAL_REGR_PROPS + CROSS_VAL_PROPS
+
   class Validation
     include DataMapper::Resource 
   
