@@ -1,79 +1,142 @@
 API-Definition 
-====================================
+===================================================================
 
 see http://opentox.org/dev/apis/api-1.1/Validation
 
 
 API-Examples
-====================================
+===================================================================
 
 how to
-------------------------------------
+-------------------------------------------------------------------
 the examples listed below can be performed with the command line tool curl 
 
 
 get list of available validations
-------------------------------------
+-------------------------------------------------------------------
 
 >>> curl <validation_service>/validations
 
 result example (accept-header: application/rdf-xml)			
-<<< TODO
+<<< not yet supported
 
 result example (accept-header: text/uri-list)
 <<< <validation_service>/validation/<validation_id>
 <<< <validation_service>/validation/validation_id_i
 <<< <validation_service>/validation/validation_id_j
+
+
+get validation
+-------------------------------------------------------------------
+
+>>> curl <validation_service>/validation/<validation_id>
+
+supported accept-headers: "text/x-yaml" and "application/rdf-xml"			
+	
 	
 validate model on test-dateset
-------------------------------------	
+-------------------------------------------------------------------	
 
->>> curl -X POST -d model_uri="<model_service>/model/<model_id>" \
-                 -d dataset_uri="<dataset_service>/dataset/<dataset_id>" \
-                 <validation_service>/validation
+>>> curl -X POST -d model_uri="<model_uri>" \
+ -d test_dataset_uri="<test_dataset_uri>" \
+ -d prediction_feature="<prediction_feature>" \
+ <validation_service>/validation
 	
 result example (accept-header: application/rdf-xml)			
-<<< TODO
+<<< not yet supported
 
 result example (accept-header: text/uri-list)
-<<< <validation_service>/validation/<id>
+<<< <validation_service>/validation/id_i
 
 
 validate an algorithm on a training- and test-dataset
-------------------------------------
+-------------------------------------------------------------------
 
->>> curl -X POST -d algorithm_uri="<model_service>/model/<model_id>" \
-                 -d training_dataset_uri="<dataset_service>/dataset/<dataset_id>" \
-                 -d test_dataset_uri="<dataset_service>/dataset/<dataset_id>" \
-                 -d prediction_feature="<prediction_feature>" \
-                 <validation_service>/validation
+>>> curl -X POST -d algorithm_uri="<algorithm_uri>" \
+ -d training_dataset_uri="<training_dataset_uri>" \
+ -d test_dataset_uri="<test_dataset_uri>" \
+ -d prediction_feature="<prediction_feature>" \
+ -d algorithm_params="<algorithm_params>" \
+ <validation_service>/validation
+
+optional params:
+algorithm_params, default is empty
 	
 result example (accept-header: application/rdf-xml)			
-<<< TODO
+<<< not yet supported
 
 result example (accept-header: text/uri-list)
-<<< <validation_service>/validation/<id>
+<<< <validation_service>/validation/id_i
 
 
 validate an algorithm on a dataset via training-test-split
-------------------------------------
+-------------------------------------------------------------------
 
->>> curl -X POST -d algorithm_uri="<model_service>/model/<model_id>" \
-                 -d dataset_uri="<dataset_service>/dataset/<dataset_id>" \
-                 -d prediction_feature="<prediction_feature>" \
-                 -d split_ratio=0.9 \
-                 -d random_seed=2 \
-                 <validation_service>/validation/training-test-split
+>>> curl -X POST -d algorithm_uri="<algorithm_uri>" \
+ -d dataset_uri="<dataset_uri>" \
+ -d prediction_feature="<prediction_feature>" \
+ -d algorithm_params="<algorithm_params>" \
+ -d split_ratio=0.9 \
+ -d random_seed=2 \
+ <validation_service>/validation/training_test_split
 
 optional params:
+algorithm_params, default is empty
 split_ratio, default is 0.67
 random_seed, default is 1
 	
 result example (accept-header: application/rdf-xml)			
-<<< TODO
+<<< not yet supported
 
 result example (accept-header: text/uri-list)
-<<< <validation_service>/validation/<id>
+<<< <validation_service>/validation/id_i
+
+
+get list of available crossvalidations
+-------------------------------------------------------------------
+
+>>> curl <validation_service>/crossvalidations
+
+result example (accept-header: application/rdf-xml)			
+<<< not yet supported
+
+result example (accept-header: text/uri-list)
+<<< <validation_service>/crossvalidation/<crossvalidation_id>
+<<< <validation_service>/crossvalidation/crossvalidation_id_i
+<<< <validation_service>/crossvalidation/crossvalidation_id_j
+
+
+get crossvalidation
+-------------------------------------------------------------------
+
+>>> curl <validation_service>/crossvalidation/<crossvalidation_id>
+
+supported accept-headers: "text/x-yaml" and "application/rdf-xml"			
+	
+
+validate an algorithm on a dataset via crossvalidation
+-------------------------------------------------------------------
+
+>>> curl -X POST -d algorithm_uri="<algorithm_uri>" \
+ -d dataset_uri="<dataset_uri>" \
+ -d prediction_feature="<prediction_feature>" \
+ -d algorithm_params="<algorithm_params>" \
+ -d num_folds=5 \
+ -d random_seed=2 \
+ -d stratified=false \
+ <validation_service>/crossvalidation
+
+optional params:
+algorithm_params, default is empty
+num_folds, default is 10
+random_seed, default is 1
+stratified, default is false
+	
+result example (accept-header: application/rdf-xml)			
+<<< not yet supported
+
+result example (accept-header: text/uri-list)
+<<< <validation_service>/crossvalidation/id_i
 
 
 

@@ -71,6 +71,12 @@ class Crossvalidation < Lib::Crossvalidation
   def get_content
     h = {}
     Lib::CROSS_VAL_PROPS.each{|p| h[p] = self.send(p)}
+    
+    v = []
+    Validation.all(:crossvalidation_id => self.id).each do |val|
+      v.push({ :validation_uri => val.uri.to_s })
+    end
+    h[:validations] = v
     h
   end
   
@@ -186,8 +192,9 @@ class CrossvalidationToRDF < ContentToRDF
   
   def initialize()
     @literals = [ :stratified, :num_folds, :random_seed ]
-    @object_properties = { :dataset_uri => OT['crossvalidationDataset'], :algorithm_uri => OT['corssvalidationAlgorithm'] } 
-    @classes = { }
+    @object_properties = { :dataset_uri => OT['crossvalidationDataset'], :algorithm_uri => OT['crossvalidationAlgorithm'],
+                           :validation_uri => OT['crossvalidationValidation'], :validations => OT['crossvalidationValidations'] } 
+    @classes = { :validations => OT['CrossvalidationValidations'] }
   end
 end
 

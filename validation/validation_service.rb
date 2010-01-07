@@ -32,7 +32,6 @@ end
 
 
 class Validation < Lib::Validation
-        #include OpenTox::Owl
     
   # constructs a validation object, sets id und uri
   def initialize( params={} )
@@ -61,11 +60,19 @@ class Validation < Lib::Validation
   end
   
   # validates an algorithm by building a model and validating this model
-  # PENDING: so far, :feature_generation_uri is used to construct a second dataset (first is training-dataset)
-  def validate_algorithm( algorithm_uri, feature_generation_uri=nil )
+  def validate_algorithm( algorithm_uri, algorithm_params=nil )
+    
+    $sinatra.halt 404, "no algorithm uri: '"+algorithm_uri+"'" if algorithm_uri==nil or algorithm_uri.to_s.size<1
     
     params = { :dataset_uri => @training_dataset_uri, :feature_uri => @prediction_feature }
-    params[:feature_generation_uri] = feature_generation_uri if feature_generation_uri
+    if (algorithm_params!=nil)
+      algorithm_params.split(";").each do |alg_params|
+        alg_param = alg_params.split("=")
+        #puts "param "+alg_param.to_s
+        $sinatra.halt 404, "invalid algorithm param: '"+alg_params.to_s+"'" unless alg_param.size==2 or alg_param[0].to_s.size<1 or alg_param[1].to_s.size<1 
+        params[alg_param[0].to_sym] = alg_param[1]
+      end
+    end
     LOGGER.debug "building model '"+algorithm_uri.to_s+"' "+params.inspect
     
     model_uri = RestClient.post algorithm_uri,params
@@ -136,11 +143,11 @@ class Crossvalidation < Lib::Crossvalidation
   end
   
   # executes the cross-validation (build models and validates them)
-  def perform_cv ( feature_generation_uri=nil )
+  def perform_cv ( algorithm_params=nil )
     
     LOGGER.debug "perform cv validations"
     Validation.all( :crossvalidation_id => id ).each do |v|
-      v.validate_algorithm( @algorithm_uri, feature_generation_uri )
+      v.validate_algorithm( @algorithm_uri, algorithm_params )
       #break
     end
   end

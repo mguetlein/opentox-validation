@@ -67,7 +67,7 @@ post '/crossvalidation/?' do
   [ :num_folds, :random_seed, :stratified ].each{ |sym| cv_params[sym] = params[sym] if params[sym] }
   cv = Crossvalidation.new cv_params
   cv.create_cv_datasets( params[:prediction_feature] )
-  cv.perform_cv( params[:feature_generation_uri])
+  cv.perform_cv( params[:algorithm_params])
   cv.uri
 end
 
@@ -78,7 +78,7 @@ end
 
 get '/validation/:id' do
   LOGGER.info "get validation with id "+params[:id].to_s+" '"+request.env['HTTP_ACCEPT'].to_s+"'"
-  halt 404, "Validation #{params[:id]} not found." unless validation = Validation.get(params[:id])
+  halt 404, "Validation '#{params[:id]}' not found." unless validation = Validation.get(params[:id])
   
   case request.env['HTTP_ACCEPT'].to_s
   when "application/rdf+xml"
@@ -104,7 +104,7 @@ post '/validation/?' do
    v = Validation.new :training_dataset_uri => params[:training_dataset_uri], 
                       :test_dataset_uri => params[:test_dataset_uri],
                       :prediction_feature => params[:prediction_feature]
-   v.validate_algorithm( params[:algorithm_uri], params[:feature_generation_uri]) 
+   v.validate_algorithm( params[:algorithm_uri], params[:algorithm_params]) 
   else
     halt 400, "illegal parameter combination for validation, use either\n"+
       "* model_uri, test_dataset_uri, prediction_feature\n"+ 
@@ -125,7 +125,7 @@ post '/validation/training_test_split' do
   v = Validation.new :training_dataset_uri => params[:training_dataset_uri], 
                    :test_dataset_uri => params[:test_dataset_uri],
                    :prediction_feature => params[:prediction_feature]
-  v.validate_algorithm( params[:algorithm_uri], params[:feature_generation_uri]) 
+  v.validate_algorithm( params[:algorithm_uri], params[:algorithm_params]) 
   v.uri
 end
 
