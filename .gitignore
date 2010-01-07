@@ -5,3 +5,4 @@ log/*
 .project
 dist
 reports
+public/server.log
