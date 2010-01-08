@@ -33,6 +33,7 @@ class Example
     sub.each do |k,v|
       res.gsub!(/<#{k}>/,v)
     end
+    res.gsub!(/\/\//,"/")
     res
   end
   
