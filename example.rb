@@ -19,7 +19,7 @@ class Example
     end
     file.close
     
-    sub = { "validation_service" => @@config[:services]["opentox-validation"], 
+    sub = { "validation_service" => @@config[:services]["opentox-validation"].chomp("/"), 
             "validation_id" => "1",
             "model_uri" => @@model,
             "dataset_uri" => @@data,
@@ -33,8 +33,6 @@ class Example
     sub.each do |k,v|
       res.gsub!(/<#{k}>/,v)
     end
-    #replace // that do not have a leading ':' 
-    res.gsub!(/[^:]\/\//,"\1/")
     res
   end
   
