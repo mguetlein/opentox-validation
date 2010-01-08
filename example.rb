@@ -33,7 +33,8 @@ class Example
     sub.each do |k,v|
       res.gsub!(/<#{k}>/,v)
     end
-    res.gsub!(/\/\//,"/")
+    #replace // that do not have a leading ':' 
+    res.gsub!(/[^:]\/\//,"\1/")
     res
   end
   
