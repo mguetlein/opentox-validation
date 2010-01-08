@@ -1,8 +1,4 @@
 
-[ 'opentox-ruby-api-wrapper' ].each do |lib|
-  require lib
-end
-
 class Example
   
   @@file=File.new("data/hamster_carcinogenicity.owl","r")

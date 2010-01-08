@@ -1,10 +1,14 @@
 
-
-require "example.rb"
-
-[ 'rubygems', 'sinatra', 'sinatra/url_for', 'logger' ].each do |lib|
+[ 'rubygems', 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper', 'logger' ].each do |lib|
   require lib
 end
+
+unless(defined? LOGGER)
+  LOGGER = Logger.new(STDOUT)
+  LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
+end
+
+require "example.rb"
 
 get '/examples/?' do
   content_type "text/plain"
