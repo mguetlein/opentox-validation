@@ -1,4 +1,8 @@
 
+[ 'opentox-ruby-api-wrapper' ].each do |lib|
+  require lib
+end
+
 class Example
   
   @@file=File.new("data/hamster_carcinogenicity.owl","r")
@@ -53,12 +57,12 @@ class Example
     
     Lib::Validation.auto_migrate!
     delete_all(@@config[:services]["opentox-model"])
-    vali_uri = RestClient.post File.join(@@config[:services]["opentox-validation"],'/validation/training_test_split'), { :dataset_uri => data_uri,
+    vali_uri = RestClient.post File.join(@@config[:services]["opentox-validation"],'/training_test_split'), { :dataset_uri => data_uri,
                                                          :algorithm_uri => @@alg,
                                                          :prediction_feature => @@feature,
                                                          :algorithm_params => @@alg_params }
     puts "created validation via training test split "+vali_uri
-    raise "failed to prepare demo" unless vali_uri==File.join(@@config[:services]["opentox-validation"],'/validation/1')
+    raise "failed to prepare demo" unless vali_uri==File.join(@@config[:services]["opentox-validation"],'/1')
     
     Lib::Crossvalidation.auto_migrate!
     cv_uri = RestClient.post File.join(@@config[:services]["opentox-validation"],'/crossvalidation'), { :dataset_uri => data_uri,

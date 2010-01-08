@@ -1,7 +1,10 @@
 
 # the r-path has to be added for the rinruby plugin
-raise "Environment variable R_HOME missing" unless ENV['R_HOME']
-ENV['PATH'] = ENV['R_HOME']+":"+ENV['PATH'] unless ENV['PATH'].split(":").index(ENV['R_HOME'])
+if ENV['R_HOME']
+  ENV['PATH'] = ENV['R_HOME']+":"+ENV['PATH'] unless ENV['PATH'].split(":").index(ENV['R_HOME'])
+else
+  LOGGER.warn "Environment variable R_HOME not set"
+end
 require "rinruby"
 
 

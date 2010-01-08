@@ -23,7 +23,7 @@ class Sinatra::Base
 end
 
 ## REST API
-get '/crossvalidations/?' do
+get '/crossvalidation/?' do
   LOGGER.info "list all crossvalidations"
   Crossvalidation.all.collect{ |d| url_for("/crossvalidation/", :full) + d.id.to_s }.join("\n")
 end
@@ -71,12 +71,12 @@ post '/crossvalidation/?' do
   cv.uri
 end
 
-get '/validations/?' do
+get '/?' do
   LOGGER.info "list all validations"
-  Validation.all.collect{ |d| url_for("/validation/", :full) + d.id.to_s }.join("\n")
+  Validation.all.collect{ |d| url_for("/", :full) + d.id.to_s }.join("\n")
 end
 
-get '/validation/:id' do
+get '/:id' do
   LOGGER.info "get validation with id "+params[:id].to_s+" '"+request.env['HTTP_ACCEPT'].to_s+"'"
   halt 404, "Validation '#{params[:id]}' not found." unless validation = Validation.get(params[:id])
   
@@ -93,7 +93,7 @@ get '/validation/:id' do
   result
 end
 
-post '/validation/?' do
+post '/?' do
   LOGGER.info "creating validation "+params.inspect
   if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri] and params[:prediction_feature]
     v = Validation.new :model_uri => params[:model_uri], 
@@ -115,7 +115,7 @@ post '/validation/?' do
   v.uri
 end
 
-post '/validation/training_test_split' do
+post '/training_test_split' do
   LOGGER.info "creating training test split "+params.inspect
   halt 400, "dataset_uri missing" unless params[:dataset_uri]
   halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
@@ -129,7 +129,7 @@ post '/validation/training_test_split' do
   v.uri
 end
 
-get '/validation/:id/:attribute' do
+get '/:id/:attribute' do
   LOGGER.info "access validation attribute "+params.inspect
   halt 404, "Validation #{params[:id]} not found." unless validation = Validation.get(params[:id])
   begin
@@ -140,7 +140,7 @@ get '/validation/:id/:attribute' do
   return validation.send(params[:attribute])
 end
 
-delete '/validation/:id' do
+delete '/:id' do
   LOGGER.info "delete validation with id "+params[:id].to_s
   halt 404, "Validation #{params[:id]} not found." unless validation = Validation.get(params[:id])
   validation.delete

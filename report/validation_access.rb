@@ -48,7 +48,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
   
   def init_validation(validation, uri)
   
-    raise Reports::BadRequest.new "not a validation uri: "+uri.to_s unless uri =~ /.*\/validation\/[0-9]+/
+    raise Reports::BadRequest.new "not a validation uri: "+uri.to_s unless uri =~ /.*\/[0-9]+/
     validation_id = uri.split("/")[-1]
     v = Lib::Validation.get(validation_id)
     raise Reports::BadRequest.new "no validation found with id "+validation_id.to_s unless v

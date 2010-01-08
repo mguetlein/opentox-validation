@@ -41,7 +41,7 @@ class Validation < Lib::Validation
     super params
     save unless attribute_dirty?("id")
     raise "internal error, id not set "+to_yaml unless @id
-    update :uri => $sinatra.url_for("/validation/"+@id.to_s, :full)
+    update :uri => $sinatra.url_for("/"+@id.to_s, :full)
   end
   
   # deletes a validation
@@ -240,7 +240,7 @@ class Crossvalidation < Lib::Crossvalidation
              '_f'+n.to_s+'of'+@num_folds.to_s+
              '_r'+@random_seed.to_s+
              '_s'+@stratified.to_s 
-      source = $sinatra.url_for('/validation/crossvalidation',:full)
+      source = $sinatra.url_for('/crossvalidation',:full)
       
       test_compounds = []
       train_compounds = []
@@ -345,7 +345,7 @@ module ValidationUtil
       else
         title = "Test dataset split of "+orig_dataset.title.to_s
       end
-      source = $sinatra.url_for('/validation/training_test_split',:full)
+      source = $sinatra.url_for('/training_test_split',:full)
       result[sym] = create_new_dataset( data, compound_array, title, source )
     end
     

@@ -31,26 +31,26 @@ require "'lib/test_util.rb"
 #    get '/osterhase'
 #    assert last_response.not_found?
 #
-#    post '/validation', :uri_list => "validation_uri_1\nvalidation_uri_2"  
+#    post '', :uri_list => "validation_uri_1\nvalidation_uri_2"  
 #    assert last_response.status == 400
 # 
-#    post '/validation', :uri_list => "validation_uri_1"
+#    post '', :uri_list => "validation_uri_1"
 #    assert last_response.ok?
 #    report_uri = last_response.body 
 #    type = $rep.parse_type(report_uri)
 #    assert type == "validation"
 #    id = $rep.parse_id(report_uri)
 #    
-#    get '/validation/'+id.to_s, {}, {"HTTP_ACCEPT" => "weihnachtsmann"}
+#    get '/'+id.to_s, {}, {"HTTP_ACCEPT" => "weihnachtsmann"}
 #    assert last_response.status == 400
-#    get '/validation/'+id.to_s, {}, {"HTTP_ACCEPT" => "text/xml"}
+#    get '/'+id.to_s, {}, {"HTTP_ACCEPT" => "text/xml"}
 #    assert last_response.ok?
-#    get '/validation/'+id.to_s, {}, {"HTTP_ACCEPT" => "text/html"}
+#    get '/'+id.to_s, {}, {"HTTP_ACCEPT" => "text/html"}
 #    assert last_response.ok?
 #    
-#    delete '/validation/43984398'
+#    delete '/43984398'
 #    assert last_response.not_found?
-#    delete '/validation/'+id.to_s
+#    delete '/'+id.to_s
 #    assert last_response.ok?
 #    
 #    map = {"crossvalidation"=>"validation_uri_1\nvalidation_uri_2\nvalidation_uri_3\nvalidation_uri_4\nvalidation_uri_5",

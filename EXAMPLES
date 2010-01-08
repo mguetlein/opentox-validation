@@ -15,21 +15,21 @@ the examples listed below can be performed with the command line tool curl
 get list of available validations
 -------------------------------------------------------------------
 
->>> curl <validation_service>/validations
+>>> curl <validation_service>
 
 result example (accept-header: application/rdf-xml)			
 <<< not yet supported
 
 result example (accept-header: text/uri-list)
-<<< <validation_service>/validation/<validation_id>
-<<< <validation_service>/validation/validation_id_i
-<<< <validation_service>/validation/validation_id_j
+<<< <validation_service>/<validation_id>
+<<< <validation_service>/validation_id_i
+<<< <validation_service>/validation_id_j
 
 
 get validation
 -------------------------------------------------------------------
 
->>> curl <validation_service>/validation/<validation_id>
+>>> curl <validation_service>/<validation_id>
 
 supported accept-headers: "text/x-yaml" and "application/rdf-xml"			
 	
@@ -40,13 +40,13 @@ validate model on test-dateset
 >>> curl -X POST -d model_uri="<model_uri>" \
  -d test_dataset_uri="<test_dataset_uri>" \
  -d prediction_feature="<prediction_feature>" \
- <validation_service>/validation
+ <validation_service>
 	
 result example (accept-header: application/rdf-xml)			
 <<< not yet supported
 
 result example (accept-header: text/uri-list)
-<<< <validation_service>/validation/id_i
+<<< <validation_service>/id_i
 
 
 validate an algorithm on a training- and test-dataset
@@ -57,7 +57,7 @@ validate an algorithm on a training- and test-dataset
  -d test_dataset_uri="<test_dataset_uri>" \
  -d prediction_feature="<prediction_feature>" \
  -d algorithm_params="<algorithm_params>" \
- <validation_service>/validation
+ <validation_service>
 
 optional params:
 algorithm_params, default is empty
@@ -66,7 +66,7 @@ result example (accept-header: application/rdf-xml)
 <<< not yet supported
 
 result example (accept-header: text/uri-list)
-<<< <validation_service>/validation/id_i
+<<< <validation_service>/id_i
 
 
 validate an algorithm on a dataset via training-test-split
@@ -78,7 +78,7 @@ validate an algorithm on a dataset via training-test-split
  -d algorithm_params="<algorithm_params>" \
  -d split_ratio=0.9 \
  -d random_seed=2 \
- <validation_service>/validation/training_test_split
+ <validation_service>/training_test_split
 
 optional params:
 algorithm_params, default is empty
@@ -89,13 +89,13 @@ result example (accept-header: application/rdf-xml)
 <<< not yet supported
 
 result example (accept-header: text/uri-list)
-<<< <validation_service>/validation/id_i
+<<< <validation_service>/id_i
 
 
 get list of available crossvalidations
 -------------------------------------------------------------------
 
->>> curl <validation_service>/crossvalidations
+>>> curl <validation_service>/crossvalidation
 
 result example (accept-header: application/rdf-xml)			
 <<< not yet supported
@@ -115,6 +115,7 @@ supported accept-headers: "text/x-yaml" and "application/rdf-xml"
 	
 
 validate an algorithm on a dataset via crossvalidation
+(may take a couple of minutes)
 -------------------------------------------------------------------
 
 >>> curl -X POST -d algorithm_uri="<algorithm_uri>" \

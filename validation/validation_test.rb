@@ -42,7 +42,7 @@ class ValidationTest < Test::Unit::TestCase
   end
 
 #  def test_all_validations
-#    get '/validations'
+#    get '/'
 #    assert last_response.ok?
 #    puts "all validations:\n"+last_response.body
 #    validations = last_response.body.split("\n")
@@ -101,11 +101,11 @@ class ValidationTest < Test::Unit::TestCase
 ##          # assert that both cross validaitons use the same datasets
 ##          first_validation2 = last_response.body.split("\n")[0].split("/")[-1]
 ##          
-##          get '/validation/'+first_validation+'/test_dataset_uri'
+##          get '/'+first_validation+'/test_dataset_uri'
 ##          assert last_response.ok?
 ##          first_val_test_data = last_response.body
 ##
-##          get '/validation/'+first_validation2+'/test_dataset_uri'
+##          get '/'+first_validation2+'/test_dataset_uri'
 ##          assert last_response.ok?
 ##          first_val2_test_data = last_response.body
 ##          assert first_val_test_data==first_val2_test_data
@@ -137,7 +137,7 @@ class ValidationTest < Test::Unit::TestCase
 #      model_uri = "http://ot.model.de/45" #trained with training split from hamster
 #      data_uri_test = "http://ot.dataset.de/367" #hamster test split
 #      
-#      post '/validation', {:test_dataset_uri => data_uri_test, :model_uri => model_uri, :prediction_feature => FEATURE_URI}
+#      post '', {:test_dataset_uri => data_uri_test, :model_uri => model_uri, :prediction_feature => FEATURE_URI}
 #      verify_validation
 #    ensure
 #      #delete_resources
@@ -147,13 +147,13 @@ class ValidationTest < Test::Unit::TestCase
 #  def test_validate_algorithm
 #    begin
 #      
-#      #get '/validation/41',nil,'HTTP_ACCEPT' => "application/rdf+xml" #"text/x-yaml"
+#      #get '/41',nil,'HTTP_ACCEPT' => "application/rdf+xml" #"text/x-yaml"
 #      #puts last_response.body
 #      data_uri_train = upload_data(WS_DATA, FILE_TRAIN)
 #      data_uri_test = upload_data(WS_DATA, FILE_TEST)
 #      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
 #      #data_uri_test = WS_DATA+"/"+DATA_TEST
-#      post '/validation', { :training_dataset_uri => data_uri_train, :test_dataset_uri => data_uri_test,
+#      post '', { :training_dataset_uri => data_uri_train, :test_dataset_uri => data_uri_test,
 #        :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI, :feature_generation_uri => WS_FEATURE_ALG}
 #      verify_validation
 #    ensure
@@ -168,7 +168,7 @@ class ValidationTest < Test::Unit::TestCase
 #      #data_uri = "http://ot.dataset.de/67" #hamster
 #      
 #      #data_uri=WS_DATA+"/"+DATA
-#      post '/validation/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
+#      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
 #        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.8, :random_seed=>5}
 #      verify_validation
 #    ensure
@@ -182,8 +182,8 @@ class ValidationTest < Test::Unit::TestCase
     
     get '/examples'
 
-    #get '/validation/350',nil,'HTTP_ACCEPT' => "application/rdf+xml"
-    #get '/validation/350',nil,'HTTP_ACCEPT' => "text/x-yaml"
+    #get '/350',nil,'HTTP_ACCEPT' => "application/rdf+xml"
+    #get '/350',nil,'HTTP_ACCEPT' => "text/x-yaml"
     
     #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
     #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "text/x-yaml"
@@ -200,15 +200,15 @@ class ValidationTest < Test::Unit::TestCase
 
     puts "uri: "+last_response.body
     puts "id:"+validation_id
-    add_resource("/validation/"+validation_id) if delete
+    add_resource("/"+validation_id) if delete
 
-    #get '/validation/'+validation_id,nil,'HTTP_ACCEPT' => "application/rdf+xml"
-    get '/validation/'+validation_id,nil,'HTTP_ACCEPT' => "text/x-yaml"
+    #get '/'+validation_id,nil,'HTTP_ACCEPT' => "application/rdf+xml"
+    get '/'+validation_id,nil,'HTTP_ACCEPT' => "text/x-yaml"
     puts last_response.body
     assert last_response.ok? || last_response.status==202
 
 #    ["test_dataset_uri", "model_uri", "prediction_dataset_uri"].each do |t|
-#      get '/validation/'+validation_id+'/'+t
+#      get '/'+validation_id+'/'+t
 #      puts ""+t+": "+last_response.body
 #      assert last_response.ok?
 #      
