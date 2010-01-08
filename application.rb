@@ -2,7 +2,7 @@
 
 require "example.rb"
 
-[ 'rubygems', 'sinatra', 'sinatra/url_for' ].each do |lib|
+[ 'rubygems', 'sinatra', 'sinatra/url_for', 'logger' ].each do |lib|
   require lib
 end
 
