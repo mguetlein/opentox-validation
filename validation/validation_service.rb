@@ -8,6 +8,7 @@ require "lib/ot_predictions.rb"
 
 require "validation/validation_format.rb"
 
+
 class Array
   
   # cuts an array into <num-pieces> chunks
@@ -75,7 +76,7 @@ class Validation < Lib::Validation
     end
     LOGGER.debug "building model '"+algorithm_uri.to_s+"' "+params.inspect
     
-    model_uri = RestClient.post algorithm_uri,params
+    model_uri = OpenTox::RestClientWrapper.post algorithm_uri,params
     update :model_uri => model_uri
     
     validate_model
