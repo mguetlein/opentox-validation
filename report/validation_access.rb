@@ -1,5 +1,6 @@
 
 require "lib/validation_db.rb"
+require "lib/wrapper.rb"
 
 # = Reports::ValidationAccess
 # 
@@ -61,8 +62,8 @@ class Reports::ValidationDB < Reports::ValidationAccess
     #raise "cannot access model '"+v[:model_uri].to_s+"'" unless model
     #validation.prediction_feature = model.get_prediction_feature
     
-    {Lib::VAL_CLASS_PROP => Lib::VAL_CLASS_PROPS, 
-     Lib::VAL_REGR_PROP => Lib::VAL_REGR_PROPS}.each do |subset_name,subset_props|
+    {:classification_statistics => Lib::VAL_CLASS_PROPS, 
+     :regression_statistics => Lib::VAL_REGR_PROPS}.each do |subset_name,subset_props|
       subset = v[subset_name]
       subset_props.each{ |prop| validation.send("#{prop.to_s}=".to_sym, subset[prop]) } if subset
     end
@@ -79,12 +80,17 @@ class Reports::ValidationDB < Reports::ValidationAccess
   end
 
   def get_predictions(validation)
-    Lib::OTPredictions.new( validation.prediction_feature, validation.test_dataset_uri, validation.prediction_dataset_uri)
+    Lib::OTPredictions.new( validation.classification?, validation.prediction_feature, validation.test_dataset_uri, validation.prediction_dataset_uri)
   end
   
-  def get_prediction_feature_values(prediction_feature)
-    #TODO: get feature range from ontology
-    return  ["true", "false"]
+  def get_prediction_feature_values( validation )
+    OpenTox::Feature.range( validation.prediction_feature )
+  end
+  
+  def classification?( validation )
+    model = OpenTox::Model::PredictionModel.find(validation.model_uri)
+    raise "model not found '"+validation.model_uri+"'" unless validation.model_uri && model
+    model.classification?
   end
   
 end

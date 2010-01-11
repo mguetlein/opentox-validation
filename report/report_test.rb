@@ -5,7 +5,7 @@ require 'report/report_application.rb'
 require 'test/unit'
 require 'rack/test'
 
-require "'lib/test_util.rb"
+require "lib/test_util.rb"
 
 
 #class Reports::ApplicationTest < Test::Unit::TestCase
@@ -75,15 +75,15 @@ require "'lib/test_util.rb"
 class Reports::ReportServiceTest < Test::Unit::TestCase
   include Lib::TestUtil
 
-  WS_VAL = "localhost:4007"
-  WS_DATA="localhost:4002"
-  DATA="hamster"
-  FILE=File.new("data/hamster_carcinogenicity.csv","r")
-  WS_CLASS_ALG="localhost:4003/lazar_classification"
-  WS_FEATURE_ALG="localhost:4003/fminer"
+  WS_VAL = @@config[:services]["opentox-validation"]
+  WS_DATA=@@config[:services]["opentox-dataset"]
+  FILE=File.new("data/hamster_carcinogenicity.owl","r")
   
-  WS_CLASS_ALG_2="localhost:4008/algorithm"
-  WS_FEATURE_ALG_2=nil
+  WS_CLASS_ALG=File.join(@@config[:services]["opentox-algorithm"],"lazar")
+  WS_FEATURE_ALG=File.join(@@config[:services]["opentox-algorithm"],"fminer")
+  
+  #WS_CLASS_ALG_2="localhost:4008/algorithm"
+  #WS_FEATURE_ALG_2=nil
 
   def test_service_ot_webservice
 
@@ -93,13 +93,13 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
       types = rep.get_report_types
       assert types.is_a?(String)
       assert types.split("\n").size == Reports::ReportFactory::REPORT_TYPES.size
-      Reports::ReportFactory::REPORT_TYPES.each{|t| rep.get_all_reports(t)}
-      assert_raise(Reports::NotFound){rep.get_all_reports("osterhase")}
+      #Reports::ReportFactory::REPORT_TYPES.each{|t| rep.get_all_reports(t)}
+      #assert_raise(Reports::NotFound){rep.get_all_reports("osterhase")}
       
       ### using ot_mock_layer (reporting component does not rely on ot validation webservice)
       
       ENV['REPORT_VALIDATION_ACCESS'] = "mock_layer"
-      Reports.reset_validation_access
+      Reports::Validation.reset_validation_access
       
 #      create_report(rep, "validation_uri_1", "validation")
 #      assert_raise(Reports::BadRequest){create_report(rep, ["validation_uri_1","validation_uri_2"], "validation")}
@@ -114,23 +114,23 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
       ### using ot webservices (instead of mock layer)
 
       ENV['REPORT_VALIDATION_ACCESS'] = nil
-      Reports.reset_validation_access
+      Reports::Validation.reset_validation_access
       
-      data_uri = upload_data WS_DATA, DATA, FILE
-      #data_uri= WS_DATA+"/hamster"
+      #data_uri = upload_data WS_DATA,  FILE
+      #data_uri= File.join(WS_DATA,"1")
       
       #val_uri = create_single_validation(data_uri)
       #val_uri = create_single_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
-      #val_uri = "http://localhost:4007/validation/49"
+      val_uri = File.join(WS_VAL,"1")
 #      #add_resource val_uri
-      #create_report(rep, val_uri, "validation")
+      create_report(rep, val_uri, "validation")
         
-       val_uri = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
+       #val_uri = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
 #       #val_uri = create_cross_validation(data_uri)
-   #    val_uri = "http://localhost:4007/crossvalidation/7"
+       #val_uri = File.join(WS_VAL,"crossvalidation/1")
 #       #val_uri2 = "http://localhost:4007/crossvalidation/14"
 #       # add_resource val_uri
-       create_report(rep, val_uri, "crossvalidation")
+#       create_report(rep, val_uri, "crossvalidation")
         
 #         #val_uri2 = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
 #         #val_uri = ["http://localhost:4007/crossvalidation/6", "http://localhost:4007/crossvalidation/8"]
@@ -172,10 +172,11 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
     report_uri = report_service.create_report(type, val_uri)
     assert type == report_service.parse_type(report_uri)
     id = report_service.parse_id(report_uri)
-    assert_raise(Reports::BadRequest){report_service.get_report(type, id, "weihnachtsmann")}
+    #assert_raise(Reports::BadRequest){report_service.get_report(type, id, "weihnachtsmann")}
     
     report_service.get_report(type, id, "text/html")
-    assert_raise(Reports::NotFound){report_service.delete_report(type, 877658)}
+    report_service.get_report(type, id, "application/pdf")
+    #assert_raise(Reports::NotFound){report_service.delete_report(type, 877658)}
 
 #      rep.delete_report(type, id)
   end

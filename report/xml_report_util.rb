@@ -15,7 +15,7 @@ module Reports::XMLReportUtil
     
     num_classes = Math.sqrt(confusion_matrix.size)
     class_values = []
-    confusion_matrix.each{ |key_map,value| class_values.push(key_map[:actual]) if class_values.index(key_map[:actual])==nil }
+    confusion_matrix.each{ |key_map,value| class_values.push(key_map[:confusion_matrix_actual]) if class_values.index(key_map[:confusion_matrix_actual])==nil }
     raise "confusion matrix invalid "+confusion_matrix.inspect unless num_classes.to_i == num_classes and class_values.size == num_classes 
 
     sum_predicted = {}
@@ -24,8 +24,8 @@ module Reports::XMLReportUtil
       sum_pred = 0
       sum_act = 0
       confusion_matrix.each do |key_map,value|
-        sum_pred += value if key_map[:predicted]==class_value
-        sum_act += value if key_map[:actual]==class_value
+        sum_pred += value if key_map[:confusion_matrix_predicted]==class_value
+        sum_act += value if key_map[:confusion_matrix_actual]==class_value
       end
       sum_predicted[class_value] = sum_pred
       sum_actual[class_value] = sum_act
@@ -38,7 +38,7 @@ module Reports::XMLReportUtil
     class_values.each do |predicted|
       row =  [ (confusion.size==2 ? "predicted" : ""), predicted ]
       class_values.each do |actual|
-        row.push( confusion_matrix[{:actual => actual, :predicted => predicted}].to_nice_s )   
+        row.push( confusion_matrix[{:confusion_matrix_actual => actual, :confusion_matrix_predicted => predicted}].to_nice_s )   
       end
       row.push( sum_predicted[predicted].to_nice_s )
       confusion.push( row )  

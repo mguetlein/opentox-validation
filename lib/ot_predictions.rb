@@ -60,7 +60,7 @@ module Lib
                   ### PENDING ####
                   confidence = nil
                   if value.is_a?(Hash)
-                    confidence = value["confidence"] if value.has_key?("confidence")
+                    confidence = value["confidence"].to_f.abs if value.has_key?("confidence")
                     value = value["classification"] if value.has_key?("classification")
                   end
                   ################

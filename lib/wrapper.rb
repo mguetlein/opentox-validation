@@ -61,7 +61,7 @@ module OpenTox
       do_halt 400,"uri is null",uri,params unless uri
       begin
         RestClient.send(rest_call, uri, params)
-     rescue RestClient::RequestFailed, RestClient::RequestTimeout => ex
+      rescue RestClient::RequestFailed, RestClient::RequestTimeout => ex
         do_halt 502,ex.message,uri,params
       rescue SocketError, RestClient::ResourceNotFound => ex
         do_halt 400,ex.message,uri,params

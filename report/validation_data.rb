@@ -28,35 +28,31 @@ end
 
 module Reports
   
-  def self.validation_access
-    @@validation_access
-  end
-  
-  def self.reset_validation_access( validation_access=nil )
-    
-    if validation_access
-      @@validation_access=validation_access
-    else
-      case ENV['REPORT_VALIDATION_ACCESS']
-      when "mock_layer"
-        @@validation_access = Reports::ValidationMockLayer.new
-      when "webservice"
-        @@validation_access = Reports::ValidationWebservice.new
-      else #default
-        @@validation_access = Reports::ValidationDB.new
-      end
-    end
-  end
-  
-  # initialize validation_access
-  reset_validation_access
-
-
   # = Reports::Validation
   #
   # contains all values of a validation object
   #
   class Validation
+    
+    def self.reset_validation_access( validation_access=nil )
+    
+      if validation_access
+        @@validation_access=validation_access
+      else
+        case ENV['REPORT_VALIDATION_ACCESS']
+        when "mock_layer"
+          @@validation_access = Reports::ValidationMockLayer.new
+        when "webservice"
+          @@validation_access = Reports::ValidationWebservice.new
+        else #default
+          @@validation_access = Reports::ValidationDB.new
+        end
+      end
+    end
+    
+    def self.resolve_cv_uris(uri_list)
+      @@validation_access.resolve_cv_uris(uri_list)
+    end
     
     @@validation_attributes = Lib::ALL_PROPS + 
       VAL_ATTR_VARIANCE.collect{ |a| (a.to_s+"_variance").to_sym } +
@@ -67,7 +63,7 @@ module Reports
     attr_reader :predictions, :merge_count
     
     def initialize(uri = nil)
-      Reports.validation_access.init_validation(self, uri) if uri
+      @@validation_access.init_validation(self, uri) if uri
       @merge_count = 1
     end
   
@@ -82,20 +78,25 @@ module Reports
         LOGGER.info("no predictions available, prediction_dataset_uri not set")
         return nil
       end
-      @predictions = Reports.validation_access.get_predictions( self )
+      @predictions = @@validation_access.get_predictions( self )
     end
     
-    # returns the predictions feature values (i.e. the range of the class attribute)
+    # returns the predictions feature values (i.e. the domain of the class attribute)
     #
     def get_prediction_feature_values
       return @prediction_feature_values if @prediction_feature_values
-      @prediction_feature_values = Reports.validation_access.get_prediction_feature_values(:prediction_feature) 
+      @prediction_feature_values = @@validation_access.get_prediction_feature_values(self) 
+    end
+    
+    def classification?
+      return @is_classification if @is_classification!=nil
+      @is_classification = @@validation_access.classification?(self) 
     end
     
     # loads all crossvalidation attributes, of the corresponding cv into this object 
     def load_cv_attributes
       raise "crossvalidation-id not set" unless @crossvalidation_id
-      Reports.validation_access.init_cv(self)
+      @@validation_access.init_cv(self)
     end
     
     def clone_validation
@@ -189,6 +190,7 @@ module Reports
   class ValidationSet
     
     def initialize(uri_list = nil)
+      uri_list = Reports::Validation.resolve_cv_uris(uri_list) if uri_list
       @validations = Array.new
       uri_list.each{|u| @validations.push(Reports::Validation.new(u))} if uri_list
     end
@@ -242,14 +244,14 @@ module Reports
     # checks weather all validations are classification validations
     #
     def all_classification?
-      @validations.each{ |v| return false if v.percent_correct==nil }
+      @validations.each{ |v| return false unless v.classification? }
       true
     end
 
     # checks weather all validations are regression validations
     #
     def all_regression?
-      @validations.each{ |v| return false if v.root_mean_squared_error==nil }
+      @validations.each{ |v| return false if v.classification? }
       true
     end
     
@@ -387,4 +389,8 @@ module Reports
     end
     
   end
+  
+    # initialize validation_access
+  Validation.reset_validation_access
+  
 end 

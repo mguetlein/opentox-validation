@@ -43,6 +43,8 @@ module Reports::ReportFormat
     case format
     when RF_HTML
       format_report_to_html(directory, xml_filename, dest_filename)
+    when RF_PDF
+      raise "pdf conversion not supported yet"
     else
       raise "unknown format type"
     end

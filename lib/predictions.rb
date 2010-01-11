@@ -43,6 +43,8 @@ module Lib
       raise "illegal num actual values "+num_info if  @actual_values.size != @predicted_values.size
       raise "illegal num confidence values "+num_info if  @confidence_values.size != @predicted_values.size
       
+      @confidence_values.each{ |c| raise "illegal confidence value: '"+c.to_s+"'" unless c==nil or (c.is_a?(Numeric) and c>=0 and c<=1) }
+      
       if @is_classification
         raise "prediction_feature_values missing while performing classification" unless @prediction_feature_values
         @num_classes = @prediction_feature_values.size

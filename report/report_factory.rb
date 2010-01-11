@@ -199,8 +199,8 @@ class Reports::ReportContent
     vals = validation_set.to_array(validation_attributes)
     #PENDING rexml strings in tables not working when >66  
     vals = vals.collect{|a| a.collect{|v| v.to_s[0,66] }}
-    #transpose values if there more than 7 columns
-    transpose = vals[0].size>7 && vals[0].size>vals.size
+    #transpose values if there more than 4 columns, and there are more than columns than rows
+    transpose = vals[0].size>4 && vals[0].size>vals.size
     @xml_report.add_table(section_table, table_title, vals, !transpose, transpose)   
   end
   

@@ -13,6 +13,11 @@ require 'mime/types'
 module Reports
 end
 
+unless(defined? LOGGER)
+  LOGGER = Logger.new(STDOUT)
+  LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
+end
+
 require "report/r_plot_factory.rb"
 require "report/plot_factory.rb"
 require "report/xml_report.rb"
@@ -29,9 +34,6 @@ require "report/external/mimeparse.rb"
 
 require "lib/ot_predictions.rb"
 
-unless(defined? LOGGER)
-  LOGGER = Logger.new(STDOUT)
-  LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
-end
+
 
 

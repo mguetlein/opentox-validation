@@ -7,7 +7,6 @@ else
 end
 require "rinruby"
 
-
 # colors for r-plots
 R_PLOT_COLORS = ["red", "blue", "green", "yellow"]
 
@@ -168,6 +167,9 @@ class Reports::RocPlot < Reports::RPlot
 
   def plot_predictions(title, predict_array, actual_array, show_single_curves = false)
   
+    puts "predict "+predict_array.to_nice_s
+    puts "actual  "+actual_array.to_nice_s
+  
     if (predict_array[0].is_a?(Array)) #multi-dim-arrays
       
       # PENDING: very in-efficient, add new type to r-in-ruby 
@@ -197,7 +199,8 @@ class Reports::RocPlot < Reports::RPlot
     end
     
     add_plot = @titles.size > 0 ? "add=TRUE" : "add=FALSE"
-    avg = predict_array[0].is_a?(Array) ? 'avg="threshold",' : '' 
+    avg = predict_array[0].is_a?(Array) ? 'avg="threshold",' : 'avg="none",' 
+    #puts "avg: "+avg
     raise "not enough colors defined" if @titles.size >=  R_PLOT_COLORS.size
     
     R.eval 'plot(perf, '+avg+' col="'+R_PLOT_COLORS[@titles.size]+'", '+add_plot+')'

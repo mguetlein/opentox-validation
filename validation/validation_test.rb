@@ -161,35 +161,35 @@ class ValidationTest < Test::Unit::TestCase
 #    end
 #  end
   
-#  def test_split
-#    begin
-#      data_uri = upload_data(WS_DATA, FILE)
-#      #data_uri =  "http://ot.dataset.de/199" #bbrc
-#      #data_uri = "http://ot.dataset.de/67" #hamster
-#      
-#      #data_uri=WS_DATA+"/"+DATA
-#      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
-#        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.8, :random_seed=>5}
-#      verify_validation
-#    ensure
-#      delete_resources
-#    end
-#  end
-  
-  def test_nothing
-    
-    #puts "testing nothing"
-    
-    get '/examples'
-
-    #get '/350',nil,'HTTP_ACCEPT' => "application/rdf+xml"
-    #get '/350',nil,'HTTP_ACCEPT' => "text/x-yaml"
-    
-    #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
-    #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "text/x-yaml"
-    
-    puts last_response.body
+  def test_split
+    begin
+      data_uri = upload_data(WS_DATA, FILE)
+      #data_uri =  "http://ot.dataset.de/199" #bbrc
+      #data_uri = "http://ot.dataset.de/67" #hamster
+      
+      #data_uri=WS_DATA+"/"+DATA
+      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
+        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.8, :random_seed=>5}
+      verify_validation
+    ensure
+      delete_resources
+    end
   end
+  
+#  def test_nothing
+#    
+#    #puts "testing nothing"
+#    
+#    get '/examples'
+#
+#    #get '/350',nil,'HTTP_ACCEPT' => "application/rdf+xml"
+#    #get '/350',nil,'HTTP_ACCEPT' => "text/x-yaml"
+#    
+#    #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
+#    #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "text/x-yaml"
+#    
+#    puts last_response.body
+#  end
   
   private
   def verify_validation (delete=true)

@@ -1,4 +1,3 @@
-
 # = Reports::ReportService
 #
 # provides complete report webservice functionality
@@ -47,12 +46,9 @@ module Reports
       LOGGER.info "create report of type '"+type.to_s+"'"
       check_report_type(type)
       
-      #step 0.5: replace cv-uris with list of validation-uris
+      # step1: load validations
       raise Reports::BadRequest.new("validation uri_list missing") unless uri_list
       LOGGER.debug "validation uri_list: '"+uri_list.inspect+"'"
-      uri_list = Reports.validation_access.resolve_cv_uris(uri_list)
-  
-      # step1: load validations
       validation_set = Reports::ValidationSet.new(uri_list)
       raise Reports::BadRequest.new("cannot get validations from uri_list '"+uri_list.inspect+"'") unless validation_set and validation_set.size > 0
       LOGGER.debug "loaded "+validation_set.size.to_s+" validation/s"
