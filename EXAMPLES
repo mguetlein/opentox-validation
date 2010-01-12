@@ -162,7 +162,7 @@ result example (accept-header: text/uri-list)
 get list of available reports of type validation
 -------------------------------------------------------------------
 
->>> curl ot.validation.de/report/validation
+>>> curl <validation_service>/report/validation
 
 result example (accept-header: application/rdf-xml)			
 <<< not yet supported
@@ -189,7 +189,7 @@ create validation report from validation
 -------------------------------------------------------------------
 
 >>> curl -X POST -d validation_uris="<validation_service>/<validation_id>" \
- ot.validation.de/report/validation
+ <validation_service>/report/validation
 
 result example (accept-header: application/rdf-xml)			
 <<< not yet supported
@@ -228,7 +228,7 @@ create crossvalidation report from crossvalidation
 -------------------------------------------------------------------
 
 >>> curl -X POST -d validation_uris="<validation_service>/crossvalidation/<crossvalidation_id>" \
- ot.validation.de/report/crossvalidation
+ <validation_service>/report/crossvalidation
 
 result example (accept-header: application/rdf-xml)			
 <<< not yet supported
