@@ -35,22 +35,22 @@ module Reports
       @persistance.list_reports(type).collect{ |id| get_uri(type,id) }.join("\n")
     end
     
-    # creates a report of a certain type, __uri_list__ must contain be a list of validation or cross-validation-uris
+    # creates a report of a certain type, __validation_uris__ must contain be a list of validation or cross-validation-uris
     # returns the uir of the report 
     #
     # call-seq:
-    #   create_report(type, uri_list) => string
+    #   create_report(type, validation_uris) => string
     # 
-    def create_report(type, uri_list)
+    def create_report(type, validation_uris)
       
       LOGGER.info "create report of type '"+type.to_s+"'"
       check_report_type(type)
       
       # step1: load validations
-      raise Reports::BadRequest.new("validation uri_list missing") unless uri_list
-      LOGGER.debug "validation uri_list: '"+uri_list.inspect+"'"
-      validation_set = Reports::ValidationSet.new(uri_list)
-      raise Reports::BadRequest.new("cannot get validations from uri_list '"+uri_list.inspect+"'") unless validation_set and validation_set.size > 0
+      raise Reports::BadRequest.new("validation_uris missing") unless validation_uris
+      LOGGER.debug "validation_uris: '"+validation_uris.inspect+"'"
+      validation_set = Reports::ValidationSet.new(validation_uris)
+      raise Reports::BadRequest.new("cannot get validations from validation_uris '"+validation_uris.inspect+"'") unless validation_set and validation_set.size > 0
       LOGGER.debug "loaded "+validation_set.size.to_s+" validation/s"
       
       #step 2: create report of type

@@ -46,5 +46,5 @@ delete '/report/:type/:id' do
 end
 
 post '/report/:type' do
-  perform{ |rs| rs.create_report(params[:type],params[:uri_list]?params[:uri_list].split("\n"):nil) }
+  perform{ |rs| rs.create_report(params[:type],params[:validation_uris]?params[:validation_uris].split("\n"):nil) }
 end

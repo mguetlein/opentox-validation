@@ -50,8 +50,8 @@ module Reports
       end
     end
     
-    def self.resolve_cv_uris(uri_list)
-      @@validation_access.resolve_cv_uris(uri_list)
+    def self.resolve_cv_uris(validation_uris)
+      @@validation_access.resolve_cv_uris(validation_uris)
     end
     
     @@validation_attributes = Lib::ALL_PROPS + 
@@ -189,10 +189,10 @@ module Reports
   #
   class ValidationSet
     
-    def initialize(uri_list = nil)
-      uri_list = Reports::Validation.resolve_cv_uris(uri_list) if uri_list
+    def initialize(validation_uris = nil)
+      validation_uris = Reports::Validation.resolve_cv_uris(validation_uris) if validation_uris
       @validations = Array.new
-      uri_list.each{|u| @validations.push(Reports::Validation.new(u))} if uri_list
+      validation_uris.each{|u| @validations.push(Reports::Validation.new(u))} if validation_uris
     end
     
     def get(index)

@@ -21,7 +21,7 @@ class Reports::ValidationAccess
     raise "not implemented"
   end
   
-  def resolve_cv_uris(uri_list)
+  def resolve_cv_uris(validation_uris)
     raise "not implemented"
   end
   
@@ -33,9 +33,9 @@ end
 
 class Reports::ValidationDB < Reports::ValidationAccess
   
-  def resolve_cv_uris(uri_list)
+  def resolve_cv_uris(validation_uris)
     res = []
-    uri_list.each do |u|
+    validation_uris.each do |u|
       if u.to_s =~ /.*\/crossvalidation\/[0-9]+/
         cv_id = u.split("/")[-1].to_i
         res += Lib::Validation.all(:crossvalidation_id => cv_id).collect{|v| v.uri.to_s}
@@ -98,9 +98,9 @@ end
 
 class Reports::ValidationWebservice < Reports::ValidationAccess
   
-  def resolve_cv_uris(uri_list)
+  def resolve_cv_uris(validation_uris)
     res = []
-    uri_list.each do |u|
+    validation_uris.each do |u|
       if u.to_s =~ /.*\/crossvalidation\/.*/
         uri = u.to_s+"/validations"
         begin
@@ -190,9 +190,9 @@ class Reports::ValidationMockLayer < Reports::ValidationAccess
     @count = 0
   end
   
-  def resolve_cv_uris(uri_list)
+  def resolve_cv_uris(validation_uris)
     res = []
-    uri_list.each do |u|
+    validation_uris.each do |u|
       if u.to_s =~ /.*crossvalidation.*/
         res += ["validation_x"]*NUM_FOLDS
       else

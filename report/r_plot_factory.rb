@@ -48,6 +48,8 @@ module Reports::RPlotFactory
   #
   def self.create_roc_plot( out_file, validation_set, class_value, split_set_attribute=nil, show_single_curves=false )
     
+    raise "roc plot not available"
+    
     LOGGER.debug "creating roc plot, out-file:"+out_file.to_s
     r = Reports::RocPlot.new( out_file )
     if split_set_attribute
@@ -192,7 +194,7 @@ class Reports::RocPlot < Reports::RPlot
     R.eval("pred <- prediction(prediction_values,actual_values)")
     R.eval 'perf <- performance(pred,"tpr","fpr")'
     begin 
-      # WORKAROUND to check weather the r calls worked out so far 
+      # WORKAROUND to check weather the r calls worked out so far
       R.pull "perf@x.name"
     rescue => ex
       raise "error while creating roc plot ("+ex.message.to_s+")"

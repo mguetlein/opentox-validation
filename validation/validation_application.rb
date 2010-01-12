@@ -25,12 +25,12 @@ end
 ## REST API
 get '/crossvalidation/?' do
   LOGGER.info "list all crossvalidations"
-  Crossvalidation.all.collect{ |d| url_for("/crossvalidation/", :full) + d.id.to_s }.join("\n")
+  Validation::Crossvalidation.all.collect{ |d| url_for("/crossvalidation/", :full) + d.id.to_s }.join("\n")
 end
 
 get '/crossvalidation/:id' do
   LOGGER.info "get crossvalidation with id "+params[:id].to_s
-  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Crossvalidation.get(params[:id])
+  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.get(params[:id])
   
   case request.env['HTTP_ACCEPT'].to_s
   when "application/rdf+xml"
@@ -47,14 +47,14 @@ end
 
 delete '/crossvalidation/:id/?' do
   LOGGER.info "delete crossvalidation with id "+params[:id].to_s
-  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Crossvalidation.get(params[:id])
+  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.get(params[:id])
   crossvalidation.delete
 end
 
 get '/crossvalidation/:id/validations' do
   LOGGER.info "get all validations for crossvalidation with id "+params[:id].to_s
-  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Crossvalidation.get(params[:id])
-  Validation.all(:crossvalidation_id => params[:id]).collect{ |v| v.uri.to_s }.join("\n")+"\n"
+  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.get(params[:id])
+  Validation::Validation.all(:crossvalidation_id => params[:id]).collect{ |v| v.uri.to_s }.join("\n")+"\n"
 end
 
 post '/crossvalidation/?' do
@@ -65,7 +65,7 @@ post '/crossvalidation/?' do
   cv_params = { :dataset_uri => params[:dataset_uri],  
                 :algorithm_uri => params[:algorithm_uri] }
   [ :num_folds, :random_seed, :stratified ].each{ |sym| cv_params[sym] = params[sym] if params[sym] }
-  cv = Crossvalidation.new cv_params
+  cv = Validation::Crossvalidation.new cv_params
   cv.create_cv_datasets( params[:prediction_feature] )
   cv.perform_cv( params[:algorithm_params])
   cv.uri
@@ -73,12 +73,12 @@ end
 
 get '/?' do
   LOGGER.info "list all validations"
-  Validation.all.collect{ |d| url_for("/", :full) + d.id.to_s }.join("\n")
+  Validation::Validation.all.collect{ |d| url_for("/", :full) + d.id.to_s }.join("\n")
 end
 
 get '/:id' do
   LOGGER.info "get validation with id "+params[:id].to_s+" '"+request.env['HTTP_ACCEPT'].to_s+"'"
-  halt 404, "Validation '#{params[:id]}' not found." unless validation = Validation.get(params[:id])
+  halt 404, "Validation '#{params[:id]}' not found." unless validation = Validation::Validation.get(params[:id])
   
   case request.env['HTTP_ACCEPT'].to_s
   when "application/rdf+xml"
@@ -96,12 +96,12 @@ end
 post '/?' do
   LOGGER.info "creating validation "+params.inspect
   if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri] and params[:prediction_feature]
-    v = Validation.new :model_uri => params[:model_uri], 
+    v = Validation::Validation.new :model_uri => params[:model_uri], 
                      :test_dataset_uri => params[:test_dataset_uri],
                      :prediction_feature => params[:prediction_feature]
     v.validate_model
   elsif params[:algorithm_uri] and params[:training_dataset_uri] and params[:test_dataset_uri] and params[:prediction_feature] and !params[:model_uri]
-   v = Validation.new :training_dataset_uri => params[:training_dataset_uri], 
+   v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
                       :test_dataset_uri => params[:test_dataset_uri],
                       :prediction_feature => params[:prediction_feature]
    v.validate_algorithm( params[:algorithm_uri], params[:algorithm_params]) 
@@ -121,8 +121,8 @@ post '/training_test_split' do
   halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
   halt 400, "prediction_feature missing" unless params[:prediction_feature]
   
-  params.merge!(ValidationUtil.train_test_dataset_split(params[:dataset_uri], params[:split_ratio], params[:random_seed]))
-  v = Validation.new :training_dataset_uri => params[:training_dataset_uri], 
+  params.merge!(Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:split_ratio], params[:random_seed]))
+  v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
                    :test_dataset_uri => params[:test_dataset_uri],
                    :prediction_feature => params[:prediction_feature]
   v.validate_algorithm( params[:algorithm_uri], params[:algorithm_params]) 
@@ -131,7 +131,7 @@ end
 
 get '/:id/:attribute' do
   LOGGER.info "access validation attribute "+params.inspect
-  halt 404, "Validation #{params[:id]} not found." unless validation = Validation.get(params[:id])
+  halt 404, "Validation #{params[:id]} not found." unless validation = Validation::Validation.get(params[:id])
   begin
     raise unless validation.attribute_loaded?(params[:attribute])
   rescue
@@ -142,6 +142,6 @@ end
 
 delete '/:id' do
   LOGGER.info "delete validation with id "+params[:id].to_s
-  halt 404, "Validation #{params[:id]} not found." unless validation = Validation.get(params[:id])
+  halt 404, "Validation #{params[:id]} not found." unless validation = Validation::Validation.get(params[:id])
   validation.delete
 end

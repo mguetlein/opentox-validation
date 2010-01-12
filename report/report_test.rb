@@ -31,10 +31,10 @@ require "lib/test_util.rb"
 #    get '/osterhase'
 #    assert last_response.not_found?
 #
-#    post '', :uri_list => "validation_uri_1\nvalidation_uri_2"  
+#    post '', :validation_uris => "validation_uri_1\nvalidation_uri_2"  
 #    assert last_response.status == 400
 # 
-#    post '', :uri_list => "validation_uri_1"
+#    post '', :validation_uris => "validation_uri_1"
 #    assert last_response.ok?
 #    report_uri = last_response.body 
 #    type = $rep.parse_type(report_uri)
@@ -57,7 +57,7 @@ require "lib/test_util.rb"
 #           "algorithm_comparison"=> ("validation_uri\n"*(Reports::OTMockLayer::NUM_DATASETS * Reports::OTMockLayer::NUM_ALGS * Reports::OTMockLayer::NUM_FOLDS)) }
 #    map.each do |t,u|
 #      Reports.reset_ot_access
-#      post '/'+t.to_s, :uri_list=>u.to_s
+#      post '/'+t.to_s, :validation_uris=>u.to_s
 #      assert last_response.ok?
 #      report_uri = last_response.body 
 #      type = $rep.parse_type(report_uri)
@@ -121,16 +121,16 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
       
       #val_uri = create_single_validation(data_uri)
       #val_uri = create_single_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
-      val_uri = File.join(WS_VAL,"1")
+      #val_uri = File.join(WS_VAL,"1")
 #      #add_resource val_uri
-      create_report(rep, val_uri, "validation")
+      #create_report(rep, val_uri, "validation")
         
        #val_uri = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
 #       #val_uri = create_cross_validation(data_uri)
-       #val_uri = File.join(WS_VAL,"crossvalidation/1")
+       val_uri = File.join(WS_VAL,"crossvalidation/1")
 #       #val_uri2 = "http://localhost:4007/crossvalidation/14"
 #       # add_resource val_uri
-#       create_report(rep, val_uri, "crossvalidation")
+       create_report(rep, val_uri, "crossvalidation")
         
 #         #val_uri2 = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
 #         #val_uri = ["http://localhost:4007/crossvalidation/6", "http://localhost:4007/crossvalidation/8"]
@@ -175,7 +175,7 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
     #assert_raise(Reports::BadRequest){report_service.get_report(type, id, "weihnachtsmann")}
     
     report_service.get_report(type, id, "text/html")
-    report_service.get_report(type, id, "application/pdf")
+    #report_service.get_report(type, id, "application/pdf")
     #assert_raise(Reports::NotFound){report_service.delete_report(type, 877658)}
 
 #      rep.delete_report(type, id)

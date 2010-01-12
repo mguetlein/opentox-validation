@@ -19,7 +19,7 @@ module Reports::ReportFactory
   RT_CV = "crossvalidation"
   RT_ALG_COMP = "algorithm_comparison"
   
-  REPORT_TYPES = [RT_FASTTOX, RT_VALIDATION, RT_CV, RT_ALG_COMP ]
+  REPORT_TYPES = [RT_VALIDATION, RT_CV, RT_ALG_COMP ] #,RT_FASTTOX
   
   # creates a report of a certain type according to the validation data in validation_set 
   #
@@ -220,17 +220,17 @@ class Reports::ReportContent
                             split_set_attribute = nil,
                             plot_file_name="roc-plot.svg", 
                             section_title="Roc Plot",
-                            section_text="This section contains the roc plot.",
+                            section_text=nil,
                             image_title=nil,
                             image_caption=nil)
-    unless image_title
-      if class_value
-        image_title = "Roc Plot for class-value '"+class_value+"'"
-      else
-        image_title = "Roc Plot for all classes"
-      end
-    end
     
+    if class_value
+      section_text = "This section contains the roc plot for class '"+class_value+"'." unless section_text
+      image_title = "Roc Plot for class-value '"+class_value+"'" unless image_title
+    else
+      section_text = "This section contains the roc plot." unless section_text
+      image_title = "Roc Plot for all classes" unless image_title
+    end
     
     section_roc = @xml_report.add_section(@xml_report.get_root_element, section_title)
     if validation_set.first.get_predictions
@@ -241,7 +241,9 @@ class Reports::ReportContent
         Reports::RPlotFactory.create_roc_plot( plot_file_path, validation_set, class_value, split_set_attribute, validation_set.size>1 )
         @xml_report.add_imagefigure(section_roc, image_title, plot_file_name, "SVG", image_caption)
       rescue RuntimeError => ex
-        LOGGER.error("could not create roc plot: "+ex.message)   
+        LOGGER.error("could not create roc plot: "+ex.message)
+        LOGGER.debug("if R cannot find your libs, try adding R_LIBS='<lib>' to your ~/.Renviron file")
+        rm_tmp_file(plot_file_name)
         @xml_report.add_paragraph(section_roc, "could not create roc plot: "+ex.message)
       end  
     else
@@ -305,6 +307,10 @@ class Reports::ReportContent
     tmp_file_path = Reports::Util.create_tmp_file(tmp_file_name)
     @tmp_files[tmp_file_name] = tmp_file_path
     return tmp_file_path
+  end
+  
+  def rm_tmp_file(tmp_file_name)
+    @tmp_files.delete(tmp_file_name) if @tmp_files.has_key?(tmp_file_name)
   end
   
 end

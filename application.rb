@@ -17,14 +17,19 @@ end
 
 get '/prepare_examples/?' do
   Example.prepare_example_resources
-  "done"
 end
 
-# order is important, first add example methods, than validation 
-# (otherwise sinatra will try to locate a validation with name examples)
+get '/test_examples/?' do
+  Example.test_examples
+end
 
-require "validation/validation_application.rb"
+# order is important, first add example methods and reports, than validation 
+# (otherwise sinatra will try to locate a validation with name examples or report)
+
+
 require "report/report_application.rb"
+require "validation/validation_application.rb"
+
 
 
 
