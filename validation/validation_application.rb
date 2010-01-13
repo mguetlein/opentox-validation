@@ -25,6 +25,8 @@ end
 ## REST API
 get '/crossvalidation/?' do
   LOGGER.info "list all crossvalidations"
+  
+  content_type "text/uri-list"
   Validation::Crossvalidation.all.collect{ |d| url_for("/crossvalidation/", :full) + d.id.to_s }.join("\n")
 end
 
@@ -34,8 +36,10 @@ get '/crossvalidation/:id' do
   
   case request.env['HTTP_ACCEPT'].to_s
   when "application/rdf+xml"
+    content_type "application/rdf+xml"
     result = crossvalidation.to_rdf
   when /text\/x-yaml|\*\/\*|/ # matches 'text/x-yaml', '*/*', ''
+    content_type "text/x-yaml"
     result = crossvalidation.to_yaml
   else
     halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported."
@@ -47,6 +51,7 @@ end
 
 delete '/crossvalidation/:id/?' do
   LOGGER.info "delete crossvalidation with id "+params[:id].to_s
+  content_type "text/plain"
   halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.get(params[:id])
   crossvalidation.delete
 end
@@ -54,6 +59,7 @@ end
 get '/crossvalidation/:id/validations' do
   LOGGER.info "get all validations for crossvalidation with id "+params[:id].to_s
   halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.get(params[:id])
+  content_type "text/uri-list"
   Validation::Validation.all(:crossvalidation_id => params[:id]).collect{ |v| v.uri.to_s }.join("\n")+"\n"
 end
 
@@ -68,11 +74,13 @@ post '/crossvalidation/?' do
   cv = Validation::Crossvalidation.new cv_params
   cv.create_cv_datasets( params[:prediction_feature] )
   cv.perform_cv( params[:algorithm_params])
+  content_type "text/uri-list"
   cv.uri
 end
 
 get '/?' do
   LOGGER.info "list all validations"
+  content_type "text/uri-list"
   Validation::Validation.all.collect{ |d| url_for("/", :full) + d.id.to_s }.join("\n")
 end
 
@@ -82,8 +90,10 @@ get '/:id' do
   
   case request.env['HTTP_ACCEPT'].to_s
   when "application/rdf+xml"
+    content_type "application/rdf+xml"
     result = validation.to_rdf
   when /text\/x-yaml|\*\/\*|/ # matches 'text/x-yaml', '*/*', ''
+    content_type "text/x-yaml"
     result = validation.to_yaml
   else
     halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported."
@@ -126,6 +136,7 @@ post '/training_test_split' do
                    :test_dataset_uri => params[:test_dataset_uri],
                    :prediction_feature => params[:prediction_feature]
   v.validate_algorithm( params[:algorithm_uri], params[:algorithm_params]) 
+  content_type "text/uri-list"
   v.uri
 end
 
@@ -137,11 +148,13 @@ get '/:id/:attribute' do
   rescue
     halt 400, "Not a validation attribute: "+params[:attribute].to_s
   end
+  content_type "text/plain"
   return validation.send(params[:attribute])
 end
 
 delete '/:id' do
   LOGGER.info "delete validation with id "+params[:id].to_s
   halt 404, "Validation #{params[:id]} not found." unless validation = Validation::Validation.get(params[:id])
+  content_type "text/plain"
   validation.delete
 end

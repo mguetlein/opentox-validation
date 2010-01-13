@@ -16,10 +16,12 @@ get '/examples/?' do
 end
 
 get '/prepare_examples/?' do
+  content_type "text/plain"
   Example.prepare_example_resources
 end
 
 get '/test_examples/?' do
+  content_type "text/plain"
   Example.test_examples
 end
 

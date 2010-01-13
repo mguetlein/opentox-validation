@@ -80,6 +80,10 @@ end
 #  end
 #end
 
+raise "':database:' configuration missing in config file" unless @@config.has_key?(:database)
+[ "adapter","database","username","password","host" ].each do |field|
+  raise "field '"+field+":' missing in database configuration" unless @@config[:database].has_key?(field)
+end
 DataMapper.setup(:default, { 
     :adapter  => @@config[:database]["adapter"],
     :database => @@config[:database]["database"],

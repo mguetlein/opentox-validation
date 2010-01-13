@@ -16,16 +16,23 @@ def perform
 end
 
 get '/report/?' do
-  perform{ |rs| rs.get_report_types }
+  perform do |rs|
+    content_type "text/uri-list"
+    rs.get_report_types
+  end
 end
 
 get '/report/:type' do
-  perform{ |rs| rs.get_all_reports(params[:type]) }
+  perform do |rs|
+    content_type "text/uri-list"
+    rs.get_all_reports(params[:type])
+  end
 end
 
 get '/report/:type/:id' do
   perform do |rs| 
     #request.env['HTTP_ACCEPT'] = "application/pdf"
+    content_type Reports::ReportFormat.get_format(request.env['HTTP_ACCEPT'])
     result = body(File.new( rs.get_report(params[:type],params[:id],request.env['HTTP_ACCEPT']) ))
   end
 end
@@ -42,9 +49,15 @@ get '/report/:type/:id/:resource' do
 end
 
 delete '/report/:type/:id' do
-  perform{ |rs| rs.delete_report(params[:type],params[:id]) }
+  perform do |rs|
+    content_type "text/plain"
+    rs.delete_report(params[:type],params[:id])
+  end
 end
 
 post '/report/:type' do
-  perform{ |rs| rs.create_report(params[:type],params[:validation_uris]?params[:validation_uris].split("\n"):nil) }
+  perform do |rs|
+    content_type "text/uri-list"
+    rs.create_report(params[:type],params[:validation_uris]?params[:validation_uris].split("\n"):nil)
+  end
 end
