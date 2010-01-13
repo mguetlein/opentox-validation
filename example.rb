@@ -123,15 +123,26 @@ class Example
     end
     
     @@summary = ""
+    num = 0
+    suc = 0
     curl_calls.each do |cmd|
+      num += 1
       log "testing: "+cmd
+      result = ""
       IO.popen(cmd.to_s+" 2> /dev/null") do |f| 
         while line = f.gets
-          #response += indent.to_s+line
+          result += line
         end
       end
-      log ($?==0)?"ok":"failed"
+      result.gsub!(/\n/, " \\n ")
+      if ($?==0)
+        log "ok ( " +result.to_s[0,50]+" )"
+        suc += 1
+      else
+        log "failed ( " +result.to_s[0,50]+" )"
+      end
     end
+    log num.to_s+"/"+num.to_s+" curls succeeded"
     @@summary  
   end
   

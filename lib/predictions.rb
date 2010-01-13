@@ -192,7 +192,7 @@ module Lib
     def area_under_roc(class_index=nil)
       return prediction_feature_value_map( lambda{ |i| area_under_roc(i) } ) if class_index==nil
       
-      LOGGER.warn("TODO: implement approx computiion of AUC,"+
+      LOGGER.warn("TODO: implement approx computiation of AUC,"+
         "so far Wilcoxon-Man-Whitney is used (exponential)") if @predicted_values.size>1000
       
       tp_conf = []

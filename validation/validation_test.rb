@@ -180,6 +180,8 @@ class ValidationTest < Test::Unit::TestCase
     
     #puts "testing nothing"
     
+    #get '/'     
+
     #get '/prepare_examples'
     get '/test_examples'
 
@@ -189,7 +191,7 @@ class ValidationTest < Test::Unit::TestCase
     #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
     #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "text/x-yaml"
     
-    puts last_response.body
+    #puts last_response.body
   end
   
   private

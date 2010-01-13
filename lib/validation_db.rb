@@ -72,11 +72,21 @@ module Lib
 end
 
 # sqlite is used for storing validations and crossvalidations
-sqlite = "#{File.expand_path(File.dirname(__FILE__))}/#{Sinatra::Base.environment}.sqlite3"
-DataMapper.setup(:default, "sqlite3:///#{sqlite}")
+#sqlite = "#{File.expand_path(File.dirname(__FILE__))}/#{Sinatra::Base.environment}.sqlite3"
+#DataMapper.setup(:default, "sqlite3:///#{sqlite}")
+#unless FileTest.exists?("#{sqlite}")
+#  [Lib::Validation, Lib::Crossvalidation].each do |model|
+#    model.auto_migrate!
+#  end
+#end
 
-unless FileTest.exists?("#{sqlite}")
-  [Lib::Validation, Lib::Crossvalidation].each do |model|
-    model.auto_migrate!
-  end
+DataMapper.setup(:default, { 
+    :adapter  => @@config[:database]["adapter"],
+    :database => @@config[:database]["database"],
+    :username => @@config[:database]["username"],
+    :password => @@config[:database]["password"],
+    :host     => @@config[:database]["host"]
+  })
+[Lib::Validation, Lib::Crossvalidation].each do |resource|
+    resource.auto_migrate! unless resource.storage_exists?
 end
