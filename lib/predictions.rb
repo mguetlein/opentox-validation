@@ -25,14 +25,12 @@ module Lib
     def initialize( predicted_values, 
                     actual_values, 
                     confidence_values, 
-                    prediction_feature, 
                     is_classification, 
                     prediction_feature_values=nil )
       
       @predicted_values = predicted_values
       @actual_values = actual_values
       @confidence_values = confidence_values
-      @prediction_feature = prediction_feature
       @is_classification = is_classification
       @prediction_feature_values = prediction_feature_values
       @num_classes = 1
@@ -61,7 +59,7 @@ module Lib
         end
       end
       
-      init_stats
+      init_stats()
       (0..@predicted_values.size-1).each do |i|
         update_stats( @predicted_values[i], @actual_values[i], @confidence_values[i] )
       end
@@ -175,6 +173,9 @@ module Lib
       return @num_unpredicted
     end
     
+    # internal structure of confusion matrix:
+    # hash with keys: hash{ :confusion_matrix_actual => <class_value>, :confusion_matrix_predicted => <class_value> }
+    #     and values: <int-value>
     def confusion_matrix
       raise "no classification" unless @is_classification
       res = {}
@@ -186,8 +187,6 @@ module Lib
       end
       return res
     end
-    
-
     
     def area_under_roc(class_index=nil)
       return prediction_feature_value_map( lambda{ |i| area_under_roc(i) } ) if class_index==nil
@@ -361,7 +360,7 @@ module Lib
     end
     
     
-    ########################################################################################
+    # regression #######################################################################################
     
     def root_mean_squared_error
       Math.sqrt(@sum_squared_error / (@num_with_actual_value - @num_unpredicted).to_f)
@@ -375,7 +374,7 @@ module Lib
       return @variance_predicted / @variance_actual
     end
     
-    ########################################################################################
+    # data for roc-plots ###################################################################################
     
     def roc_confidence_values(class_value)
       class_index = @prediction_feature_values.index(class_value)

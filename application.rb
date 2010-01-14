@@ -11,23 +11,25 @@ end
 require "example.rb"
 
 get '/examples/?' do
+  LOGGER.info "list examples"
   content_type "text/plain"
   Example.transform_example
 end
 
 get '/prepare_examples/?' do
+  LOGGER.info "prepare examples"
   content_type "text/plain"
   Example.prepare_example_resources
 end
 
 get '/test_examples/?' do
+  LOGGER.info "test examples"
   content_type "text/plain"
   Example.test_examples
 end
 
 # order is important, first add example methods and reports, than validation 
 # (otherwise sinatra will try to locate a validation with name examples or report)
-
 
 require "report/report_application.rb"
 require "validation/validation_application.rb"

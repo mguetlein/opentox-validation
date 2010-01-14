@@ -9,20 +9,22 @@ require 'validation/validation_service.rb'
 # hack: store self in $sinatra to make url_for method accessible in validation_service
 # (before is executed in every rest call, problem is that the request object is not set, until the first rest-call )
 before {$sinatra = self unless $sinatra}
+
 unless(defined? LOGGER)
   LOGGER = Logger.new(STDOUT)
   LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 end
 
+
 class Sinatra::Base
-  # logging halts (!= 202)
+  # overwriting halt to log halts (!= 202)
   def halt(status,msg)
     LOGGER.error "halt "+status.to_s+" "+msg.to_s if (status != 202)
     throw :halt, [status, msg] 
   end
 end
 
-## REST API
+
 get '/crossvalidation/?' do
   LOGGER.info "list all crossvalidations"
   

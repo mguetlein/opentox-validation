@@ -134,8 +134,8 @@ class ValidationTest < Test::Unit::TestCase
 #      #model_uri = "http://ot.model.de/12"
 #      #data_uri_test = "http://ot.dataset.de/67"
 #      
-#      model_uri = "http://ot.model.de/45" #trained with training split from hamster
-#      data_uri_test = "http://ot.dataset.de/367" #hamster test split
+#      model_uri = "http://ot.model.de/1" 
+#      data_uri_test = "http://ot.dataset.de/3"
 #      
 #      post '', {:test_dataset_uri => data_uri_test, :model_uri => model_uri, :prediction_feature => FEATURE_URI}
 #      verify_validation
@@ -185,13 +185,13 @@ class ValidationTest < Test::Unit::TestCase
     #get '/prepare_examples'
     get '/test_examples'
 
-    #get '/350',nil,'HTTP_ACCEPT' => "application/rdf+xml"
+    #get '/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
     #get '/350',nil,'HTTP_ACCEPT' => "text/x-yaml"
     
     #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
     #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "text/x-yaml"
     
-    #puts last_response.body
+    puts last_response.body
   end
   
   private

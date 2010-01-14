@@ -78,7 +78,7 @@ module Lib
           index += 1
         end
 
-        super(predicted_values, actual_values, confidence_values, prediction_feature, is_classification, class_values)
+        super(predicted_values, actual_values, confidence_values, is_classification, class_values)
         raise "illegal num compounds "+num_info if  @compounds.size != @predicted_values.size
     end
     

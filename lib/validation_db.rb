@@ -3,7 +3,6 @@
   require lib
 end
 
-
 module Lib
 
   VAL_PROPS = [ :id, :uri, :model_uri, :training_dataset_uri, :prediction_feature,
@@ -43,7 +42,6 @@ module Lib
     property :finished, Boolean, :default => false
     property :created_at, DateTime
     property :real_runtime, Float
-    #property :cpu_runtime, Float
     
     property :num_instances, Integer
     property :num_without_class, Integer

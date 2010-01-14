@@ -10,6 +10,13 @@ module OpenTox
    module Model
     class PredictionModel
       
+      attr_reader :uri
+      
+      def self.build( algorithm_uri, algorithm_parms )
+        uri = OpenTox::RestClientWrapper.post algorithm_uri,algorithm_parms
+        PredictionModel.new(uri)
+      end
+      
       def self.find( uri )
         begin
           RestClient.get uri,:accept => "application/rdf+xml"

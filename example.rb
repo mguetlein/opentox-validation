@@ -12,6 +12,7 @@ class Example
   
   @@summary=""
   
+  # replaces placeholdes ( in <> brackets ) in EXAMPLE file with uris and ids
   def self.transform_example
   
     file = File.new("EXAMPLES", "r")
@@ -41,61 +42,45 @@ class Example
     res
   end
   
-  def self.delete_all(uri_list_service)
-    uri_list = OpenTox::RestClientWrapper.get(uri_list_service)
-    uri_list.split("\n").each do |uri|
-      OpenTox::RestClientWrapper.delete(uri)
-    end
-  end
-  
-  def self.log(log_string)
-    LOGGER.debug log_string
-    @@summary += log_string+"\n"
-  end
-  
+  # creates the resources that are requested by the examples
   def self.prepare_example_resources
     
     @@summary = ""
     delete_all(@@config[:services]["opentox-dataset"])
     
+    log "upload dataset"
     data = File.read(@@file.path)
     data_uri = OpenTox::RestClientWrapper.post @@config[:services]["opentox-dataset"], data, :content_type => "application/rdf+xml"
-    log "uploaded dataset "+data_uri
-    raise "failed to prepare demo" unless data_uri==@@data
-    
+
+    log "train-test-validation"
     Lib::Validation.auto_migrate!
     delete_all(@@config[:services]["opentox-model"])
-    vali_uri = OpenTox::RestClientWrapper.post File.join(@@config[:services]["opentox-validation"],'/training_test_split'), { :dataset_uri => data_uri,
-                                                         :algorithm_uri => @@alg,
-                                                         :prediction_feature => @@feature,
-                                                         :algorithm_params => @@alg_params }
-    log "created validation via training test split "+vali_uri
-    raise "failed to prepare demo" unless vali_uri==File.join(@@config[:services]["opentox-validation"],'/1')
+    split_params = Validation::Util.train_test_dataset_split(data_uri, 0.9, 1)
+    v = Validation::Validation.new :training_dataset_uri => split_params[:training_dataset_uri], 
+                   :test_dataset_uri => split_params[:test_dataset_uri],
+                   :prediction_feature => @@feature
+    v.validate_algorithm( @@alg, @@alg_params) 
     
+    log "crossvalidation"
     Lib::Crossvalidation.auto_migrate!
-    cv_uri = OpenTox::RestClientWrapper.post File.join(@@config[:services]["opentox-validation"],'/crossvalidation'), { :dataset_uri => data_uri,
-                                                         :algorithm_uri => @@alg,
-                                                         :prediction_feature => @@feature,
-                                                         :algorithm_params => @@alg_params,
-                                                         :num_folds => 5, :stratified => false }
-    log "created crossvalidation "+cv_uri
-    raise "failed to prepare demo" unless cv_uri==File.join(@@config[:services]["opentox-validation"],'/crossvalidation/1')
+    cv = Validation::Crossvalidation.new({ :dataset_uri => data_uri, :algorithm_uri => @@alg, :num_folds => 5, :stratified => false })
+    cv.create_cv_datasets( @@feature )
+    cv.perform_cv( @@alg_params )
     
-    delete_all(File.join(@@config[:services]["opentox-validation"],"/report/validation"))
-    val_report_uri = OpenTox::RestClientWrapper.post File.join(@@config[:services]["opentox-validation"],'/report/validation'), { :validation_uris => vali_uri }
-    log "created validation report: "+val_report_uri
-    raise "failed to prepare demo" unless val_report_uri==File.join(@@config[:services]["opentox-validation"],'/report/validation/1')
+    log "create validation report"
+    rep = Reports::ReportService.new(File.join(@@config[:services]["opentox-validation"],"report"))
+    rep.delete_all_reports("validation")
+    rep.create_report("validation",v.uri)
     
-    delete_all(File.join(@@config[:services]["opentox-validation"],"/report/crossvalidation"))
-    cv_report_uri = OpenTox::RestClientWrapper.post File.join(@@config[:services]["opentox-validation"],'/report/crossvalidation'), { :validation_uris => cv_uri }
-    log "created crossvalidation report: "+cv_report_uri
-    raise "failed to prepare demo" unless cv_report_uri==File.join(@@config[:services]["opentox-validation"],'/report/crossvalidation/1')
+    log "create crossvalidation report"
+    rep.delete_all_reports("crossvalidation")
+    rep.create_report("crossvalidation",cv.uri)
+    
     log "done"
-
     @@summary
   end
   
-  
+  # performs all curl calls listed in examples after ">>>", next line is added if line ends with "\"
   def self.test_examples
     lines = transform_example.split("\n")
     curl_call = false
@@ -144,6 +129,21 @@ class Example
     end
     log num.to_s+"/"+num.to_s+" curls succeeded"
     @@summary  
+  end
+  
+  private
+  # deletes resources listed by service
+  def self.delete_all(uri_list_service)
+    uri_list = OpenTox::RestClientWrapper.get(uri_list_service)
+    uri_list.split("\n").each do |uri|
+      OpenTox::RestClientWrapper.delete(uri)
+    end
+  end
+  
+  # logs string and and adds to summary
+  def self.log(log_string)
+    LOGGER.info log_string
+    @@summary += log_string+"\n"
   end
   
 end

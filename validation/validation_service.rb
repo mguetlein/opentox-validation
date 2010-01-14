@@ -41,6 +41,7 @@ module Validation
       raise "do not set id manually" if params[:id]
       raise "do not set uri manually" if params[:uri]
       super params
+      # hack to overcome datamapper bug: save to set id
       save unless attribute_dirty?("id")
       raise "internal error, id not set "+to_yaml unless @id
       update :uri => $sinatra.url_for("/"+@id.to_s, :full)
@@ -77,14 +78,13 @@ module Validation
       end
       LOGGER.debug "building model '"+algorithm_uri.to_s+"' "+params.inspect
       
-      model_uri = OpenTox::RestClientWrapper.post algorithm_uri,params
-      update :model_uri => model_uri
-      
+      model = OpenTox::Model::PredictionModel.build(algorithm_uri, params)
+      update :model_uri => model.uri
       validate_model
     end
     
     # validates a model
-    # PENDING: a new dataset is created to store the predictions, this should be optional: STORE predictions yes/no
+    # PENDING: a new dataset is created to store the predictions, this should be optional: delete predictions afterwards yes/no
     def validate_model
       
       LOGGER.debug "validating model '"+@model_uri+"'"
@@ -125,6 +125,7 @@ module Validation
       raise "do not set id manually" if params[:id]
       raise "do not set uri manually" if params[:uri]
       super params
+      # hack to overcome datamapper bug: save to set id
       save unless attribute_dirty?("id")
       raise "internal error, id not set" unless @id
       update :uri => $sinatra.url_for("/crossvalidation/"+@id.to_s, :full)
@@ -277,7 +278,8 @@ module Validation
   
   module Util
     
-    
+    # creates a new dataset from orig_dataset.data
+    # copies only features and compounds included in compounds array 
     def self.create_new_dataset( orig_dataset_data, compounds, title, source )
       
       dataset = OpenTox::Dataset.new
@@ -306,7 +308,6 @@ module Validation
       uri = dataset.save
       raise "no dataset uri" if uri==nil || uri.to_s.length<1
       return uri
-      
     end
     
   

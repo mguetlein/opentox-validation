@@ -102,6 +102,13 @@ module Reports
       @persistance.delete_report(type, id)
     end
     
+    def delete_all_reports( type )
+      
+      LOGGER.info "deleteing all reports of ype '"+type.to_s+"'"
+      check_report_type(type)
+      @persistance.list_reports(type).each{ |id| @persistance.delete_report(type, id) }
+    end
+    
     def parse_type( report_uri )
       
       raise "invalid uri" unless report_uri.to_s =~/^#{@home_uri}.*/
