@@ -34,30 +34,16 @@ module Reports
   #
   class Validation
     
-    def self.reset_validation_access( validation_access=nil )
-    
-      if validation_access
-        @@validation_access=validation_access
-      else
-        case ENV['REPORT_VALIDATION_ACCESS']
-        when "mock_layer"
-          @@validation_access = Reports::ValidationMockLayer.new
-        when "webservice"
-          @@validation_access = Reports::ValidationWebservice.new
-        else #default
-          @@validation_access = Reports::ValidationDB.new
-        end
-      end
-    end
+    @@validation_access = Reports::ValidationDB.new
     
     def self.resolve_cv_uris(validation_uris)
       @@validation_access.resolve_cv_uris(validation_uris)
     end
     
+    # create member variables for all validation properties
     @@validation_attributes = Lib::ALL_PROPS + 
       VAL_ATTR_VARIANCE.collect{ |a| (a.to_s+"_variance").to_sym } +
       VAL_ATTR_RANKING.collect{ |a| (a.to_s+"_ranking").to_sym }
-    
     @@validation_attributes.each{ |a| attr_accessor a } 
   
     attr_reader :predictions, :merge_count
@@ -67,7 +53,7 @@ module Reports
       @merge_count = 1
     end
   
-    # returns predictions, these are dynamically generated and stored in this object
+    # returns/creates predictions, cache to save rest-calls/computation time
     #
     # call-seq:
     #   get_predictions => Reports::Predictions
@@ -88,6 +74,8 @@ module Reports
       @prediction_feature_values = @@validation_access.get_prediction_feature_values(self) 
     end
     
+    # is classification validation? cache to save resr-calls
+    #
     def classification?
       return @is_classification if @is_classification!=nil
       @is_classification = @@validation_access.classification?(self) 
@@ -115,9 +103,10 @@ module Reports
     # call-seq:
     #   merge( validation, equal_attributes) => Reports::Validation
     # 
-    def merge_validation( validation, equal_attributes)
+    def merge_validation( validation, equal_attributes )
   
       new_validation = Reports::Validation.new
+      # validation cannot be merged before 
       raise "not working" if validation.merge_count > 1
 
       @@validation_attributes.each do |a|
@@ -389,8 +378,5 @@ module Reports
     end
     
   end
-  
-    # initialize validation_access
-  Validation.reset_validation_access
   
 end 

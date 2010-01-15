@@ -102,6 +102,7 @@ module Reports
       @persistance.delete_report(type, id)
     end
     
+    # no api-access for this method
     def delete_all_reports( type )
       
       LOGGER.info "deleteing all reports of ype '"+type.to_s+"'"

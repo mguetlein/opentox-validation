@@ -49,7 +49,7 @@ module Reports::ReportFactory
     
     report = Reports::ReportContent.new("Validation report")
     
-    if (val.percent_correct != nil) #classification
+    if (val.classification?)
       report.add_section_result(validation_set, VAL_ATTR_TRAIN_TEST + VAL_ATTR_CLASS, "Results", "Results")
       val.get_prediction_feature_values.each do |class_value|
         report.add_section_roc_plot(validation_set, class_value, nil, "roc-plot-"+class_value+".svg")
@@ -199,7 +199,7 @@ class Reports::ReportContent
     vals = validation_set.to_array(validation_attributes)
     #PENDING rexml strings in tables not working when >66  
     vals = vals.collect{|a| a.collect{|v| v.to_s[0,66] }}
-    #transpose values if there more than 4 columns, and there are more than columns than rows
+    #PENDING transpose values if there more than 4 columns, and there are more than columns than rows
     transpose = vals[0].size>4 && vals[0].size>vals.size
     @xml_report.add_table(section_table, table_title, vals, !transpose, transpose)   
   end

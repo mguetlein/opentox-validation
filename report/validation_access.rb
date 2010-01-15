@@ -4,28 +4,43 @@ require "lib/wrapper.rb"
 
 # = Reports::ValidationAccess
 # 
-# service that connects to the validation-service
+# service that connects (mainly) to the validation-service
 #  
 class Reports::ValidationAccess
 
-  # initialize validation object with 
+  # initialize Reports::Validation object with data from Lib:Validation object
+  #  
   def init_validation(validation, uri)
     raise "not implemented"
   end
   
+  # sets cv-attributes in Reports::Validation object  
+  #
   def init_cv(validation)
     raise "not implemented"
   end
   
+  # yields predictions (Lib::OTPredictions) if available 
+  #
   def get_predictions(validation)
     raise "not implemented"
   end
   
+  # replaces crossvalidations uris with corresponding validation uris, in-/output: array
+  #
   def resolve_cv_uris(validation_uris)
     raise "not implemented"
   end
   
-  def get_prediction_feature_values(prediction_feature)
+  # get domain/class values of prediction feature
+  #
+  def get_prediction_feature_values(validation)
+    raise "not implemented"
+  end
+  
+  # is validation classification?
+  #
+  def classification?(validation)
     raise "not implemented"
   end
   
@@ -58,10 +73,6 @@ class Reports::ValidationDB < Reports::ValidationAccess
       validation.send("#{p.to_s}=".to_sym, v[p])
     end
     
-    #model = OpenTox::Model::LazarClassificationModel.new(v[:model_uri])
-    #raise "cannot access model '"+v[:model_uri].to_s+"'" unless model
-    #validation.prediction_feature = model.get_prediction_feature
-    
     {:classification_statistics => Lib::VAL_CLASS_PROPS, 
      :regression_statistics => Lib::VAL_REGR_PROPS}.each do |subset_name,subset_props|
       subset = v[subset_name]
@@ -80,7 +91,8 @@ class Reports::ValidationDB < Reports::ValidationAccess
   end
 
   def get_predictions(validation)
-    Lib::OTPredictions.new( validation.classification?, validation.prediction_feature, validation.test_dataset_uri, validation.prediction_dataset_uri)
+    Lib::OTPredictions.new( validation.classification?, validation.prediction_feature,
+      validation.test_dataset_uri, validation.prediction_dataset_uri)
   end
   
   def get_prediction_feature_values( validation )
@@ -95,7 +107,9 @@ class Reports::ValidationDB < Reports::ValidationAccess
   
 end
 
-
+#
+# OUTDATED, please update before use
+#
 class Reports::ValidationWebservice < Reports::ValidationAccess
   
   def resolve_cv_uris(validation_uris)
@@ -162,6 +176,8 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
 end
 
 # = Reports::OTMockLayer
+#
+# OUTDATED, please update before use
 #
 # does not connect to other services, provides randomly generated data
 #
