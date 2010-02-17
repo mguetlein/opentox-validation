@@ -326,8 +326,7 @@ module Validation
       $sinatra.halt 400, "Split ratio not >0 and <1" unless split_ratio>0 && split_ratio<1
       
       compounds = orig_dataset.compounds
-      
-      $sinatra.halt 400, "Dataset size < 2" if compounds.size<2
+      $sinatra.halt 400, "Cannot split datset, num compounds in dataset < 2 ("+compounds.size.to_s+")" if compounds.size<2
       split = (compounds.size*split_ratio).to_i
       split = [split,1].max
       split = [split,compounds.size-2].min

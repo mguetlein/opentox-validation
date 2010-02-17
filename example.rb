@@ -50,6 +50,7 @@ class Example
     log OpenTox::RestClientWrapper.delete @@config[:services]["opentox-dataset"]
     
     log "upload dataset"
+    halt 400,"File not found: "+@@file.path.to_s unless File.exist?(@@file.path)
     data = File.read(@@file.path)
     task_uri = OpenTox::RestClientWrapper.post @@config[:services]["opentox-dataset"], data, :content_type => "application/rdf+xml"
     data_uri = OpenTox::Task.find(task_uri).wait_for_resource
@@ -63,7 +64,7 @@ class Example
     v = Validation::Validation.new :training_dataset_uri => split_params[:training_dataset_uri], 
                    :test_dataset_uri => split_params[:test_dataset_uri],
                    :prediction_feature => @@feature
-    v.validate_algorithm( @@alg, @@alg_params) 
+    v.validate_algorithm( @@alg, @@alg_params ) 
     
     log "crossvalidation"
     Lib::Crossvalidation.auto_migrate!
@@ -111,34 +112,37 @@ class Example
       end
     end
     
-    @@summary = ""
-    num = 0
-    suc = 0
-    curl_calls.each do |cmd|
-      num += 1
-      log "testing: "+cmd
-      result = ""
-      IO.popen(cmd.to_s+" 2> /dev/null") do |f| 
-        while line = f.gets
-          result += line
+    Spork.spork(:logger => LOGGER) do
+      @@summary = ""
+      num = 0
+      suc = 0
+      curl_calls.each do |cmd|
+        num += 1
+        log "testing: "+cmd
+        result = ""
+        IO.popen(cmd.to_s+" 2> /dev/null") do |f| 
+          while line = f.gets
+            result += line
+          end
+        end
+        result.gsub!(/\n/, " \\n ")
+        if ($?==0)
+          if (result.to_s =~ /task/)
+            log "wait for task: "+result.to_s
+            task = OpenTox::Task.find(result)
+            task.wait_for_completion
+            result = task.resource unless task.failed?
+          end
+          log "ok ( " +result.to_s[0,50]+" )"
+          suc += 1
+        else
+          log "failed ( " +result.to_s[0,50]+" )"
         end
       end
-      result.gsub!(/\n/, " \\n ")
-      if ($?==0)
-        if (result.to_s =~ /task/)
-          log "wait for task: "+result.to_s
-          task = OpenTox::Task.find(result)
-          task.wait_for_completion
-          result = task.resource unless task.failed?
-        end
-        log "ok ( " +result.to_s[0,50]+" )"
-        suc += 1
-      else
-        log "failed ( " +result.to_s[0,50]+" )"
-      end
+      log num.to_s+"/"+num.to_s+" curls succeeded"
+      @@summary
     end
-    log num.to_s+"/"+num.to_s+" curls succeeded"
-    @@summary  
+    "testing in background, check log for results"
   end
   
   private

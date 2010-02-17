@@ -1,3 +1,4 @@
+
 module OpenTox
   
   class Task
@@ -17,7 +18,7 @@ module OpenTox
         end
         task.completed(result)
       end  
-      LOGGER.debug "validate model task PID: " + pid.to_s
+      LOGGER.debug "task PID: " + pid.to_s
       task.pid = pid
       task.uri
       
