@@ -134,11 +134,13 @@ class ValidationTest < Test::Unit::TestCase
 #      #model_uri = "http://ot.model.de/12"
 #      #data_uri_test = "http://ot.dataset.de/67"
 #      
-#      model_uri = "http://ot.model.de/1" 
-#      data_uri_test = "http://ot.dataset.de/3"
+#      model_uri = "http://ot.model.de/9" 
+#      data_uri_test = "http://ot.dataset.de/33"
 #      
 #      post '', {:test_dataset_uri => data_uri_test, :model_uri => model_uri, :prediction_feature => FEATURE_URI}
-#      verify_validation
+#      
+#      puts last_response.body
+#      #verify_validation
 #    ensure
 #      #delete_resources
 #    end
@@ -151,13 +153,16 @@ class ValidationTest < Test::Unit::TestCase
 #      #puts last_response.body
 #      data_uri_train = upload_data(WS_DATA, FILE_TRAIN)
 #      data_uri_test = upload_data(WS_DATA, FILE_TEST)
+#      
 #      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
 #      #data_uri_test = WS_DATA+"/"+DATA_TEST
 #      post '', { :training_dataset_uri => data_uri_train, :test_dataset_uri => data_uri_test,
-#        :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI, :feature_generation_uri => WS_FEATURE_ALG}
-#      verify_validation
+#        :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI, :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG }
+#        
+#      puts last_response.body
+#      #verify_validation
 #    ensure
-#      delete_resources
+#      #delete_resources
 #    end
 #  end
   
@@ -170,9 +175,10 @@ class ValidationTest < Test::Unit::TestCase
 #      #data_uri=WS_DATA+"/"+DATA
 #      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
 #        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.8, :random_seed=>5}
-#      verify_validation
+#      puts last_response.body
+#      #verify_validation
 #    ensure
-#      delete_resources
+#      #delete_resources
 #    end
 #  end
   

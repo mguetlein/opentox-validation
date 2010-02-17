@@ -25,21 +25,20 @@ module Lib
         actual_values = []
         @compounds = []
         test_dataset.data.each do |compound,featuresValues|
+          
           @compounds.push compound
-  
-          featuresValues.each do | featureValue |
-            featureValue.each do |feature, value|
-              if feature == prediction_feature
-                value = nil if value.to_s.size==0
-                if is_classification
-                  raise "illegal class_value "+value.to_s unless value==nil or class_values.index(value)!=nil
-                  actual_values.push class_values.index(value) 
-                else
-                  value = value.to_f unless value==nil or value.is_a?(Numeric)
-                  actual_values.push value
-                end
-              end
-            end
+          value = nil
+          value = featuresValues[prediction_feature] if featuresValues.is_a?(Hash)
+          value = value[0] if value.is_a?(Array) and value.length == 1
+          value = nil if value.to_s.size==0  # PENDING: hack to avoid illegal boolean values
+          
+          if is_classification
+            value = value.to_s unless value==nil
+            raise "illegal class_value of actual value "+value.to_s+" class: "+value.class.to_s unless value==nil or class_values.index(value)!=nil
+            actual_values.push class_values.index(value) 
+          else
+            value = value.to_f unless value==nil or value.is_a?(Numeric)
+            actual_values.push value
           end
         end
         
@@ -51,29 +50,29 @@ module Lib
           index = @compounds.index(compound)
           raise "compound "+compound.to_s+" not found in\n"+@compounds.inspect if index==nil
     
-          featuresValues.each do | featureValue |
-            featureValue.each do |feature, value|
-              if feature == prediction_feature
-                value = nil if value.to_s.size==0
-                if is_classification
-                  
-                  ### PENDING ####
-                  confidence = nil
-                  if value.is_a?(Hash)
-                    confidence = value["confidence"].to_f.abs if value.has_key?("confidence")
-                    value = value["classification"] if value.has_key?("classification")
-                  end
-                  ################
-                  
-                  raise "illegal class_value "+value.to_s unless value==nil or class_values.index(value)!=nil
-                  predicted_values[index] = class_values.index(value) 
-                  confidence_values[index] = confidence if confidence!=nil
-                else
-                  value = value.to_f unless value==nil or value.is_a?(Numeric)
-                  predicted_values[index] = value
-                end
-              end
+          value = nil
+          value = featuresValues[prediction_feature] if featuresValues.is_a?(Hash)
+          value = value[0] if value.is_a?(Array) and value.length == 1
+          value = nil if value.to_s.size==0
+
+          if is_classification
+            
+            ### PENDING ####
+            confidence = nil
+            if value.is_a?(Hash)
+              confidence = value["confidence"].to_f.abs if value.has_key?("confidence")
+              value = value["classification"].to_s if value.has_key?("classification")
+            else
+              value = value.to_s unless value==nil # PENDING: hack to avoid illegal boolean values
             end
+            ################
+            
+            raise "illegal class_value of predicted value "+value.to_s+" class: "+value.class.to_s unless value==nil or class_values.index(value)!=nil
+            predicted_values[index] = class_values.index(value) 
+            confidence_values[index] = confidence if confidence!=nil
+          else
+            value = value.to_f unless value==nil or value.is_a?(Numeric)
+            predicted_values[index] = value
           end
           index += 1
         end

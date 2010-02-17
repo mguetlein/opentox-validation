@@ -46,15 +46,19 @@ class Example
   def self.prepare_example_resources
     
     @@summary = ""
-    delete_all(@@config[:services]["opentox-dataset"])
+    #delete_all(@@config[:services]["opentox-dataset"])
+    log OpenTox::RestClientWrapper.delete @@config[:services]["opentox-dataset"]
     
     log "upload dataset"
     data = File.read(@@file.path)
-    data_uri = OpenTox::RestClientWrapper.post @@config[:services]["opentox-dataset"], data, :content_type => "application/rdf+xml"
-
+    task_uri = OpenTox::RestClientWrapper.post @@config[:services]["opentox-dataset"], data, :content_type => "application/rdf+xml"
+    data_uri = OpenTox::Task.find(task_uri).wait_for_resource
+    
     log "train-test-validation"
     Lib::Validation.auto_migrate!
-    delete_all(@@config[:services]["opentox-model"])
+    #delete_all(@@config[:services]["opentox-model"])
+    OpenTox::RestClientWrapper.delete @@config[:services]["opentox-model"]
+    
     split_params = Validation::Util.train_test_dataset_split(data_uri, 0.9, 1)
     v = Validation::Validation.new :training_dataset_uri => split_params[:training_dataset_uri], 
                    :test_dataset_uri => split_params[:test_dataset_uri],
@@ -121,6 +125,12 @@ class Example
       end
       result.gsub!(/\n/, " \\n ")
       if ($?==0)
+        if (result.to_s =~ /task/)
+          log "wait for task: "+result.to_s
+          task = OpenTox::Task.find(result)
+          task.wait_for_completion
+          result = task.resource unless task.failed?
+        end
         log "ok ( " +result.to_s[0,50]+" )"
         suc += 1
       else

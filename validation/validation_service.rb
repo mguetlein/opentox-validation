@@ -79,7 +79,9 @@ module Validation
       LOGGER.debug "building model '"+algorithm_uri.to_s+"' "+params.inspect
       
       model = OpenTox::Model::PredictionModel.build(algorithm_uri, params)
+      raise "model building failed" unless model
       update :model_uri => model.uri
+          
       validate_model
     end
     
@@ -106,6 +108,7 @@ module Validation
       else
         update :regression_statistics => prediction.compute_stats
       end
+      
       update :prediction_dataset_uri => prediction_dataset_uri, 
              :finished => true, 
              :real_runtime => benchmark.real,
@@ -114,7 +117,7 @@ module Validation
              :percent_without_class => prediction.percent_without_class,
              :num_unpredicted => prediction.num_unpredicted,
              :percent_unpredicted => prediction.percent_unpredicted
-    end  
+    end
   end
   
   class Crossvalidation < Lib::Crossvalidation
@@ -289,18 +292,17 @@ module Validation
       compounds.each do |c|
         
         compound = dataset.find_or_create_compound(c.to_s)
+        
         featureValuesArray = orig_dataset_data[c]
         
-        featureValuesArray.each do |featureValues|
-          featureValues.each do |f, v|
-          
-            raise "null value not handled yet" if v==nil
-            if v.is_a?(Hash)
-              tuple = dataset.create_tuple(f,v)
-              dataset.add_tuple(compound,tuple)
-            else
-              dataset.add(compound,f,v)
-            end
+        featureValuesArray.each do |f, v|
+        
+          raise "null value not handled yet" if v==nil
+          if v.is_a?(Hash)
+            tuple = dataset.create_tuple(f,v)
+            dataset.add_tuple(compound,tuple)
+          else
+            dataset.add(compound,f,v)
           end
         end
       end

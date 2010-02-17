@@ -27,7 +27,7 @@ module Lib
                     confidence_values, 
                     is_classification, 
                     prediction_feature_values=nil )
-      
+                    
       @predicted_values = predicted_values
       @actual_values = actual_values
       @confidence_values = confidence_values
@@ -62,7 +62,7 @@ module Lib
       init_stats()
       (0..@predicted_values.size-1).each do |i|
         update_stats( @predicted_values[i], @actual_values[i], @confidence_values[i] )
-      end
+      end 
     end
     
     def init_stats
@@ -134,15 +134,18 @@ module Lib
     
     def percent_correct
       raise "no classification" unless @is_classification
+      return 0 if @num_with_actual_value==0
       return 100 * @num_correct / @num_with_actual_value.to_f
     end
     
     def percent_incorrect
       raise "no classification" unless @is_classification
+      return 0 if @num_with_actual_value==0
       return 100 * @num_incorrect / @num_with_actual_value.to_f
     end
     
     def percent_unpredicted
+      return 0 if @num_with_actual_value==0
       return 100 * @num_unpredicted / @num_with_actual_value.to_f
     end
 
@@ -151,6 +154,7 @@ module Lib
     end
 
     def percent_without_class
+      return 0 if @predicted_values==0
       return 100 * @num_no_actual_value / @predicted_values.size.to_f
     end
     
@@ -363,14 +367,17 @@ module Lib
     # regression #######################################################################################
     
     def root_mean_squared_error
+      return 0 if (@num_with_actual_value - @num_unpredicted)==0
       Math.sqrt(@sum_squared_error / (@num_with_actual_value - @num_unpredicted).to_f)
     end
     
     def mean_absolute_error
+      return 0 if (@num_with_actual_value - @num_unpredicted)==0
       Math.sqrt(@sum_abs_error / (@num_with_actual_value - @num_unpredicted).to_f)
     end
     
     def r_square
+      return 0 if @variance_actual==0
       return @variance_predicted / @variance_actual
     end
     

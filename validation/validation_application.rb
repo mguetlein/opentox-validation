@@ -16,6 +16,7 @@ unless(defined? LOGGER)
 end
 
 
+
 class Sinatra::Base
   # overwriting halt to log halts (!= 202)
   def halt(status,msg)
@@ -66,18 +67,20 @@ get '/crossvalidation/:id/validations' do
 end
 
 post '/crossvalidation/?' do
-  LOGGER.info "creating crossvalidation "+params.inspect
-  halt 400, "dataset_uri missing" unless params[:dataset_uri]
-  halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
-  halt 400, "prediction_feature missing" unless params[:prediction_feature]
-  cv_params = { :dataset_uri => params[:dataset_uri],  
-                :algorithm_uri => params[:algorithm_uri] }
-  [ :num_folds, :random_seed, :stratified ].each{ |sym| cv_params[sym] = params[sym] if params[sym] }
-  cv = Validation::Crossvalidation.new cv_params
-  cv.create_cv_datasets( params[:prediction_feature] )
-  cv.perform_cv( params[:algorithm_params])
-  content_type "text/uri-list"
-  cv.uri
+  OpenTox::Task.as_task do
+    LOGGER.info "creating crossvalidation "+params.inspect
+    halt 400, "dataset_uri missing" unless params[:dataset_uri]
+    halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
+    halt 400, "prediction_feature missing" unless params[:prediction_feature]
+    cv_params = { :dataset_uri => params[:dataset_uri],  
+                  :algorithm_uri => params[:algorithm_uri] }
+    [ :num_folds, :random_seed, :stratified ].each{ |sym| cv_params[sym] = params[sym] if params[sym] }
+    cv = Validation::Crossvalidation.new cv_params
+    cv.create_cv_datasets( params[:prediction_feature] )
+    cv.perform_cv( params[:algorithm_params])
+    content_type "text/uri-list"
+    cv.uri
+  end
 end
 
 get '/?' do
@@ -106,40 +109,45 @@ get '/:id' do
 end
 
 post '/?' do
-  LOGGER.info "creating validation "+params.inspect
-  if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri] and params[:prediction_feature]
-    v = Validation::Validation.new :model_uri => params[:model_uri], 
-                     :test_dataset_uri => params[:test_dataset_uri],
-                     :prediction_feature => params[:prediction_feature]
-    v.validate_model
-  elsif params[:algorithm_uri] and params[:training_dataset_uri] and params[:test_dataset_uri] and params[:prediction_feature] and !params[:model_uri]
-   v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
-                      :test_dataset_uri => params[:test_dataset_uri],
-                      :prediction_feature => params[:prediction_feature]
-   v.validate_algorithm( params[:algorithm_uri], params[:algorithm_params]) 
-  else
-    halt 400, "illegal parameter combination for validation, use either\n"+
-      "* model_uri, test_dataset_uri, prediction_feature\n"+ 
-      "* algorithm_uri, training_dataset_uri, test_dataset_uri, prediction_feature\n"
-      "params given: "+params.inspect
+  OpenTox::Task.as_task do
+    LOGGER.info "creating validation "+params.inspect
+    if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri] and params[:prediction_feature]
+      v = Validation::Validation.new :model_uri => params[:model_uri], 
+                       :test_dataset_uri => params[:test_dataset_uri],
+                       :prediction_feature => params[:prediction_feature]
+      v.validate_model
+    elsif params[:algorithm_uri] and params[:training_dataset_uri] and params[:test_dataset_uri] and params[:prediction_feature] and !params[:model_uri]
+     v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
+                        :test_dataset_uri => params[:test_dataset_uri],
+                        :prediction_feature => params[:prediction_feature]
+     v.validate_algorithm( params[:algorithm_uri], params[:algorithm_params]) 
+    else
+      halt 400, "illegal parameter combination for validation, use either\n"+
+        "* model_uri, test_dataset_uri, prediction_feature\n"+ 
+        "* algorithm_uri, training_dataset_uri, test_dataset_uri, prediction_feature\n"
+        "params given: "+params.inspect
+    end
+    content_type "text/uri-list"
+    v.uri
   end
-  
-  v.uri
 end
 
 post '/training_test_split' do
-  LOGGER.info "creating training test split "+params.inspect
-  halt 400, "dataset_uri missing" unless params[:dataset_uri]
-  halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
-  halt 400, "prediction_feature missing" unless params[:prediction_feature]
-  
-  params.merge!(Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:split_ratio], params[:random_seed]))
-  v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
-                   :test_dataset_uri => params[:test_dataset_uri],
-                   :prediction_feature => params[:prediction_feature]
-  v.validate_algorithm( params[:algorithm_uri], params[:algorithm_params]) 
-  content_type "text/uri-list"
-  v.uri
+  OpenTox::Task.as_task do
+    LOGGER.info "creating training test split "+params.inspect
+    halt 400, "dataset_uri missing" unless params[:dataset_uri]
+    halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
+    halt 400, "prediction_feature missing" unless params[:prediction_feature]
+    
+    params.merge!(Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:split_ratio], params[:random_seed]))
+    v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
+                     :test_dataset_uri => params[:test_dataset_uri],
+                     :prediction_feature => params[:prediction_feature]
+    content_type "text/uri-list"
+    v.validate_algorithm( params[:algorithm_uri], params[:algorithm_params])
+    content_type "text/uri-list"
+    v.uri
+  end
 end
 
 get '/:id/:attribute' do

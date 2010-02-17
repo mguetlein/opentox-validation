@@ -9,8 +9,10 @@ module Lib
     def upload_data(ws, file)
          
       data = File.read(file.path)
-      data_uri = RestClient.post ws, data, :content_type => "application/rdf+xml"
-      puts "created dataset "+data_uri.to_s
+      task_uri = RestClient.post ws, data, :content_type => "application/rdf+xml"
+      print "uploading dataset "+task_uri.to_s+" - "
+      data_uri = OpenTox::Task.find(task_uri).wait_for_resource
+      puts "done: "+data_uri.to_s
       add_resource(data_uri)
       return data_uri
     end

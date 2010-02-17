@@ -78,17 +78,17 @@ end
 #  end
 #end
 
-raise "':database:' configuration missing in config file" unless @@config.has_key?(:database)
-[ "adapter","database","username","password","host" ].each do |field|
-  raise "field '"+field+":' missing in database configuration" unless @@config[:database].has_key?(field)
-end
-DataMapper.setup(:default, { 
-    :adapter  => @@config[:database]["adapter"],
-    :database => @@config[:database]["database"],
-    :username => @@config[:database]["username"],
-    :password => @@config[:database]["password"],
-    :host     => @@config[:database]["host"]
-  })
+#raise "':database:' configuration missing in config file" unless @@config.has_key?(:database)
+#[ "adapter","database","username","password","host" ].each do |field|
+  #raise "field '"+field+":' missing in database configuration" unless @@config[:database].has_key?(field)
+#end
+#DataMapper.setup(:default, { 
+    #:adapter  => @@config[:database]["adapter"],
+    #:database => @@config[:database]["database"],
+    #:username => @@config[:database]["username"],
+   # :password => @@config[:database]["password"],
+#    :host     => @@config[:database]["host"]
+  #})
 [Lib::Validation, Lib::Crossvalidation].each do |resource|
     resource.auto_migrate! unless resource.storage_exists?
 end

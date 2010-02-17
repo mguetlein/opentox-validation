@@ -1,5 +1,40 @@
 module OpenTox
   
+  class Task
+    
+    def self.as_task
+  
+      task = OpenTox::Task.create
+      pid = Spork.spork(:logger => LOGGER) do
+        task.started
+        LOGGER.debug "task #{task.uri} started #{Time.now}"
+        begin
+          result = yield
+        rescue => ex
+          LOGGER.error ex.message
+          task.failed
+          break
+        end
+        task.completed(result)
+      end  
+      LOGGER.debug "validate model task PID: " + pid.to_s
+      task.pid = pid
+      task.uri
+      
+    end
+
+    
+    def wait_for_resource
+      wait_for_completion
+      if failed?
+        LOGGER.error "task failed "+uri.to_s
+        return nil
+      end
+      return resource
+    end
+
+  end
+
   module Feature
     def self.range( feature_uri )
       #TODO
@@ -13,8 +48,13 @@ module OpenTox
       attr_reader :uri
       
       def self.build( algorithm_uri, algorithm_parms )
-        uri = OpenTox::RestClientWrapper.post algorithm_uri,algorithm_parms
-        PredictionModel.new(uri)
+        model_task_uri = OpenTox::RestClientWrapper.post algorithm_uri,algorithm_parms
+        model_uri = OpenTox::Task.find(model_task_uri).wait_for_resource
+        if model_uri
+          return PredictionModel.new(model_uri)
+        else
+          return nil
+        end
       end
       
       def self.find( uri )
@@ -28,7 +68,11 @@ module OpenTox
       end
       
       def predict_dataset( dataset_uri )
-        RestClientWrapper.post @uri,{:dataset_uri => dataset_uri}
+        LOGGER.debug "model "+@uri.to_s+" predicts dataset: "+dataset_uri.to_s
+        #prediction_task_uri = RestClientWrapper.post @uri,{:dataset_uri => dataset_uri}
+        #puts prediction_task_uri
+        #return OpenTox::Task.find(prediction_task_uri).wait_for_resource
+        return RestClientWrapper.post @uri,{:dataset_uri => dataset_uri}
       end
       
       def classification?
