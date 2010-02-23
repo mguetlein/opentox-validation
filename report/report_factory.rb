@@ -51,9 +51,10 @@ module Reports::ReportFactory
     
     if (val.classification?)
       report.add_section_result(validation_set, VAL_ATTR_TRAIN_TEST + VAL_ATTR_CLASS, "Results", "Results")
-      val.get_prediction_feature_values.each do |class_value|
-        report.add_section_roc_plot(validation_set, class_value, nil, "roc-plot-"+class_value+".svg")
-      end
+      report.add_section_roc_plot(validation_set, nil, nil, "roc-plot.svg")
+      #val.get_prediction_feature_values.each do |class_value|
+        #report.add_section_roc_plot(validation_set, class_value, nil, "roc-plot-"+class_value+".svg")
+      #end
       report.add_section_confusion_matrix(validation_set.first)
     else #regression
       report.add_section_result(validation_set, VAL_ATTR_TRAIN_TEST + VAL_ATTR_REGR, "Results", "Results")
@@ -82,9 +83,11 @@ module Reports::ReportFactory
     
     if (validation_set.validations[0].percent_correct!=nil) #classification
       report.add_section_result(merged, VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold],"Mean Results","Mean Results")
-      validation_set.validations[0].get_prediction_feature_values.each do |class_value|
-        report.add_section_roc_plot(validation_set, class_value, nil, "roc-plot-"+class_value+".svg")
-      end
+      
+      report.add_section_roc_plot(validation_set, nil, nil, "roc-plot.svg")
+      #validation_set.validations[0].get_prediction_feature_values.each do |class_value|
+        #report.add_section_roc_plot(validation_set, class_value, nil, "roc-plot-"+class_value+".svg")
+      #end
       report.add_section_confusion_matrix(merged.first)
       report.add_section_result(validation_set, VAL_ATTR_CV+VAL_ATTR_CLASS-[:num_folds], "Results","Results")
     else #regression
@@ -208,11 +211,10 @@ class Reports::ReportContent
                                 section_title="Confusion Matrix",
                                 section_text="This section contains the confusion matrix.",
                                 table_title="Confusion Matrix")
-                                
     section_confusion = @xml_report.add_section(xml_report.get_root_element, section_title)
     @xml_report.add_paragraph(section_confusion, section_text) if section_text
     @xml_report.add_table(section_confusion, table_title, 
-      Reports::XMLReportUtil::create_confusion_matrix( validation.confusion_matrix), false)
+      Reports::XMLReportUtil::create_confusion_matrix( validation.confusion_matrix ), false)
   end
 
   def add_section_roc_plot( validation_set,
@@ -238,7 +240,7 @@ class Reports::ReportContent
 
       begin
         plot_file_path = add_tmp_file(plot_file_name)
-        Reports::RPlotFactory.create_roc_plot( plot_file_path, validation_set, class_value, split_set_attribute, validation_set.size>1 )
+        Reports::PlotFactory.create_roc_plot( plot_file_path, validation_set, class_value, split_set_attribute, validation_set.size>1 )
         @xml_report.add_imagefigure(section_roc, image_title, plot_file_name, "SVG", image_caption)
       rescue RuntimeError => ex
         LOGGER.error("could not create roc plot: "+ex.message)

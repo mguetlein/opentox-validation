@@ -98,8 +98,8 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
       
       ### using ot_mock_layer (reporting component does not rely on ot validation webservice)
       
-      ENV['REPORT_VALIDATION_ACCESS'] = "mock_layer"
-      Reports::Validation.reset_validation_access
+      #ENV['REPORT_VALIDATION_ACCESS'] = "mock_layer"
+      #Reports::Validation.reset_validation_access
       
 #      create_report(rep, "validation_uri_1", "validation")
 #      assert_raise(Reports::BadRequest){create_report(rep, ["validation_uri_1","validation_uri_2"], "validation")}
@@ -113,22 +113,22 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
 
       ### using ot webservices (instead of mock layer)
 
-      ENV['REPORT_VALIDATION_ACCESS'] = nil
-      Reports::Validation.reset_validation_access
+      #ENV['REPORT_VALIDATION_ACCESS'] = nil
+      #Reports::Validation.reset_validation_access
       
       #data_uri = upload_data WS_DATA,  FILE
       #data_uri= File.join(WS_DATA,"1")
       
-      #val_uri = create_single_validation(data_uri)
-      #val_uri = create_single_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
-      #val_uri = File.join(WS_VAL,"1")
-#      #add_resource val_uri
-      #create_report(rep, val_uri, "validation")
+#      #val_uri = create_single_validation(data_uri)
+#      #val_uri = create_single_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
+#      val_uri = File.join(WS_VAL,"15")
+##      #add_resource val_uri
+#      create_report(rep, val_uri, "validation")
         
        #val_uri = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
-#       #val_uri = create_cross_validation(data_uri)
+       #val_uri = create_cross_validation(data_uri)
        val_uri = File.join(WS_VAL,"crossvalidation/1")
-#       #val_uri2 = "http://localhost:4007/crossvalidation/14"
+       #val_uri2 = "http://localhost:4007/crossvalidation/14"
 #       # add_resource val_uri
        create_report(rep, val_uri, "crossvalidation")
         
@@ -172,6 +172,9 @@ class Reports::ReportServiceTest < Test::Unit::TestCase
     report_uri = report_service.create_report(type, val_uri)
     assert type == report_service.parse_type(report_uri)
     id = report_service.parse_id(report_uri)
+    
+    #puts "created report with id "+id.to_s
+    
     #assert_raise(Reports::BadRequest){report_service.get_report(type, id, "weihnachtsmann")}
     
     report_service.get_report(type, id, "text/html")

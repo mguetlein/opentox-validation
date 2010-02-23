@@ -62,7 +62,7 @@ module Lib
       init_stats()
       (0..@predicted_values.size-1).each do |i|
         update_stats( @predicted_values[i], @actual_values[i], @confidence_values[i] )
-      end 
+      end
     end
     
     def init_stats
@@ -181,6 +181,7 @@ module Lib
     # hash with keys: hash{ :confusion_matrix_actual => <class_value>, :confusion_matrix_predicted => <class_value> }
     #     and values: <int-value>
     def confusion_matrix
+      
       raise "no classification" unless @is_classification
       res = {}
       (0..@num_classes-1).each do |actual|
@@ -383,28 +384,21 @@ module Lib
     
     # data for roc-plots ###################################################################################
     
-    def roc_confidence_values(class_value)
+    def get_roc_values(class_value)
+      
       class_index = @prediction_feature_values.index(class_value)
       raise "class not found "+class_value.to_s if class_index==nil and class_value!=nil
-      res =  []
+      
+      c = []; p = []; a = []
       (0..@predicted_values.size-1).each do |i|
-        res.push(@confidence_values[i]) if (class_value==nil or @predicted_values[i]==class_index) 
-      end
-      return res
-    end
-    
-    def roc_actual_values(class_value)
-      class_index = @prediction_feature_values.index(class_value)
-      raise "class not found "+class_value.to_s if class_index==nil
-      res =  []
-      (0..@predicted_values.size-1).each do |i|
-        if class_value!=nil
-          res.push( @actual_values[i]==class_index ? 1 : 0 ) if @predicted_values[i]==class_index
-        else
-          res.push( @actual_values[i]==@predicted_values[i] ? 1 : 0 )
+        # NOTE: not predicted instances are ignored here
+        if (@predicted_values[i]!=nil and (class_value==nil or @predicted_values[i]==class_index))
+          c << @confidence_values[i]
+          p << @predicted_values[i]
+          a << @actual_values[i]
         end
       end
-      return res
+      return {:predicted_values => p, :actual_values => a, :confidence_values => c}
     end
     
     ########################################################################################

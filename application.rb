@@ -3,10 +3,10 @@
   require lib
 end
 
-unless(defined? LOGGER)
-  LOGGER = Logger.new(STDOUT)
-  LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
-end
+#unless(defined? LOGGER)
+  #LOGGER = Logger.new(STDOUT)
+  #LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
+#end
 
 require "example.rb"
 

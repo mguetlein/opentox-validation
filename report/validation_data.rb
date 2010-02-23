@@ -35,6 +35,12 @@ module Reports
   class Validation
     
     @@validation_access = Reports::ValidationDB.new
+
+    # for overwriting validation source (other than using webservices)
+    def self.reset_validation_access(validation_access)
+      @@validation_access = validation_access
+    end
+
     
     def self.resolve_cv_uris(validation_uris)
       @@validation_access.resolve_cv_uris(validation_uris)

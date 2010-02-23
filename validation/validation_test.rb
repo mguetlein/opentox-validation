@@ -166,22 +166,22 @@ class ValidationTest < Test::Unit::TestCase
 #    end
 #  end
   
-#  def test_split
-#    begin
-#      data_uri = upload_data(WS_DATA, FILE)
-#      #data_uri =  "http://ot.dataset.de/199" #bbrc
-#      #data_uri = "http://ot.dataset.de/67" #hamster
-#      #puts data_uri
-#      
-#      #data_uri=WS_DATA+"/"+DATA
-#      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
-#        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.8, :random_seed=>5}
-#      puts last_response.body
-#      #verify_validation
-#    ensure
-#      #delete_resources
-#    end
-#  end
+  def test_split
+    begin
+      data_uri = upload_data(WS_DATA, FILE)
+      #data_uri =  "http://ot.dataset.de/199" #bbrc
+      #data_uri = "http://ot.dataset.de/67" #hamster
+      #puts data_uri
+      
+      #data_uri=WS_DATA+"/"+DATA
+      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
+        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.75, :random_seed=>6}
+      puts last_response.body
+      #verify_validation
+    ensure
+      #delete_resources
+    end
+  end
   
   def test_nothing
     
@@ -193,39 +193,40 @@ class ValidationTest < Test::Unit::TestCase
     get '/test_examples'
 
     #get '/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
-    #get '/350',nil,'HTTP_ACCEPT' => "text/x-yaml"
+    #get '/1',nil,'HTTP_ACCEPT' => "text/x-yaml"
+
     
     #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
     #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "text/x-yaml"
     
-    puts last_response.body
+    #puts last_response.body
   end
   
-  private
-  def verify_validation (delete=true)
-    
-    puts "validation: "+last_response.body
-    assert last_response.ok?
-    validation_id = last_response.body.split("/")[-1]
-
-    puts "uri: "+last_response.body
-    puts "id:"+validation_id
-    add_resource("/"+validation_id) if delete
-
-    #get '/'+validation_id,nil,'HTTP_ACCEPT' => "application/rdf+xml"
-    get '/'+validation_id,nil,'HTTP_ACCEPT' => "text/x-yaml"
-    puts last_response.body
-    assert last_response.ok? || last_response.status==202
-
-#    ["test_dataset_uri", "model_uri", "prediction_dataset_uri"].each do |t|
-#      get '/'+validation_id+'/'+t
-#      puts ""+t+": "+last_response.body
-#      assert last_response.ok?
-#      
-#      content = ext("curl "+last_response.body)
-#      content = content.split("\n")[0,10].join("\n")+"\n...\n" if content.count("\n")>10
-#      puts content
-#    end
-  end
+#  private
+#  def verify_validation (delete=true)
+#    
+#    puts "validation: "+last_response.body
+#    assert last_response.ok?
+#    validation_id = last_response.body.split("/")[-1]
+#
+#    puts "uri: "+last_response.body
+#    puts "id:"+validation_id
+#    add_resource("/"+validation_id) if delete
+#
+#    #get '/'+validation_id,nil,'HTTP_ACCEPT' => "application/rdf+xml"
+#    get '/'+validation_id,nil,'HTTP_ACCEPT' => "text/x-yaml"
+#    puts last_response.body
+#    assert last_response.ok? || last_response.status==202
+#
+##    ["test_dataset_uri", "model_uri", "prediction_dataset_uri"].each do |t|
+##      get '/'+validation_id+'/'+t
+##      puts ""+t+": "+last_response.body
+##      assert last_response.ok?
+##      
+##      content = ext("curl "+last_response.body)
+##      content = content.split("\n")[0,10].join("\n")+"\n...\n" if content.count("\n")>10
+##      puts content
+##    end
+#  end
   
 end

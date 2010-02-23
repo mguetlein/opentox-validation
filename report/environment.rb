@@ -9,14 +9,15 @@ require 'yaml'
 require 'opentox-ruby-api-wrapper'
 require 'fileutils'
 require 'mime/types'
+require 'svg_roc_plot'
 
 module Reports
 end
 
-unless(defined? LOGGER)
-  LOGGER = Logger.new(STDOUT)
-  LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
-end
+#unless(defined? LOGGER)
+  #LOGGER = Logger.new(STDOUT)
+  #LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
+#end
 
 require "report/r_plot_factory.rb"
 require "report/plot_factory.rb"
@@ -33,7 +34,6 @@ require "report/util.rb"
 require "report/external/mimeparse.rb"
 
 require "lib/ot_predictions.rb"
-
 
 
 

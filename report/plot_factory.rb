@@ -2,10 +2,51 @@ ENV['JAVA_HOME'] = "/usr/bin" unless ENV['JAVA_HOME']
 ENV['PATH'] = ENV['JAVA_HOME']+":"+ENV['PATH'] unless ENV['PATH'].split(":").index(ENV['JAVA_HOME'])
 ENV['RANK_PLOTTER_JAR'] = "RankPlotter/RankPlotter.jar" unless ENV['RANK_PLOTTER_JAR']
 
+class Array
+  def swap!(i,j)
+    tmp = self[i]
+    self[i] = self[j]
+    self[j] = tmp
+  end
+end
+
+
 module Reports
   
   module PlotFactory 
-  
+    
+    # creates a roc plot (result is plotted into out_file)
+    # * if (split_set_attributes == nil?)
+    #   * the predictions of all validations in the validation set are plotted as one average roc-curve
+    #   * if (show_single_curves == true) -> the single predictions of each validation are plotted as well   
+    # * if (split_set_attributes != nil?)
+    #   * the validation set is splitted into sets of validation_sets with equal attribute values
+    #   * each of theses validation sets is plotted as a roc-curve  
+    #
+    def self.create_roc_plot( out_file, validation_set, class_value, split_set_attribute=nil, show_single_curves=false )
+      
+      LOGGER.debug "creating roc plot, out-file:"+out_file.to_s
+      
+      if split_set_attribute
+        attribute_values = validation_set.get_values(split_set_attribute)
+        
+        names = []
+        fp_rates = []
+        tp_rates = []
+        attribute_values.each do |value|
+          names << value
+          data = transform_predictions(validation_set.filter({split_set_attribute => value}), class_value, false)
+          fp_rates << data[:fp_rate][0]
+          tp_rates << data[:tp_rate][0]
+        end
+        Svg_Roc_Plot::plot(out_file, "ROC-Plot", "False positive rate", "True Positive Rate", names, fp_rates, tp_rates )
+      else
+        data = transform_predictions(validation_set, class_value, show_single_curves)
+        Svg_Roc_Plot::plot(out_file, "ROC-Plot", "False positive rate", "True Positive Rate", data[:names], data[:fp_rate], data[:tp_rate], data[:faint] )
+      end  
+    end
+    
+    
     def self.create_ranking_plot( svg_out_file, validation_set, compare_attribute, equal_attribute, rank_attribute )
 
       #compute ranks
@@ -57,7 +98,79 @@ module Reports
       puts plot_ranking( nil, ["naive bayes", "svm", "decision tree"], [1.9, 3, 1.5], 0.1, 50) #, "/home/martin/tmp/test.svg")
     end
     
+    private
+    def self.transform_predictions(validation_set, class_value, add_single_folds=false)
+      
+      if (validation_set.size > 1)
+        
+        names = []; fp_rate = []; tp_rate = []; faint = []
+        sum_roc_values = { :predicted_values => [], :actual_values => [], :confidence_values => []}
+        
+        (0..validation_set.size-1).each do |i|
+          roc_values = validation_set.get(i).get_predictions.get_roc_values(class_value)
+          sum_roc_values[:predicted_values] += roc_values[:predicted_values]
+          sum_roc_values[:confidence_values] += roc_values[:confidence_values]
+          sum_roc_values[:actual_values] += roc_values[:actual_values]
+          if add_single_folds
+            tp_fp_rates = get_tp_fp_rates(roc_values)
+            names << "fold "+i.to_s
+            fp_rate << tp_fp_rates[:fp_rate]
+            tp_rate << tp_fp_rates[:tp_rate]
+            faint << true
+          end
+        end
+        tp_fp_rates = get_tp_fp_rates(sum_roc_values)
+        names << "all"
+        fp_rate << tp_fp_rates[:fp_rate]
+        tp_rate << tp_fp_rates[:tp_rate]
+        faint << false
+        return { :names => names, :fp_rate => fp_rate, :tp_rate => tp_rate, :faint => faint }
+      else
+        roc_values = validation_set.first.get_predictions.get_roc_values(class_value)
+        tp_fp_rates = get_tp_fp_rates(roc_values)
+        return { :names => ["default"], :fp_rate => [tp_fp_rates[:fp_rate]], :tp_rate => [tp_fp_rates[:tp_rate]] }
+      end
+    end
     
+    def self.get_tp_fp_rates(roc_values)
+      
+      c = roc_values[:confidence_values]
+      p = roc_values[:predicted_values]
+      a = roc_values[:actual_values]
+      raise "no prediction values for roc-plot" if p.size==0
+      
+      (0..p.size-2).each do |i|
+        ((i+1)..p.size-1).each do |j|
+          if c[i]<c[j]
+            c.swap!(i,j)
+            a.swap!(i,j)
+            p.swap!(i,j)
+          end
+        end
+      end
+      #puts c.inspect+"\n"+a.inspect+"\n"+p.inspect
+     
+      tp_rate = [0]
+      fp_rate = [0]
+      (0..p.size-1).each do |i|
+        if a[i]==p[i]
+          tp_rate << tp_rate[-1]+1
+          fp_rate << fp_rate[-1]
+        else
+          fp_rate << fp_rate[-1]+1
+          tp_rate << tp_rate[-1]
+        end
+      end
+      #puts tp_rate.inspect+"\n"+fp_rate.inspect
+      
+      (0..tp_rate.size-1).each do |i|
+        tp_rate[i] = tp_rate[-1]>0 ? tp_rate[i]/tp_rate[-1].to_f*100 : 100
+        fp_rate[i] = fp_rate[-1]>0 ? fp_rate[i]/fp_rate[-1].to_f*100 : 100
+      end
+      #puts tp_rate.inspect+"\n"+fp_rate.inspect
+      
+      return {:tp_rate => tp_rate,:fp_rate => fp_rate}
+    end
   end
 end
    

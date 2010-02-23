@@ -13,6 +13,7 @@ module Reports::XMLReportUtil
   #
   def self.create_confusion_matrix( confusion_matrix )
     
+    raise "confusion matrix is null" unless confusion_matrix
     num_classes = Math.sqrt(confusion_matrix.size)
     class_values = []
     confusion_matrix.each{ |key_map,value| class_values.push(key_map[:confusion_matrix_actual]) if class_values.index(key_map[:confusion_matrix_actual])==nil }

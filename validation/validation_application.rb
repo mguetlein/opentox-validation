@@ -10,11 +10,10 @@ require 'validation/validation_service.rb'
 # (before is executed in every rest call, problem is that the request object is not set, until the first rest-call )
 before {$sinatra = self unless $sinatra}
 
-unless(defined? LOGGER)
-  LOGGER = Logger.new(STDOUT)
-  LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
-end
-
+#unless(defined? LOGGER)
+  #LOGGER = Logger.new(STDOUT)
+  #LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
+#end
 
 
 class Sinatra::Base
