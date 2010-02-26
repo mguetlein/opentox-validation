@@ -39,11 +39,38 @@ module Reports
           fp_rates << data[:fp_rate][0]
           tp_rates << data[:tp_rate][0]
         end
-        Svg_Roc_Plot::plot(out_file, "ROC-Plot", "False positive rate", "True Positive Rate", names, fp_rates, tp_rates )
+        RubyPlot::plot_lines(out_file, "ROC-Plot", "False positive rate", "True Positive Rate", names, fp_rates, tp_rates )
       else
         data = transform_predictions(validation_set, class_value, show_single_curves)
-        Svg_Roc_Plot::plot(out_file, "ROC-Plot", "False positive rate", "True Positive Rate", data[:names], data[:fp_rate], data[:tp_rate], data[:faint] )
+        RubyPlot::plot_lines(out_file, "ROC-Plot", "False positive rate", "True Positive Rate", data[:names], data[:fp_rate], data[:tp_rate], data[:faint] )
       end  
+    end
+    
+    def self.create_bar_plot( out_file, validation_set, class_value, title_attribute, value_attributes )
+  
+      LOGGER.debug "creating bar plot, out-file:"+out_file.to_s
+      
+      data = []
+      validation_set.validations.each do |v|
+        values = []
+        value_attributes.collect do |a|
+          value = v.send(a)
+          if value.is_a?(Hash)
+            raise "bar plot value is hash, but no entry for class-value ("+class_value.to_s+")" unless value.key?(class_value)
+            value = value[class_value]
+          end
+          values.push(value)
+        end
+        data << [v.send(title_attribute).to_s] + values
+      end
+      
+      labels = value_attributes.collect{|a| a.to_s.gsub("_","-")}
+      
+      LOGGER.debug "bar plot labels: "+labels.inspect 
+      LOGGER.debug "bar plot data: "+data.inspect
+      
+      RubyPlot::plot_bars('Bar plot', labels, data, out_file)
+      
     end
     
     

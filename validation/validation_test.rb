@@ -166,22 +166,22 @@ class ValidationTest < Test::Unit::TestCase
 #    end
 #  end
   
-  def test_split
-    begin
-      data_uri = upload_data(WS_DATA, FILE)
-      #data_uri =  "http://ot.dataset.de/199" #bbrc
-      #data_uri = "http://ot.dataset.de/67" #hamster
-      #puts data_uri
-      
-      #data_uri=WS_DATA+"/"+DATA
-      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
-        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.75, :random_seed=>6}
-      puts last_response.body
-      #verify_validation
-    ensure
-      #delete_resources
-    end
-  end
+#  def test_split
+#    begin
+#      data_uri = upload_data(WS_DATA, FILE)
+#      #data_uri =  "http://ot.dataset.de/199" #bbrc
+#      #data_uri = "http://ot.dataset.de/67" #hamster
+#      #puts data_uri
+#      
+#      #data_uri=WS_DATA+"/"+DATA
+#      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
+#        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.75, :random_seed=>6}
+#      puts last_response.body
+#      #verify_validation
+#    ensure
+#      #delete_resources
+#    end
+#  end
   
   def test_nothing
     

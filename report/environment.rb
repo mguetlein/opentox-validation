@@ -9,7 +9,7 @@ require 'yaml'
 require 'opentox-ruby-api-wrapper'
 require 'fileutils'
 require 'mime/types'
-require 'svg_roc_plot'
+require 'ruby-plot'
 
 module Reports
 end
@@ -19,7 +19,6 @@ end
   #LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 #end
 
-require "report/r_plot_factory.rb"
 require "report/plot_factory.rb"
 require "report/xml_report.rb"
 require "report/xml_report_util.rb"

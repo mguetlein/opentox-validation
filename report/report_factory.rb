@@ -244,7 +244,6 @@ class Reports::ReportContent
         @xml_report.add_imagefigure(section_roc, image_title, plot_file_name, "SVG", image_caption)
       rescue RuntimeError => ex
         LOGGER.error("could not create roc plot: "+ex.message)
-        LOGGER.debug("if R cannot find your libs, try adding R_LIBS='<lib>' to your ~/.Renviron file")
         rm_tmp_file(plot_file_name)
         @xml_report.add_paragraph(section_roc, "could not create roc plot: "+ex.message)
       end  
@@ -297,7 +296,7 @@ class Reports::ReportContent
     @xml_report.add_paragraph(section_bar, section_text) if section_text
     
     plot_file_path = add_tmp_file(plot_file_name)
-    Reports::RPlotFactory.create_bar_plot(plot_file_path, validation_set, class_value, title_attribute, value_attributes )
+    Reports::PlotFactory.create_bar_plot(plot_file_path, validation_set, class_value, title_attribute, value_attributes )
     @xml_report.add_imagefigure(section_bar, image_title, plot_file_name, "SVG", image_caption)
   end  
   

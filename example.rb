@@ -156,7 +156,7 @@ class Example
   
   # logs string and and adds to summary
   def self.log(log_string)
-    LOGGER.info log_string
+    LOGGER.info "EXAMPLE: "+log_string
     @@summary += log_string+"\n"
   end
   

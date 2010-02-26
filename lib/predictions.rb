@@ -1,11 +1,4 @@
 
-if ENV['R_HOME']
-  ENV['PATH'] = ENV['R_HOME']+":"+ENV['PATH'] unless ENV['PATH'].split(":").index(ENV['R_HOME'])
-else
-  LOGGER.warn "Environment variable R_HOME not set"
-end
-require 'rinruby'
-
 module Lib
 
   module Util
