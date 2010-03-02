@@ -34,8 +34,8 @@ module Reports
         fp_rates = []
         tp_rates = []
         attribute_values.each do |value|
-          names << value
           data = transform_predictions(validation_set.filter({split_set_attribute => value}), class_value, false)
+          names << value
           fp_rates << data[:fp_rate][0]
           tp_rates << data[:tp_rate][0]
         end
@@ -53,14 +53,21 @@ module Reports
       data = []
       validation_set.validations.each do |v|
         values = []
-        value_attributes.collect do |a|
+        value_attributes.each do |a|
           value = v.send(a)
           if value.is_a?(Hash)
-            raise "bar plot value is hash, but no entry for class-value ("+class_value.to_s+")" unless value.key?(class_value)
-            value = value[class_value]
+            if class_value==nil
+              avg_value = 0
+              value.values.each{ |val| avg_value+=val }
+              value = avg_value/value.values.size.to_f
+            else
+              raise "bar plot value is hash, but no entry for class-value ("+class_value.to_s+"); value for "+a.to_s+" -> "+value.inspect unless value.key?(class_value)
+              value = value[class_value]
+            end
           end
           values.push(value)
         end
+        
         data << [v.send(title_attribute).to_s] + values
       end
       
@@ -74,10 +81,10 @@ module Reports
     end
     
     
-    def self.create_ranking_plot( svg_out_file, validation_set, compare_attribute, equal_attribute, rank_attribute )
+    def self.create_ranking_plot( svg_out_file, validation_set, compare_attribute, equal_attribute, rank_attribute, class_value=nil )
 
       #compute ranks
-      rank_set = validation_set.compute_ranking([equal_attribute],rank_attribute)
+      rank_set = validation_set.compute_ranking([equal_attribute],rank_attribute,class_value)
       #puts rank_set.to_array([:algorithm_uri, :dataset_uri, :acc, :acc_ranking]).collect{|a| a.inspect}.join("\n")
 
       #compute avg ranks
@@ -85,7 +92,7 @@ module Reports
       #puts merge_set.to_array([:algorithm_uri, :dataset_uri, :acc, :acc_ranking]).collect{|a| a.inspect}.join("\n")
       
       comparables = merge_set.get_values(compare_attribute)
-      ranks = merge_set.get_values((rank_attribute.to_s+"_ranking").to_sym)
+      ranks = merge_set.get_values((rank_attribute.to_s+"_ranking").to_sym,false)
       
       plot_ranking( rank_attribute.to_s+" ranking",
                     comparables, 

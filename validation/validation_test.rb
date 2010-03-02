@@ -190,16 +190,16 @@ class ValidationTest < Test::Unit::TestCase
     #get '/'     
 
     #get '/prepare_examples'
-    get '/test_examples'
+    #get '/test_examples'
 
     #get '/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
     #get '/1',nil,'HTTP_ACCEPT' => "text/x-yaml"
 
     
     #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
-    #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "text/x-yaml"
+    get '/crossvalidation/1/statistics',nil,'HTTP_ACCEPT' => "text/x-yaml"
     
-    #puts last_response.body
+    puts last_response.body
   end
   
 #  private

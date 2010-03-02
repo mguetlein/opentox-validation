@@ -214,3 +214,7 @@ if __FILE__ == $0
     end
   end
 end
+
+
+#puts MIMEParse::best_match(["text/xml","text/html","application/pdf"],
+#  'application/x-ms-application,image/jpeg, application/xaml+xml, image/gif, image/pjpeg, application/x-ms-xbap, */*')

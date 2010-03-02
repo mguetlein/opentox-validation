@@ -35,6 +35,12 @@ module Lib
       raise "illegal num confidence values "+num_info if  @confidence_values.size != @predicted_values.size
       
       @confidence_values.each{ |c| raise "illegal confidence value: '"+c.to_s+"'" unless c==nil or (c.is_a?(Numeric) and c>=0 and c<=1) }
+      conf_val_tmp = {}
+      @confidence_values.each{ |c| conf_val_tmp[c] = nil }
+      if conf_val_tmp.keys.size<2
+        LOGGER.warn("prediction w/o confidence values");
+        @confidence_values=nil
+      end
       
       if @is_classification
         raise "prediction_feature_values missing while performing classification" unless @prediction_feature_values
@@ -54,13 +60,13 @@ module Lib
       
       init_stats()
       (0..@predicted_values.size-1).each do |i|
-        update_stats( @predicted_values[i], @actual_values[i], @confidence_values[i] )
+        update_stats( @predicted_values[i], @actual_values[i], (@confidence_values!=nil)?@confidence_values[i]:nil )
       end
     end
     
     def init_stats
       @num_no_actual_value = 0
-      @num_with_actual_value = 0
+      @num_with_actual_value = 0 
       
       @num_predicted = 0
       @num_unpredicted = 0
@@ -137,6 +143,10 @@ module Lib
       return 100 * @num_incorrect / @num_with_actual_value.to_f
     end
     
+    def accuracy
+      return percent_correct / 100.0
+    end
+    
     def percent_unpredicted
       return 0 if @num_with_actual_value==0
       return 100 * @num_unpredicted / @num_with_actual_value.to_f
@@ -188,6 +198,7 @@ module Lib
     
     def area_under_roc(class_index=nil)
       return prediction_feature_value_map( lambda{ |i| area_under_roc(i) } ) if class_index==nil
+      return 0.0 if @confidence_values==nil
       
       LOGGER.warn("TODO: implement approx computiation of AUC,"+
         "so far Wilcoxon-Man-Whitney is used (exponential)") if @predicted_values.size>1000
@@ -212,6 +223,7 @@ module Lib
           sum += 1 if tp>fp
         end
       end
+      
       return sum / (tp_conf.size * fp_conf.size).to_f
     end
     
@@ -378,7 +390,7 @@ module Lib
     # data for roc-plots ###################################################################################
     
     def get_roc_values(class_value)
-      
+      raise "no confidence values" if @confidence_values==nil
       class_index = @prediction_feature_values.index(class_value)
       raise "class not found "+class_value.to_s if class_index==nil and class_value!=nil
       
@@ -428,6 +440,10 @@ module Lib
     
     def classification?
       @is_classification
+    end
+    
+    def confidence_values_available?
+      return @confidence_values!=nil
     end
     
     ###################################################################################################################

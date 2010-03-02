@@ -78,7 +78,7 @@ module Lib
           set_literal( k, v, node)
         elsif @rdf_provider.object_property?(k)
           add_object_property( k, v, node)
-        elsif [ :uri, :id, :finished ].index(k)!=nil
+        elsif [ :uri, :id ].index(k)!=nil
           #skip
         else
           raise "illegal value k:"+k.to_s+" v:"+v.to_s

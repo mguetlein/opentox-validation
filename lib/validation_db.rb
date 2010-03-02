@@ -6,7 +6,7 @@ end
 module Lib
 
   VAL_PROPS = [ :id, :uri, :model_uri, :training_dataset_uri, :prediction_feature,
-                :test_dataset_uri, :prediction_dataset_uri, :finished, 
+                :test_dataset_uri, :prediction_dataset_uri,  
                 :created_at, :real_runtime, # :cpu_runtime, 
                 :num_instances, :num_without_class, :percent_without_class, :num_unpredicted, :percent_unpredicted ] 
   
@@ -21,13 +21,14 @@ module Lib
                                 :num_true_positives, :num_true_negatives, :precision, 
                                 :recall, :true_negative_rate, :true_positive_rate ]
   VAL_CLASS_PROPS = VAL_CLASS_PROPS_SINGLE + VAL_CLASS_PROPS_PER_CLASS + [ :confusion_matrix ]
+  VAL_CLASS_PROPS_EXTENDED = VAL_CLASS_PROPS + [:accuracy]
 
   # :regression_statistics
   VAL_REGR_PROPS = [ :root_mean_squared_error, :mean_absolute_error, :r_square ]
   
   CROSS_VAL_PROPS = [:algorithm_uri, :dataset_uri, :num_folds, :stratified, :random_seed]
   
-  ALL_PROPS = VAL_PROPS + VAL_CV_PROPS + VAL_CLASS_PROPS + VAL_REGR_PROPS + CROSS_VAL_PROPS
+  ALL_PROPS = VAL_PROPS + VAL_CV_PROPS + VAL_CLASS_PROPS_EXTENDED + VAL_REGR_PROPS + CROSS_VAL_PROPS
 
   class Validation
     include DataMapper::Resource 
@@ -39,7 +40,6 @@ module Lib
     property :test_dataset_uri, String, :length => 255
     property :prediction_dataset_uri, String, :length => 255
     property :prediction_feature, String, :length => 255
-    property :finished, Boolean, :default => false
     property :created_at, DateTime
     property :real_runtime, Float
     
@@ -65,7 +65,6 @@ module Lib
     property :num_folds, Integer, :default => 10
     property :stratified, Boolean, :default => false
     property :random_seed, Integer, :default => 1
-    property :finished, Boolean, :default => false
   end
 end
 

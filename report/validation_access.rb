@@ -73,7 +73,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
       validation.send("#{p.to_s}=".to_sym, v[p])
     end
     
-    {:classification_statistics => Lib::VAL_CLASS_PROPS, 
+    {:classification_statistics => Lib::VAL_CLASS_PROPS_EXTENDED, 
      :regression_statistics => Lib::VAL_REGR_PROPS}.each do |subset_name,subset_props|
       subset = v[subset_name]
       subset_props.each{ |prop| validation.send("#{prop.to_s}=".to_sym, subset[prop]) } if subset
@@ -148,7 +148,7 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
     #validation.prediction_feature = model.get_prediction_feature
     
     {Lib::VAL_CV_PROP => Lib::VAL_CV_PROPS,
-     Lib::VAL_CLASS_PROP => Lib::VAL_CLASS_PROPS}.each do |subset_name,subset_props|
+     Lib::VAL_CLASS_PROP => Lib::VAL_CLASS_PROPS_EXTENDED}.each do |subset_name,subset_props|
       subset = data[subset_name]
       subset_props.each{ |prop| validation.send("#{prop}=".to_sym, subset[prop]) } if subset
     end

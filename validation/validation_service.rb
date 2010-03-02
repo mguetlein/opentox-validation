@@ -110,7 +110,6 @@ module Validation
       end
       
       update :prediction_dataset_uri => prediction_dataset_uri, 
-             :finished => true, 
              :real_runtime => benchmark.real,
              :num_instances => prediction.num_instances,
              :num_without_class => prediction.num_without_class,

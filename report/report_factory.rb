@@ -5,6 +5,7 @@ VAL_ATTR_TRAIN_TEST = [ :model_uri, :training_dataset_uri, :test_dataset_uri, :p
 VAL_ATTR_CV = [ :algorithm_uri, :dataset_uri, :num_folds, :crossvalidation_fold ]
 # selected attributes of interest when performing classification
 VAL_ATTR_CLASS = [ :area_under_roc, :percent_correct, :true_positive_rate, :true_negative_rate ]
+VAL_ATTR_BAR_PLOT_CLASS = [ :area_under_roc, :accuracy, :true_positive_rate, :true_negative_rate ]
 VAL_ATTR_REGR = [ :root_mean_squared_error, :mean_absolute_error, :r_square ]
 
 
@@ -81,7 +82,7 @@ module Reports::ReportFactory
     #puts merged.get_values(:percent_correct_variance, false).inspect
     report = Reports::ReportContent.new("Crossvalidation report")
     
-    if (validation_set.validations[0].percent_correct!=nil) #classification
+    if (validation_set.first.classification?)
       report.add_section_result(merged, VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold],"Mean Results","Mean Results")
       
       report.add_section_roc_plot(validation_set, nil, nil, "roc-plot.svg")
@@ -106,13 +107,52 @@ module Reports::ReportFactory
     raise Reports::BadRequest.new("num validations is not >1") unless validation_set.size>1
     raise Reports::BadRequest.new("validations must be either all regression, "+
       +"or all classification validations") unless validation_set.all_classification? or validation_set.all_regression?
+    raise Reports::BadRequest.new("number of different algorithms <2") if validation_set.num_different_values(:algorithm_uri)<2
       
     if validation_set.has_nil_values?(:crossvalidation_id)
-      raise Reports::BadRequest.new("so far, algorithm comparison is only supported for crossvalidation results")
+      if validation_set.num_different_values(:test_dataset_uri)>1
+        
+        # groups results into sets with equal test and training dataset
+        dataset_grouping = Reports::Util.group(validation_set.validations, [:test_dataset_uri, :training_dataset_uri])
+        # check if the same algorithms exists for each test and training dataset
+        Reports::Util.check_group_matching(dataset_grouping, [:algorithm_uri])
+        
+        #merged = validation_set.merge([:algorithm_uri, :dataset_uri])
+        report = Reports::ReportContent.new("Algorithm comparison report Many datasets")
+        
+        if (validation_set.first.classification?)
+          report.add_section_result(validation_set,[:algorithm_uri, :test_dataset_uri]+VAL_ATTR_CLASS,"Mean Results","Mean Results")
+          report.add_section_ranking_plots(validation_set, :algorithm_uri, :test_dataset_uri,
+            [:accuracy, :true_positive_rate, :true_negative_rate], "true")
+        else # regression
+          raise Reports::BadRequest.new("not implemented yet for regression")
+        end
+        return report
+      else
+        # this groups all validations in x different groups (arrays) according to there algorithm-uri
+        algorithm_grouping = Reports::Util.group(validation_set.validations, [:algorithm_uri])
+        # we check if there are corresponding validations in each group that have equal attributes (folds, num-folds,..)
+        Reports::Util.check_group_matching(algorithm_grouping, [:training_dataset_uri, :test_dataset_uri, :prediction_feature])
+        
+        report = Reports::ReportContent.new("Algorithm comparison report")
+        
+        if (validation_set.first.classification?)
+          report.add_section_bar_plot(validation_set,nil,:algorithm_uri,VAL_ATTR_BAR_PLOT_CLASS, "bar-plot.svg")   
+          report.add_section_roc_plot(validation_set,nil, :algorithm_uri, "roc-plot.svg")
+          #validation_set.validations[0].get_prediction_feature_values.each do |class_value|
+            #report.add_section_bar_plot(validation_set,class_value,:algorithm_uri,VAL_ATTR_CLASS, "bar-plot-"+class_value+".svg")   
+            #report.add_section_roc_plot(validation_set, class_value, :algorithm_uri, "roc-plot-"+class_value+".svg")
+          #end
+          report.add_section_result(validation_set,[:algorithm_uri]+VAL_ATTR_CLASS,"Results","Results")
+        else #regression
+          #report.add_section_result(merged, VAL_ATTR_CV+VAL_ATTR_REGR-[:crossvalidation_fold],"Mean Results","Mean Results")
+          #report.add_section_result(validation_set, VAL_ATTR_CV+VAL_ATTR_REGR-[:num_folds], "Results","Results")
+        end
+        return report
+      end
     else
       raise Reports::BadRequest.new("num different cross-validation-ids <2") if validation_set.num_different_values(:crossvalidation_id)<2
       validation_set.load_cv_attributes
-      raise Reports::BadRequest.new("number of different algorithms <2") if validation_set.num_different_values(:algorithm_uri)<2
       
       if validation_set.num_different_values(:dataset_uri)>1
         # groups results into sets with equal dataset 
@@ -128,9 +168,9 @@ module Reports::ReportFactory
         merged = validation_set.merge([:algorithm_uri, :dataset_uri])
         report = Reports::ReportContent.new("Algorithm comparison report - Many datasets")
         
-        if (validation_set.validations[0].percent_correct!=nil) #classification
+        if (validation_set.first.classification?)
           report.add_section_result(merged,VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold],"Mean Results","Mean Results")
-          report.add_section_ranking_plots(merged, :algorithm_uri, :dataset_uri, [:acc, :auc, :sens, :spec])
+          report.add_section_ranking_plots(merged, :algorithm_uri, :dataset_uri, [:acc, :auc, :sens, :spec], "true")
         else # regression
           report.add_section_result(merged,VAL_ATTR_CV+VAL_ATTR_REGR-[:crossvalidation_fold],"Mean Results","Mean Results")
         end
@@ -145,7 +185,7 @@ module Reports::ReportFactory
         
         report = Reports::ReportContent.new("Algorithm comparison report")
         
-        if (validation_set.validations[0].percent_correct!=nil) #classification
+        if (validation_set.first.classification?)
           validation_set.validations[0].get_prediction_feature_values.each do |class_value|
             report.add_section_bar_plot(merged,class_value,:algorithm_uri,VAL_ATTR_CLASS, "bar-plot-"+class_value+".svg")   
             report.add_section_roc_plot(validation_set, class_value, :algorithm_uri, "roc-plot-"+class_value+".svg")
@@ -204,7 +244,7 @@ class Reports::ReportContent
     vals = vals.collect{|a| a.collect{|v| v.to_s[0,66] }}
     #PENDING transpose values if there more than 4 columns, and there are more than columns than rows
     transpose = vals[0].size>4 && vals[0].size>vals.size
-    @xml_report.add_table(section_table, table_title, vals, !transpose, transpose)   
+    @xml_report.add_table(section_table, table_title, vals, !transpose, transpose)
   end
   
   def add_section_confusion_matrix(  validation, 
@@ -235,12 +275,16 @@ class Reports::ReportContent
     end
     
     section_roc = @xml_report.add_section(@xml_report.get_root_element, section_title)
-    if validation_set.first.get_predictions
+    
+    prediction_set = validation_set.collect{ |v| v.get_predictions && v.get_predictions.confidence_values_available? }
+        
+    if prediction_set.size>0
+      
+      section_text += "\nWARNING: roc plot information not available for all validation results" if prediction_set.size!=validation_set.size
       @xml_report.add_paragraph(section_roc, section_text) if section_text
-
       begin
         plot_file_path = add_tmp_file(plot_file_name)
-        Reports::PlotFactory.create_roc_plot( plot_file_path, validation_set, class_value, split_set_attribute, validation_set.size>1 )
+        Reports::PlotFactory.create_roc_plot( plot_file_path, prediction_set, class_value, split_set_attribute, prediction_set.size>1 )
         @xml_report.add_imagefigure(section_roc, image_title, plot_file_name, "SVG", image_caption)
       rescue RuntimeError => ex
         LOGGER.error("could not create roc plot: "+ex.message)
@@ -248,7 +292,7 @@ class Reports::ReportContent
         @xml_report.add_paragraph(section_roc, "could not create roc plot: "+ex.message)
       end  
     else
-      @xml_report.add_paragraph(section_roc, "No prediction info for roc plot available.")
+      @xml_report.add_paragraph(section_roc, "No prediction-confidence info for roc plot available.")
     end
     
   end
@@ -257,13 +301,14 @@ class Reports::ReportContent
                             compare_attribute,
                             equal_attribute,
                             rank_attributes,
+                            class_value,
                             section_title="Ranking Plots",
                             section_text="This section contains the ranking plots.")
     
     section_rank = @xml_report.add_section(@xml_report.get_root_element, section_title)
     @xml_report.add_paragraph(section_rank, section_text) if section_text
 
-    rank_attributes.each{|a| add_ranking_plot(section_rank, validation_set, compare_attribute, equal_attribute, a, a.to_s+"-ranking.svg")}
+    rank_attributes.each{|a| add_ranking_plot(section_rank, validation_set, compare_attribute, equal_attribute, a, class_value, a.to_s+"-ranking.svg")}
   end
   
   def add_ranking_plot( report_section, 
@@ -271,12 +316,13 @@ class Reports::ReportContent
                         compare_attribute,
                         equal_attribute,
                         rank_attribute,
+                        class_value=nil,
                         plot_file_name="ranking.svg", 
                         image_title="Ranking Plot",
                         image_caption=nil)
     
     plot_file_path = add_tmp_file(plot_file_name)
-    Reports::PlotFactory::create_ranking_plot(plot_file_path, validation_set, compare_attribute, equal_attribute, rank_attribute)
+    Reports::PlotFactory::create_ranking_plot(plot_file_path, validation_set, compare_attribute, equal_attribute, rank_attribute, class_value)
     @xml_report.add_imagefigure(report_section, image_title, plot_file_name, "SVG", image_caption)
     
   end
@@ -287,11 +333,16 @@ class Reports::ReportContent
                             value_attributes,
                             plot_file_name="bar-plot.svg", 
                             section_title="Bar Plot",
-                            section_text="This section contains the bar plot.",
+                            section_text=nil,
                             image_title=nil,
                             image_caption=nil)
-    image_title = "Bar Plot for class-value '"+class_value+"'" unless image_title
-  
+    if class_value
+      section_text = "This section contains the bar plot for class '"+class_value+"'." unless section_text
+      image_title = "Bar Plot for class-value '"+class_value+"'" unless image_title
+    else
+      section_text = "This section contains the bar plot." unless section_text
+      image_title = "Bar Plot for all classes" unless image_title
+    end                            
     section_bar = @xml_report.add_section(@xml_report.get_root_element, section_title)
     @xml_report.add_paragraph(section_bar, section_text) if section_text
     

@@ -1,7 +1,7 @@
 
 # the variance is computed when merging results for these attributes 
-VAL_ATTR_VARIANCE = [ :area_under_roc, :percent_correct, :root_mean_squared_error, :mean_absolute_error, :r_square ]
-VAL_ATTR_RANKING = [ :area_under_roc, :percent_correct, :true_positive_rate, :true_negative_rate ]
+VAL_ATTR_VARIANCE = [ :area_under_roc, :percent_correct, :root_mean_squared_error, :mean_absolute_error, :r_square, :accuracy  ]
+VAL_ATTR_RANKING = [ :area_under_roc, :percent_correct, :true_positive_rate, :true_negative_rate, :accuracy ]
 
 class Object
   
@@ -23,6 +23,19 @@ class Object
     map.each{|k,v| return false if send(k)!=v}
     return true
   end
+end
+
+class Hash
+  
+  def mean_value
+    sum = 0
+    self.values.collect do |v|
+      raise "cannot compute mean of non-numeric values '"+self.inspect+"'" unless v!=nil and v.is_a?(Numeric)
+      sum+=v
+    end
+    sum/=self.values.size.to_f
+  end
+  
 end
 
 
@@ -261,6 +274,18 @@ module Reports
       return new_set
     end
     
+    # returns a new set with all validation that the attached block accepted
+    # e.g. create set with predictions: collect{ |validation| validation.get_predictions!=null } 
+    #
+    # call-seq:
+    #   filter_proc(proc) => Reports::ValidationSet
+    # 
+    def collect
+      new_set = Reports::ValidationSet.new
+      validations.each{ |v| new_set.validations.push(v) if yield(v) }
+      return new_set
+    end
+    
     # returns an array, with values for __attributes__, that can be use for a table
     # * first row is header row
     # * other rows are values
@@ -321,7 +346,7 @@ module Reports
     # call-seq:
     #   compute_ranking(equal_attributes, ranking_attribute) => array
     # 
-    def compute_ranking(equal_attributes, ranking_attribute)
+    def compute_ranking(equal_attributes, ranking_attribute, class_value=nil )
     
       new_set = Reports::ValidationSet.new
       (0..@validations.size-1).each do |i|
@@ -334,7 +359,16 @@ module Reports
         # put indices and ranking values for current group into hash
         rank_hash = {}
         (0..group.size-1).each do |i|
-          rank_hash[i] = group[i].send(ranking_attribute)
+          val = group[i].send(ranking_attribute)
+          if val.is_a?(Hash)
+            if class_value != nil
+              raise "no value for class value "+class_value.class.to_s+" "+class_value.to_s+" in hash "+val.inspect.to_s unless val.has_key?(class_value)
+              val = val[class_value]
+            else
+              val = val.mean_value
+            end
+          end
+          rank_hash[i] = val
         end
               
         # sort group accrording to second value (= ranking value)

@@ -86,7 +86,7 @@ module Lib
     
       res = {}
       if @is_classification
-        (Lib::VAL_CLASS_PROPS).each{ |s| res[s] = send(s)}  
+        (Lib::VAL_CLASS_PROPS_EXTENDED).each{ |s| res[s] = send(s)}  
       else
         (Lib::VAL_REGR_PROPS).each{ |s| res[s] = send(s) }  
       end

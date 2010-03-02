@@ -31,9 +31,16 @@ end
 
 get '/report/:type/:id' do
   perform do |rs| 
+    
+    accept_header = request.env['HTTP_ACCEPT']
+    if request.env['HTTP_USER_AGENT'] =~ /MSIE/
+      LOGGER.info "Changing MSIE accept-header to text/html"
+      accept_header = "text/html"
+    end
     #request.env['HTTP_ACCEPT'] = "application/pdf"
-    content_type Reports::ReportFormat.get_format(request.env['HTTP_ACCEPT'])
-    result = body(File.new( rs.get_report(params[:type],params[:id],request.env['HTTP_ACCEPT']) ))
+    
+    content_type Reports::ReportFormat.get_format(accept_header)
+    result = body(File.new( rs.get_report(params[:type],params[:id],accept_header) ))
   end
 end
 

@@ -8,12 +8,19 @@ require 'rack/test'
 require "lib/test_util.rb"
 
 
-#class Reports::ApplicationTest < Test::Unit::TestCase
-#  include Rack::Test::Methods
-#
-#  def app
-#    Sinatra::Application
-#  end
+class Reports::ApplicationTest < Test::Unit::TestCase
+  include Rack::Test::Methods
+
+  def app
+    Sinatra::Application
+  end
+  
+  def test_nothing
+    
+    get '/report/validation/1'     
+    
+    puts last_response.body
+  end
 #
 #  def test_webservice
 #    
@@ -68,122 +75,122 @@ require "lib/test_util.rb"
 #    end
 #  end
 #  
-#end
-
-
-
-class Reports::ReportServiceTest < Test::Unit::TestCase
-  include Lib::TestUtil
-
-  WS_VAL = @@config[:services]["opentox-validation"]
-  WS_DATA=@@config[:services]["opentox-dataset"]
-  FILE=File.new("data/hamster_carcinogenicity.owl","r")
-  
-  WS_CLASS_ALG=File.join(@@config[:services]["opentox-algorithm"],"lazar")
-  WS_FEATURE_ALG=File.join(@@config[:services]["opentox-algorithm"],"fminer")
-  
-  #WS_CLASS_ALG_2="localhost:4008/algorithm"
-  #WS_FEATURE_ALG_2=nil
-
-  def test_service_ot_webservice
-
-    begin
-      
-      rep = Reports::ReportService.new("http://some.location")
-      types = rep.get_report_types
-      assert types.is_a?(String)
-      assert types.split("\n").size == Reports::ReportFactory::REPORT_TYPES.size
-      #Reports::ReportFactory::REPORT_TYPES.each{|t| rep.get_all_reports(t)}
-      #assert_raise(Reports::NotFound){rep.get_all_reports("osterhase")}
-      
-      ### using ot_mock_layer (reporting component does not rely on ot validation webservice)
-      
-      #ENV['REPORT_VALIDATION_ACCESS'] = "mock_layer"
-      #Reports::Validation.reset_validation_access
-      
-#      create_report(rep, "validation_uri_1", "validation")
-#      assert_raise(Reports::BadRequest){create_report(rep, ["validation_uri_1","validation_uri_2"], "validation")}
-#      
-#      create_report(rep, "crossvalidation_uri_1", "crossvalidation")
-#      create_report(rep, ["validation_uri_1"]*Reports::OTMockLayer::NUM_FOLDS, "crossvalidation")
-#      assert_raise(Reports::BadRequest){create_report(rep, ["validation_uri_1"]*(Reports::OTMockLayer::NUM_FOLDS-1), "crossvalidation")}
-#      
-#      create_report(rep, ["crossvalidation_uri_1"]* (Reports::OTMockLayer::NUM_DATASETS * Reports::OTMockLayer::NUM_ALGS), "algorithm_comparison")
-#      create_report(rep, ["validation_uri_1"]* (Reports::OTMockLayer::NUM_DATASETS * Reports::OTMockLayer::NUM_ALGS * Reports::OTMockLayer::NUM_FOLDS), "algorithm_comparison")
-
-      ### using ot webservices (instead of mock layer)
-
-      #ENV['REPORT_VALIDATION_ACCESS'] = nil
-      #Reports::Validation.reset_validation_access
-      
-      #data_uri = upload_data WS_DATA,  FILE
-      #data_uri= File.join(WS_DATA,"1")
-      
-#      #val_uri = create_single_validation(data_uri)
-#      #val_uri = create_single_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
-#      val_uri = File.join(WS_VAL,"15")
-##      #add_resource val_uri
-#      create_report(rep, val_uri, "validation")
-        
-       #val_uri = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
-       #val_uri = create_cross_validation(data_uri)
-       val_uri = File.join(WS_VAL,"crossvalidation/1")
-       #val_uri2 = "http://localhost:4007/crossvalidation/14"
-#       # add_resource val_uri
-       create_report(rep, val_uri, "crossvalidation")
-        
-#         #val_uri2 = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
-#         #val_uri = ["http://localhost:4007/crossvalidation/6", "http://localhost:4007/crossvalidation/8"]
-         #val_uri = ["http://localhost:4007/crossvalidation/7", "http://localhost:4007/crossvalidation/8"]
-#         #add_resource val_uri
-         #create_report(rep, val_uri, "algorithm_comparison")
-      
-    ensure
-     # delete_resources
-    end
-  end
-  
-  private
-  def create_single_validation(data_uri, ws_class_alg=WS_CLASS_ALG, ws_feat_alg=WS_FEATURE_ALG)
-    puts "validating"
-    val_params = { 
-        :dataset_uri => data_uri, 
-        :algorithm_uri => ws_class_alg, 
-        :split_ratio=>0.7,
-        :prediction_feature => "classification",}
-    val_params[:feature_generation_uri] = ws_feat_alg if ws_feat_alg
-    begin
-      RestClient.post WS_VAL+"/validation/training_test_split", val_params
-    rescue => ex
-      raise "error validating "+WS_VAL+"/validation/training_test_split\n "+val_params.inspect+" \n -> "+ex.message
-    end
-  end
-  
-  def create_cross_validation(data_uri, ws_class_alg=WS_CLASS_ALG, ws_feat_alg=WS_FEATURE_ALG)
-    puts "cross-validating"
-    ext("curl -X POST -d num_folds=3 -d dataset_uri="+data_uri+" -d algorithm_uri="+ws_class_alg+" -d prediction_feature=classification"+
-        (ws_feat_alg ? " -d feature_generation_uri="+ws_feat_alg : "")+
-        " "+WS_VAL+"/crossvalidation",nil)
-  end
-  
-  def create_report(report_service, val_uri, type)
-    
-    Reports.reset_ot_access if ENV['USE_OT_MOCK_LAYER']
-    report_uri = report_service.create_report(type, val_uri)
-    assert type == report_service.parse_type(report_uri)
-    id = report_service.parse_id(report_uri)
-    
-    #puts "created report with id "+id.to_s
-    
-    #assert_raise(Reports::BadRequest){report_service.get_report(type, id, "weihnachtsmann")}
-    
-    report_service.get_report(type, id, "text/html")
-    #report_service.get_report(type, id, "application/pdf")
-    #assert_raise(Reports::NotFound){report_service.delete_report(type, 877658)}
-
-#      rep.delete_report(type, id)
-  end
 end
+
+
+
+#class Reports::ReportServiceTest < Test::Unit::TestCase
+#  include Lib::TestUtil
+#
+#  WS_VAL = @@config[:services]["opentox-validation"]
+#  WS_DATA=@@config[:services]["opentox-dataset"]
+#  FILE=File.new("data/hamster_carcinogenicity.owl","r")
+#  
+#  WS_CLASS_ALG=File.join(@@config[:services]["opentox-algorithm"],"lazar")
+#  WS_FEATURE_ALG=File.join(@@config[:services]["opentox-algorithm"],"fminer")
+#  
+#  #WS_CLASS_ALG_2="localhost:4008/algorithm"
+#  #WS_FEATURE_ALG_2=nil
+#
+#  def test_service_ot_webservice
+#
+#    begin
+#      
+#      rep = Reports::ReportService.new("http://some.location")
+#      types = rep.get_report_types
+#      assert types.is_a?(String)
+#      assert types.split("\n").size == Reports::ReportFactory::REPORT_TYPES.size
+#      #Reports::ReportFactory::REPORT_TYPES.each{|t| rep.get_all_reports(t)}
+#      #assert_raise(Reports::NotFound){rep.get_all_reports("osterhase")}
+#      
+#      ### using ot_mock_layer (reporting component does not rely on ot validation webservice)
+#      
+#      #ENV['REPORT_VALIDATION_ACCESS'] = "mock_layer"
+#      #Reports::Validation.reset_validation_access
+#      
+##      create_report(rep, "validation_uri_1", "validation")
+##      assert_raise(Reports::BadRequest){create_report(rep, ["validation_uri_1","validation_uri_2"], "validation")}
+##      
+##      create_report(rep, "crossvalidation_uri_1", "crossvalidation")
+##      create_report(rep, ["validation_uri_1"]*Reports::OTMockLayer::NUM_FOLDS, "crossvalidation")
+##      assert_raise(Reports::BadRequest){create_report(rep, ["validation_uri_1"]*(Reports::OTMockLayer::NUM_FOLDS-1), "crossvalidation")}
+##      
+##      create_report(rep, ["crossvalidation_uri_1"]* (Reports::OTMockLayer::NUM_DATASETS * Reports::OTMockLayer::NUM_ALGS), "algorithm_comparison")
+##      create_report(rep, ["validation_uri_1"]* (Reports::OTMockLayer::NUM_DATASETS * Reports::OTMockLayer::NUM_ALGS * Reports::OTMockLayer::NUM_FOLDS), "algorithm_comparison")
+#
+#      ### using ot webservices (instead of mock layer)
+#
+#      #ENV['REPORT_VALIDATION_ACCESS'] = nil
+#      #Reports::Validation.reset_validation_access
+#      
+#      #data_uri = upload_data WS_DATA,  FILE
+#      #data_uri= File.join(WS_DATA,"1")
+#      
+##      #val_uri = create_single_validation(data_uri)
+##      #val_uri = create_single_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
+##      val_uri = File.join(WS_VAL,"15")
+###      #add_resource val_uri
+##      create_report(rep, val_uri, "validation")
+#        
+#       #val_uri = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
+#       #val_uri = create_cross_validation(data_uri)
+#       val_uri = File.join(WS_VAL,"crossvalidation/1")
+#       #val_uri2 = "http://localhost:4007/crossvalidation/14"
+##       # add_resource val_uri
+#       create_report(rep, val_uri, "crossvalidation")
+#        
+##         #val_uri2 = create_cross_validation(data_uri, WS_CLASS_ALG_2, WS_FEATURE_ALG_2)
+##         #val_uri = ["http://localhost:4007/crossvalidation/6", "http://localhost:4007/crossvalidation/8"]
+#         #val_uri = ["http://localhost:4007/crossvalidation/7", "http://localhost:4007/crossvalidation/8"]
+##         #add_resource val_uri
+#         #create_report(rep, val_uri, "algorithm_comparison")
+#      
+#    ensure
+#     # delete_resources
+#    end
+#  end
+#  
+#  private
+#  def create_single_validation(data_uri, ws_class_alg=WS_CLASS_ALG, ws_feat_alg=WS_FEATURE_ALG)
+#    puts "validating"
+#    val_params = { 
+#        :dataset_uri => data_uri, 
+#        :algorithm_uri => ws_class_alg, 
+#        :split_ratio=>0.7,
+#        :prediction_feature => "classification",}
+#    val_params[:feature_generation_uri] = ws_feat_alg if ws_feat_alg
+#    begin
+#      RestClient.post WS_VAL+"/validation/training_test_split", val_params
+#    rescue => ex
+#      raise "error validating "+WS_VAL+"/validation/training_test_split\n "+val_params.inspect+" \n -> "+ex.message
+#    end
+#  end
+#  
+#  def create_cross_validation(data_uri, ws_class_alg=WS_CLASS_ALG, ws_feat_alg=WS_FEATURE_ALG)
+#    puts "cross-validating"
+#    ext("curl -X POST -d num_folds=3 -d dataset_uri="+data_uri+" -d algorithm_uri="+ws_class_alg+" -d prediction_feature=classification"+
+#        (ws_feat_alg ? " -d feature_generation_uri="+ws_feat_alg : "")+
+#        " "+WS_VAL+"/crossvalidation",nil)
+#  end
+#  
+#  def create_report(report_service, val_uri, type)
+#    
+#    Reports.reset_ot_access if ENV['USE_OT_MOCK_LAYER']
+#    report_uri = report_service.create_report(type, val_uri)
+#    assert type == report_service.parse_type(report_uri)
+#    id = report_service.parse_id(report_uri)
+#    
+#    #puts "created report with id "+id.to_s
+#    
+#    #assert_raise(Reports::BadRequest){report_service.get_report(type, id, "weihnachtsmann")}
+#    
+#    report_service.get_report(type, id, "text/html")
+#    #report_service.get_report(type, id, "application/pdf")
+#    #assert_raise(Reports::NotFound){report_service.delete_report(type, 877658)}
+#
+##      rep.delete_report(type, id)
+#  end
+#end
 
     
 

@@ -4,6 +4,7 @@
 end
 
 require 'validation/validation_service.rb'
+require 'lib/merge.rb'
 
 
 # hack: store self in $sinatra to make url_for method accessible in validation_service
@@ -46,8 +47,6 @@ get '/crossvalidation/:id' do
   else
     halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported."
   end
-  
-  halt 202, result unless crossvalidation.finished
   result
 end
 
@@ -64,6 +63,22 @@ get '/crossvalidation/:id/validations' do
   content_type "text/uri-list"
   Validation::Validation.all(:crossvalidation_id => params[:id]).collect{ |v| v.uri.to_s }.join("\n")+"\n"
 end
+
+
+get '/crossvalidation/:id/statistics' do
+  LOGGER.info "get merged validation-result for crossvalidation with id "+params[:id].to_s
+  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.get(params[:id])
+  
+  to_merge = [:prediction_feature, :num_instances,:num_without_class,:percent_without_class,:num_unpredicted,:percent_unpredicted,
+    :classification_statistics,:regression_statistics,:crossvalidation_id]
+  v = Validation::Validation.all(:crossvalidation_id => params[:id]).merge_array(to_merge)
+  v.uri = nil
+  v.created_at = nil
+  v.id = nil
+  content_type "text/x-yaml"
+  v.to_yaml
+end
+
 
 post '/crossvalidation/?' do
   OpenTox::Task.as_task do
@@ -102,8 +117,6 @@ get '/:id' do
   else
     halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported."
   end
-  
-  halt 202, result unless validation.finished
   result
 end
 
