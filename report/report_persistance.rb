@@ -31,7 +31,7 @@ class Reports::ReportPersistance
   # call-seq:
   #   get_report(type, id, format) => string
   #
-  def get_report(type, id, format)
+  def get_report(type, id, format, force_formating, params)
     raise "not implemented"
   end
   
@@ -111,7 +111,7 @@ class Reports::FileReportPersistance < Reports::ReportPersistance
     return id
   end
   
-  def get_report(type, id, format)
+  def get_report(type, id, format, force_formating, params)
     
     report_dir = report_directory(type, id)
     raise_report_not_found(type, id) unless File.directory?(report_dir)
@@ -119,11 +119,10 @@ class Reports::FileReportPersistance < Reports::ReportPersistance
     filename = "report."+format
     file_path = report_dir+"/"+filename
 
-    if !File.exist?(file_path)
-      Reports::ReportFormat.format_report(report_dir, "report.xml", filename, format)
-      raise "formated file not found '"+file_path+"'" unless File.exist?(file_path)
-    end
-
+    return file_path if File.exist?(file_path) && !force_formating
+      
+    Reports::ReportFormat.format_report(report_dir, "report.xml", filename, format, force_formating, params)
+    raise "formated file not found '"+file_path+"'" unless File.exist?(file_path)
     return file_path
   end
   

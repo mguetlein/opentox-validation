@@ -17,9 +17,14 @@ class Reports::ApplicationTest < Test::Unit::TestCase
   
   def test_nothing
     
-    get '/report/validation/1'     
+    #uri = '/report/css_style_sheet?css_style_sheet='+CGI.escape("http://apps.ideaconsult.net:8180/ToxPredict/style/global.css")
+    #puts uri
+    #get uri
     
-    puts last_response.body
+    #get '/report/validation/1',nil,'HTTP_ACCEPT' => "text/html"     
+    post '/report/validation/1/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
+    
+    puts last_response.body.to_s.gsub(/\n.*/,"")
   end
 #
 #  def test_webservice

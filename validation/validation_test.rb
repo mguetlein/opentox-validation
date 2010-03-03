@@ -197,7 +197,7 @@ class ValidationTest < Test::Unit::TestCase
 
     
     #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
-    get '/crossvalidation/1/statistics',nil,'HTTP_ACCEPT' => "text/x-yaml"
+    get '/crossvalidation/1/statistics',:bla=>blub,'HTTP_ACCEPT' => "text/x-yaml"
     
     puts last_response.body
   end

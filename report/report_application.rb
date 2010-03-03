@@ -15,6 +15,13 @@ def perform
   end
 end
 
+get '/report/:type/css_style_sheet/?' do
+  perform do |rs|
+    "@import \""+params[:css_style_sheet]+"\";"
+  end
+end
+
+
 get '/report/?' do
   perform do |rs|
     content_type "text/uri-list"
@@ -29,11 +36,22 @@ get '/report/:type' do
   end
 end
 
+post '/report/:type/:id/format_html' do
+  
+  perform do |rs| 
+    rs.get_report(params[:type],params[:id],"text/html",true,params)
+    content_type "text/uri-list"
+    rs.get_uri(params[:type],params[:id])
+  end
+end
+
+
 get '/report/:type/:id' do
+  
   perform do |rs| 
     
     accept_header = request.env['HTTP_ACCEPT']
-    if request.env['HTTP_USER_AGENT'] =~ /MSIE/
+    if accept_header =~ /MSIE/
       LOGGER.info "Changing MSIE accept-header to text/html"
       accept_header = "text/html"
     end

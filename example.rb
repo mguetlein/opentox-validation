@@ -9,6 +9,7 @@ class Example
   @@data=File.join @@config[:services]["opentox-dataset"],"1"
   @@train_data=File.join @@config[:services]["opentox-dataset"],"2"
   @@test_data=File.join @@config[:services]["opentox-dataset"],"3"
+  @@css_file="http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
   
   @@summary=""
   
@@ -34,6 +35,7 @@ class Example
             "crossvalidation_id" => "1",
             "validation_report_id" => "1",
             "crossvalidation_report_id" => "1",
+            "css_file" => @@css_file,
             }
     
     sub.each do |k,v|

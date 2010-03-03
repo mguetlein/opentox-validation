@@ -69,12 +69,13 @@ module Reports
     # call-seq:
     #   get_report( type, id, accept_header_value ) => string
     # 
-    def get_report( type, id, accept_header_value="text/xml" )
+    def get_report( type, id, accept_header_value="text/xml", force_formating=false, params={} )
       
-      LOGGER.info "get report '"+id.to_s+"' of type '"+type.to_s+"' (accept-header-value: '"+accept_header_value.to_s+"')"
+      LOGGER.info "get report '"+id.to_s+"' of type '"+type.to_s+"' (accept-header-value: '"+
+        accept_header_value.to_s+"', force-formating:"+force_formating.to_s+" params: '"+params.inspect+"')"
       check_report_type(type)
       format = Reports::ReportFormat.get_format(accept_header_value)
-      return @persistance.get_report(type, id, format)
+      return @persistance.get_report(type, id, format, force_formating, params)
     end
     
     # returns a report resource (i.e. image)
@@ -126,11 +127,11 @@ module Reports
       return id
     end
     
-    protected
     def get_uri(type, id=nil)
       @home_uri+"/"+type.to_s+(id!=nil ? "/"+id.to_s : "")
     end
     
+    protected
     def check_report_type(type)
      raise Reports::NotFound.new("report type not found '"+type.to_s+"'") unless Reports::ReportFactory::REPORT_TYPES.index(type)
     end
