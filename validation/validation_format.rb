@@ -30,6 +30,7 @@ module Validation
         # transpose results per class
         class_values = {}
         Lib::VAL_CLASS_PROPS_PER_CLASS.each do |p|
+          raise "missing classification statitstics: "+p.to_s+" "+classification_statistics.inspect unless classification_statistics[p]
           classification_statistics[p].each do |class_value, property_value|
             class_values[class_value] = {:class_value => class_value} unless class_values.has_key?(class_value)
             map = class_values[class_value]
@@ -40,6 +41,7 @@ module Validation
         
         #converting confusion matrix
         cells = []
+        raise "confusion matrix missing" unless classification_statistics[:confusion_matrix]!=nil
         classification_statistics[:confusion_matrix].each do |k,v|
           cell = {}
           # key in confusion matrix is map with predicted and actual attribute 
@@ -62,6 +64,7 @@ module Validation
     # build hash structure and return with to_yaml
     def to_yaml
       get_content_as_hash.to_yaml
+      #super.to_yaml
     end
     
     def rdf_title

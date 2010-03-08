@@ -134,13 +134,22 @@ class ValidationTest < Test::Unit::TestCase
 #      #model_uri = "http://ot.model.de/12"
 #      #data_uri_test = "http://ot.dataset.de/67"
 #      
-#      model_uri = "http://ot.model.de/9" 
-#      data_uri_test = "http://ot.dataset.de/33"
+#      model_uri = "http://ot.model.de/1" 
+#      data_uri_test = "http://ot.dataset.de/3"
 #      
 #      post '', {:test_dataset_uri => data_uri_test, :model_uri => model_uri, :prediction_feature => FEATURE_URI}
 #      
 #      puts last_response.body
 #      #verify_validation
+#      
+#      task = OpenTox::Task.find(last_response.body)
+#      task.wait_for_completion
+#      val_uri = task.resource
+#      puts val_uri
+#      
+#      get val_uri
+#      verify_validation(last_response.body)
+#
 #    ensure
 #      #delete_resources
 #    end
@@ -151,8 +160,9 @@ class ValidationTest < Test::Unit::TestCase
 #      
 #      #get '/41',nil,'HTTP_ACCEPT' => "application/rdf+xml" #"text/x-yaml"
 #      #puts last_response.body
-#      data_uri_train = upload_data(WS_DATA, FILE_TRAIN)
-#      data_uri_test = upload_data(WS_DATA, FILE_TEST)
+#      
+#      #data_uri_train = upload_data(WS_DATA, FILE_TRAIN)
+#      #data_uri_test = upload_data(WS_DATA, FILE_TEST)
 #      
 #      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
 #      #data_uri_test = WS_DATA+"/"+DATA_TEST
@@ -177,17 +187,85 @@ class ValidationTest < Test::Unit::TestCase
 #      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
 #        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.75, :random_seed=>6}
 #      puts last_response.body
+#      
+#      task = OpenTox::Task.find(last_response.body)
+#      task.wait_for_completion
+#      val_uri = task.resource
+#      puts val_uri
+#            
+#      get val_uri
+#      puts last_response.body
 #      #verify_validation
 #    ensure
 #      #delete_resources
 #    end
 #  end
   
+  
+  def verify_validation(val_yaml)
+    
+    val = YAML.load(val_yaml)
+
+    puts val.inspect
+    assert_integer val["num_instances".to_sym],0,1000
+    num_instances = val["num_instances".to_sym].to_i
+    
+    assert_integer val["num_unpredicted".to_sym],0,num_instances
+    num_unpredicted = val["num_unpredicted".to_sym].to_i
+    assert_float val["percent_unpredicted".to_sym],0,100
+    assert_float_equal(val["percent_unpredicted".to_sym].to_f,100*num_unpredicted/num_instances.to_f,"percent_unpredicted")
+    
+    assert_integer val["num_without_class".to_sym],0,num_instances
+    num_without_class = val["num_without_class".to_sym].to_i
+    assert_float val["percent_without_class".to_sym],0,100
+    assert_float_equal(val["percent_without_class".to_sym].to_f,100*num_without_class/num_instances.to_f,"percent_without_class")
+    
+    class_stats = val["classification_statistics".to_sym]
+    class_value_stats = class_stats["class_value_statistics".to_sym]
+    class_values = []
+    class_value_stats.each do |cvs|
+      class_values << cvs["class_value".to_sym]
+    end
+    puts class_values.inspect
+    
+    confusion_matrix = class_stats["confusion_matrix".to_sym]
+    confusion_matrix_cells = confusion_matrix["confusion_matrix_cell".to_sym]
+    predictions = 0
+    confusion_matrix_cells.each do |confusion_matrix_cell|
+      predictions += confusion_matrix_cell["confusion_matrix_value".to_sym].to_i
+    end
+    assert_int_equal(predictions, num_instances-num_unpredicted)
+  end
+  
+  def assert_int_equal(val1,val2,msg_suffix=nil)
+    assert(val1==val2,msg_suffix.to_s+" not equal: "+val1.to_s+" != "+val2.to_s)
+  end
+  
+  def assert_float_equal(val1,val2,msg_suffix=nil,epsilon=0.0001)
+    assert((val1-val2).abs<epsilon,msg_suffix.to_s+" not equal: "+val1.to_s+" != "+val2.to_s+", diff:"+(val1-val2).abs.to_s)
+  end
+  
+  def assert_integer(string_val, min=nil, max=nil)
+    assert string_val.to_i.to_s==string_val.to_s, string_val.to_s+" not an integer"
+    assert string_val.to_i>=min if min!=nil
+    assert string_val.to_i<=max if max!=nil
+  end
+  
+  def assert_float(string_val, min=nil, max=nil)
+    assert( string_val.to_f.to_s==string_val.to_s || (string_val.to_f.to_s==(string_val.to_s+".0")),
+      string_val.to_s+" not a float (!="+string_val.to_f.to_s+")")
+    assert string_val.to_f>=min if min!=nil
+    assert string_val.to_f<=max if max!=nil
+  end
+  
   def test_nothing
     
     #puts "testing nothing"
     
     #get '/'     
+
+    #get '/crossvalidation/loo'
+    #get '/training_test_split'
 
     #get '/prepare_examples'
     #get '/test_examples'
@@ -197,9 +275,13 @@ class ValidationTest < Test::Unit::TestCase
 
     
     #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
-    get '/crossvalidation/1/statistics',:bla=>blub,'HTTP_ACCEPT' => "text/x-yaml"
+    get '/crossvalidation/1/statistics',nil,'HTTP_ACCEPT' => "text/x-yaml"
     
-    puts last_response.body
+    #puts last_response.body
+    
+    #get '/2'
+    verify_validation(last_response.body)
+    
   end
   
 #  private

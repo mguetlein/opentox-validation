@@ -109,10 +109,11 @@ module Reports
       svg_out_file ? show = "-o" : show = ""  
       (title and title.length > 0) ? tit = '-t "'+title+'"' : tit = ""  
       #title = "-t \""+ranking_value_prop+"-Ranking ("+comparables.size.to_s+" "+comparable_prop+"s, "+num_groups.to_s+" "+ranking_group_prop+"s, p < "+p.to_s+")\" "
-        
+      
       cmd = "java -jar "+ENV['RANK_PLOTTER_JAR']+" "+tit+" -c '"+
         comparables_array.join(",")+"' -r '"+ranks_array.join(",")+"' "+conf+" "+show #+" > /home/martin/tmp/test.svg" 
       #puts "\nplotting: "+cmd
+      LOGGER.debug "Plotting ranks: "+cmd.to_s
       
       res = ""
       IO.popen(cmd) do |f|

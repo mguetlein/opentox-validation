@@ -33,6 +33,14 @@ get '/crossvalidation/?' do
   Validation::Crossvalidation.all.collect{ |d| url_for("/crossvalidation/", :full) + d.id.to_s }.join("\n")
 end
 
+post '/crossvalidation/loo/?' do
+  halt 500, "not yet implemented"
+end
+
+get '/crossvalidation/loo/?' do
+  halt 400, "GET operation not supported, use POST for performing a loo-crossvalidation, see "+url_for("/crossvalidation", :full)+" for crossvalidation results"
+end
+
 get '/crossvalidation/:id' do
   LOGGER.info "get crossvalidation with id "+params[:id].to_s
   halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.get(params[:id])
@@ -69,9 +77,11 @@ get '/crossvalidation/:id/statistics' do
   LOGGER.info "get merged validation-result for crossvalidation with id "+params[:id].to_s
   halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.get(params[:id])
   
-  to_merge = [:prediction_feature, :num_instances,:num_without_class,:percent_without_class,:num_unpredicted,:percent_unpredicted,
-    :classification_statistics,:regression_statistics,:crossvalidation_id]
-  v = Validation::Validation.all(:crossvalidation_id => params[:id]).merge_array(to_merge)
+  Lib::MergeObjects.register_merge_attributes( Validation::Validation,
+    Lib::VAL_MERGE_AVG,Lib::VAL_MERGE_SUM,Lib::VAL_MERGE_GENERAL) unless 
+      Lib::MergeObjects.merge_attributes_registered?(Validation::Validation)
+  
+  v = Lib::MergeObjects.merge_array_objects( Validation::Validation.all(:crossvalidation_id => params[:id]) )
   v.uri = nil
   v.created_at = nil
   v.id = nil
@@ -95,6 +105,10 @@ post '/crossvalidation/?' do
     content_type "text/uri-list"
     cv.uri
   end
+end
+
+get '/training_test_split' do
+  halt 400, "GET operation not supported, use POST to perform a training_test_split, see "+url_for("/", :full)+" for validation results"
 end
 
 get '/?' do

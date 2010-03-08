@@ -1,6 +1,5 @@
 
 require 'rexml/document'
-include REXML
 
 ENV['REPORT_DTD'] = "docbook-xml-4.5/docbookx.dtd" unless ENV['REPORT_DTD']
 #transfer to absolute path
@@ -13,6 +12,7 @@ ENV['REPORT_DTD'] = File.expand_path(ENV['REPORT_DTD']) if File.exist?(ENV['REPO
 # uses Env-Variable _XMLREPORT_DTD_ to specifiy the dtd
 #  
 class Reports::XMLReport
+  include REXML
   
   # create new xmlreport
   def initialize(title, pubdate=nil, author_firstname = nil, author_surname = nil)

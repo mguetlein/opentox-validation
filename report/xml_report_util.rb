@@ -4,6 +4,7 @@
 # Utilities for XMLReport
 #
 module Reports::XMLReportUtil
+  include REXML
   
   # creates a confusion matrix as array (to be used as input for Reports::XMLReport::add_table)
   # input is confusion matrix as returned by Lib::Predictions.confusion_matrix

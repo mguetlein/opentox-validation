@@ -118,7 +118,7 @@ module Reports::ReportFactory
         Reports::Util.check_group_matching(dataset_grouping, [:algorithm_uri])
         
         #merged = validation_set.merge([:algorithm_uri, :dataset_uri])
-        report = Reports::ReportContent.new("Algorithm comparison report Many datasets")
+        report = Reports::ReportContent.new("Algorithm comparison report - Many datasets")
         
         if (validation_set.first.classification?)
           report.add_section_result(validation_set,[:algorithm_uri, :test_dataset_uri]+VAL_ATTR_CLASS,"Mean Results","Mean Results")

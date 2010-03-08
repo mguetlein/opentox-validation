@@ -48,7 +48,7 @@ module Reports
   class Validation
     
     @@validation_access = Reports::ValidationDB.new
-
+    
     # for overwriting validation source (other than using webservices)
     def self.reset_validation_access(validation_access)
       @@validation_access = validation_access
@@ -65,11 +65,10 @@ module Reports
       VAL_ATTR_RANKING.collect{ |a| (a.to_s+"_ranking").to_sym }
     @@validation_attributes.each{ |a| attr_accessor a } 
   
-    attr_reader :predictions, :merge_count
+    attr_reader :predictions
     
     def initialize(uri = nil)
       @@validation_access.init_validation(self, uri) if uri
-      @merge_count = 1
     end
   
     # returns/creates predictions, cache to save rest-calls/computation time
@@ -109,86 +108,8 @@ module Reports
     def clone_validation
       new_val = clone
       VAL_ATTR_VARIANCE.each { |a| new_val.send((a.to_s+"_variance=").to_sym,nil) }
-      new_val.set_merge_count(1)
       return new_val
     end
-    
-    # merges this validation and another validation object to a new validation object
-    # * v1.att = "a", v2.att = "a" => r.att = "a"
-    # * v1.att = "a", v2.att = "b" => r.att = "a / b"
-    # * v1.att = "1", v2.att = "2" => r.att = "1.5"
-    # * the attributes in __equal_attributes__ are assumed to be equal
-    #
-    # call-seq:
-    #   merge( validation, equal_attributes) => Reports::Validation
-    # 
-    def merge_validation( validation, equal_attributes )
-  
-      new_validation = Reports::Validation.new
-      # validation cannot be merged before 
-      raise "not working" if validation.merge_count > 1
-
-      @@validation_attributes.each do |a|
-        next if a.to_s =~ /_variance$/
-      
-        if (equal_attributes.index(a) != nil)
-          new_validation.send("#{a.to_s}=".to_sym, send(a))
-        else
-          
-          compute_variance = VAL_ATTR_VARIANCE.index(a)!=nil
-          old_variance = compute_variance ? send((a.to_s+"_variance").to_sym) : nil 
-          m = Validation::merge_value( send(a), @merge_count, compute_variance, old_variance, validation.send(a) )
-          
-          new_validation.send("#{a.to_s}=".to_sym, m[:value])
-          new_validation.send("#{a.to_s+"_variance"}=".to_sym, m[:variance]) if compute_variance
-        end
-      end
-  
-      new_validation.set_merge_count(@merge_count + 1);
-      return new_validation
-    end  
-    
-    def merge_count
-      @merge_count
-    end
-    
-    protected
-    def set_merge_count(c)
-      @merge_count = c
-    end
-    
-    # merges to values (value1 and value2), value1 has weight weight1, value2 has weight 1,
-    # computes variance if corresponding params are set
-    #
-    # return hash with merge value (:value) and :variance (if necessary)
-    # 
-    def self.merge_value( value1, weight1, compute_variance, variance1, value2 )
-      
-      if (value1.is_a?(Numeric))
-        value = (value1 * weight1 + value2) / (weight1 + 1).to_f;
-        if compute_variance
-          variance = Lib::Util::compute_variance( variance1!=nil ? variance1 : 0, weight1+1, value, value1, value2 )
-        end
-      elsif value1.is_a?(Array)
-        raise "not yet implemented : merging arrays"
-      elsif value1.is_a?(Hash)
-        value = {}
-        variance = {}
-        value1.keys.each do |k|
-          m = merge_value( value1[k], weight1, compute_variance, variance1==nil ? nil : variance1[k], value2[k] )
-          value[k] = m[:value]
-          variance[k] = m[:variance] if compute_variance
-        end
-      else
-        if value1.to_s != value2.to_s
-          value = value1.to_s + "/" + value2.to_s
-        else
-          value = value2.to_s
-        end
-      end
-      
-      {:value => value, :variance => (compute_variance ? variance : nil) }
-    end    
   end
   
   # = Reports:ValidationSet
@@ -327,11 +248,15 @@ module Reports
       #compute grouping
       grouping = Reports::Util.group(@validations, equal_attributes)
   
+      Lib::MergeObjects.register_merge_attributes( Reports::Validation,
+        Lib::VAL_MERGE_AVG,Lib::VAL_MERGE_SUM,Lib::VAL_MERGE_GENERAL) unless 
+          Lib::MergeObjects.merge_attributes_registered?(Reports::Validation)
+  
       #merge
       grouping.each do |g|
         new_set.validations.push(g[0].clone_validation)
         g[1..-1].each do |v|
-          new_set.validations[-1] = new_set.validations[-1].merge_validation(v, equal_attributes)
+          new_set.validations[-1] = Lib::MergeObjects.merge_objects(new_set.validations[-1],v)
         end
       end
       
