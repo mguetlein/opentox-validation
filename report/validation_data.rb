@@ -20,7 +20,7 @@ class Object
   #   has_values?(map) => boolean
   # 
   def has_values?(map)
-    map.each{|k,v| return false if send(k)!=v}
+    map.each { |k,v| return false if send(k)!=v }
     return true
   end
 end
@@ -141,7 +141,7 @@ module Reports
     # 
     def get_values(attribute, unique=true)
       a = Array.new
-      @validations.each{ |v| a.push(v.send(attribute).to_s) if !unique || a.index(v.send(attribute).to_s)==nil } 
+      @validations.each{ |v| a.push(v.send(attribute)) if !unique || a.index(v.send(attribute))==nil } 
       return a
     end
     

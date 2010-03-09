@@ -85,7 +85,8 @@ module Reports::ReportFactory
     if (validation_set.first.classification?)
       report.add_section_result(merged, VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold],"Mean Results","Mean Results")
       
-      report.add_section_roc_plot(validation_set, nil, nil, "roc-plot.svg")
+      report.add_section_roc_plot(validation_set, nil, nil, "roc-plot.svg", nil, nil, "Roc plot")
+      report.add_section_roc_plot(validation_set, nil, :crossvalidation_fold, "roc-plot-folds.svg", nil, nil, "Roc plots for folds")
       #validation_set.validations[0].get_prediction_feature_values.each do |class_value|
         #report.add_section_roc_plot(validation_set, class_value, nil, "roc-plot-"+class_value+".svg")
       #end
@@ -275,7 +276,6 @@ class Reports::ReportContent
     end
     
     section_roc = @xml_report.add_section(@xml_report.get_root_element, section_title)
-    
     prediction_set = validation_set.collect{ |v| v.get_predictions && v.get_predictions.confidence_values_available? }
         
     if prediction_set.size>0
@@ -284,7 +284,7 @@ class Reports::ReportContent
       @xml_report.add_paragraph(section_roc, section_text) if section_text
       begin
         plot_file_path = add_tmp_file(plot_file_name)
-        Reports::PlotFactory.create_roc_plot( plot_file_path, prediction_set, class_value, split_set_attribute, prediction_set.size>1 )
+        Reports::PlotFactory.create_roc_plot( plot_file_path, prediction_set, class_value, split_set_attribute, false )#prediction_set.size>1 )
         @xml_report.add_imagefigure(section_roc, image_title, plot_file_name, "SVG", image_caption)
       rescue RuntimeError => ex
         LOGGER.error("could not create roc plot: "+ex.message)

@@ -27,8 +27,8 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     post 'http://ot.validation.de/report/crossvalidation',:validation_uris=>"http://ot.validation.de/crossvalidation/1"
     uri = last_response.body.to_s
     
-    #post uri.to_s+'/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
-    #puts last_response.body.to_s.gsub(/\n.*/,"")
+    post uri.to_s+'/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
+    puts last_response.body.to_s.gsub(/\n.*/,"")
     
   end
 #

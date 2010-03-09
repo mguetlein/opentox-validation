@@ -27,6 +27,8 @@ module Lib
         test_dataset.data.each do |compound,featuresValues|
           
           @compounds.push compound
+          #@compounds << (OpenTox::Compound.new :uri=>compound.to_s).smiles
+          
           value = nil
           value = featuresValues[prediction_feature] if featuresValues.is_a?(Hash)
           value = value[0] if value.is_a?(Array) and value.length == 1

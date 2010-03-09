@@ -267,7 +267,7 @@ class ValidationTest < Test::Unit::TestCase
     #get '/crossvalidation/loo'
     #get '/training_test_split'
 
-    #get '/prepare_examples'
+    get '/prepare_examples'
     #get '/test_examples'
 
     #get '/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
@@ -275,12 +275,12 @@ class ValidationTest < Test::Unit::TestCase
 
     
     #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
-    get '/crossvalidation/1/statistics',nil,'HTTP_ACCEPT' => "text/x-yaml"
+    #get '/crossvalidation/1/statistics',nil,'HTTP_ACCEPT' => "text/x-yaml"
     
     #puts last_response.body
     
     #get '/2'
-    verify_validation(last_response.body)
+    #verify_validation(last_response.body)
     
   end
   

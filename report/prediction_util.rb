@@ -19,7 +19,8 @@ module Reports::PredictionUtil
         (0..v.get_predictions.num_instances-1).each do |i|
           a = []
           validation_attributes.each{ |att| a.push(v.send(att).to_s) }
-          a.push(v.get_predictions.compound(i)[0,65]) #.gsub(/[-(),=]/, '')[0,10])
+          #a.push(v.get_predictions.compound(i)[0,65]) #.gsub(/[-(),=]/, '')[0,10])
+          a.push(OpenTox::Compound.new(:uri=>v.get_predictions.compound(i)).smiles[0,65]) #.gsub(/[-(),=]/, '')[0,10])
           a.push(v.get_predictions.actual_value(i).to_nice_s) 
           a.push(v.get_predictions.predicted_value(i).to_nice_s)
           a.push(v.get_predictions.classification_miss?(i)?"X":"") if v.get_predictions.classification?
