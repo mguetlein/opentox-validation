@@ -3,6 +3,8 @@
 VAL_ATTR_VARIANCE = [ :area_under_roc, :percent_correct, :root_mean_squared_error, :mean_absolute_error, :r_square, :accuracy  ]
 VAL_ATTR_RANKING = [ :area_under_roc, :percent_correct, :true_positive_rate, :true_negative_rate, :accuracy ]
 
+
+
 class Object
   
   def to_nice_s
@@ -25,19 +27,6 @@ class Object
   end
 end
 
-class Hash
-  
-  def mean_value
-    sum = 0
-    self.values.collect do |v|
-      raise "cannot compute mean of non-numeric values '"+self.inspect+"'" unless v!=nil and v.is_a?(Numeric)
-      sum+=v
-    end
-    sum/=self.values.size.to_f
-  end
-  
-end
-
 
 module Reports
   
@@ -53,7 +42,6 @@ module Reports
     def self.reset_validation_access(validation_access)
       @@validation_access = validation_access
     end
-
     
     def self.resolve_cv_uris(validation_uris)
       @@validation_access.resolve_cv_uris(validation_uris)
@@ -99,6 +87,11 @@ module Reports
       @is_classification = @@validation_access.classification?(self) 
     end
     
+    def predicted_variable
+      return @predicted_variable if @predicted_variable!=nil
+      @predicted_variable = @@validation_access.predicted_variable(self) 
+    end
+    
     # loads all crossvalidation attributes, of the corresponding cv into this object 
     def load_cv_attributes
       raise "crossvalidation-id not set" unless @crossvalidation_id
@@ -119,6 +112,7 @@ module Reports
   class ValidationSet
     
     def initialize(validation_uris = nil)
+      @unique_values = {}
       validation_uris = Reports::Validation.resolve_cv_uris(validation_uris) if validation_uris
       @validations = Array.new
       validation_uris.each{|u| @validations.push(Reports::Validation.new(u))} if validation_uris
@@ -128,9 +122,9 @@ module Reports
       return @validations[index]
     end
     
-    def first()
-      return @validations.first
-    end
+    #def first()
+      #return @validations.first
+    #end
     
     # returns the values of the validations for __attribute__
     # * if unique is true a set is returned, i.e. not redundant info
@@ -170,18 +164,46 @@ module Reports
       @validations.each{ |v| v.load_cv_attributes }
     end
     
+    def unique_value(validation_prop)
+      return @unique_values[validation_prop] if @unique_values.has_key?(validation_prop)
+      val = @validations[0].send(validation_prop)        
+      (1..@validations.size-1).each do |i|
+          if @validations[i].send(validation_prop)!=val
+            val = nil
+            break
+          end
+      end
+      @unique_values[validation_prop] = val
+      return val
+    end
+    
+    def get_true_prediction_feature_value
+      if all_classification?
+        class_values = get_prediction_feature_values
+        if class_values.size == 2
+          (0..1).each do |i|
+            return class_values[i] if (class_values[i].to_s.downcase == "true" || class_values[i].to_s.downcase == "active")
+          end
+        end
+      end
+      return nil
+    end
+    
+    def get_prediction_feature_values
+      return unique_value("get_prediction_feature_values")
+    end
+    
     # checks weather all validations are classification validations
     #
     def all_classification?
-      @validations.each{ |v| return false unless v.classification? }
-      true
+      return unique_value("classification?")
     end
 
     # checks weather all validations are regression validations
     #
     def all_regression?
-      @validations.each{ |v| return false if v.classification? }
-      true
+      # WARNING, NOT TRUE: !all_classification == all_regression? 
+      return unique_value("classification?")==false
     end
     
     # returns a new set with all validation that have values as specified in the map
@@ -214,18 +236,22 @@ module Reports
     # call-seq:
     #   to_array(attributes, remove_nil_attributes) => array
     # 
-    def to_array(attributes, remove_nil_attributes=true)
+    def to_array(attributes, remove_nil_attributes=true, true_class_value=nil)
       array = Array.new
       array.push(attributes)
       attribute_not_nil = Array.new(attributes.size)
       @validations.each do |v|
         index = 0
         array.push(attributes.collect do |a|
-          variance = v.send( (a.to_s+"_variance").to_sym ) if VAL_ATTR_VARIANCE.index(a)
+          if VAL_ATTR_VARIANCE.index(a)
+            variance = v.send( (a.to_s+"_variance").to_sym )
+          end
           variance = " +- "+variance.to_nice_s if variance
           attribute_not_nil[index] = true if remove_nil_attributes and v.send(a)!=nil
           index += 1
-          v.send(a).to_nice_s + variance.to_s
+          val = v.send(a)
+          val = val[true_class_value] if true_class_value!=nil && val.is_a?(Hash) && Lib::VAL_CLASS_PROPS_PER_CLASS_COMPLEMENT_EXISTS.index(a)!=nil
+          val.to_nice_s + variance.to_s
         end)
       end
       if remove_nil_attributes #delete in reverse order to avoid shifting of indices
@@ -244,6 +270,10 @@ module Reports
     # 
     def merge(equal_attributes)
       new_set = Reports::ValidationSet.new
+      
+      # unique values stay unique when merging
+      # derive unique values before, because model dependent props cannot be accessed later (when mergin validations from different models)
+      new_set.unique_values = @unique_values
       
       #compute grouping
       grouping = Reports::Util.group(@validations, equal_attributes)
@@ -290,7 +320,7 @@ module Reports
               raise "no value for class value "+class_value.class.to_s+" "+class_value.to_s+" in hash "+val.inspect.to_s unless val.has_key?(class_value)
               val = val[class_value]
             else
-              val = val.mean_value
+              raise "is a hash "+ranking_attribute+", specify class value plz"
             end
           end
           rank_hash[i] = val
@@ -342,6 +372,10 @@ module Reports
       @validations
     end
     
+    protected
+    def unique_values=(unique_values)
+      @unique_values = unique_values
+    end
   end
   
 end 

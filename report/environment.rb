@@ -15,8 +15,8 @@ module Reports
 end
 
 #unless(defined? LOGGER)
-  #LOGGER = Logger.new(STDOUT)
-  #LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
+  LOGGER = Logger.new(STDOUT)
+  LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 #end
 
 require "report/plot_factory.rb"

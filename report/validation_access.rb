@@ -44,9 +44,17 @@ class Reports::ValidationAccess
     raise "not implemented"
   end
   
+  def predicted_variable(validation)
+    raise "not implemented"
+  end
+  
 end
 
 class Reports::ValidationDB < Reports::ValidationAccess
+  
+  def initialize
+     @model_store = {}
+  end
   
   def resolve_cv_uris(validation_uris)
     res = []
@@ -73,7 +81,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
       validation.send("#{p.to_s}=".to_sym, v[p])
     end
     
-    {:classification_statistics => Lib::VAL_CLASS_PROPS_EXTENDED, 
+    {:classification_statistics => Lib::VAL_CLASS_PROPS, 
      :regression_statistics => Lib::VAL_REGR_PROPS}.each do |subset_name,subset_props|
       subset = v[subset_name]
       subset_props.each{ |prop| validation.send("#{prop.to_s}=".to_sym, subset[prop]) } if subset
@@ -91,8 +99,8 @@ class Reports::ValidationDB < Reports::ValidationAccess
   end
 
   def get_predictions(validation)
-    Lib::OTPredictions.new( validation.classification?, validation.prediction_feature,
-      validation.test_dataset_uri, validation.prediction_dataset_uri)
+    Lib::OTPredictions.new( validation.classification?, validation.test_dataset_uri, 
+    validation.prediction_feature, validation.prediction_dataset_uri, validation.predicted_variable)
   end
   
   def get_prediction_feature_values( validation )
@@ -100,10 +108,25 @@ class Reports::ValidationDB < Reports::ValidationAccess
   end
   
   def classification?( validation )
-    model = OpenTox::Model::PredictionModel.find(validation.model_uri)
-    raise "model not found '"+validation.model_uri+"'" unless validation.model_uri && model
-    model.classification?
+    get_model(validation).classification?
   end
+  
+  def predicted_variable(validation)
+    get_model(validation).predictedVariables
+  end
+  
+  private
+  def get_model(validation)
+    raise "cannot derive model depended props for merged validations" if Lib::MergeObjects.merged?(validation)
+    model = @model_store[validation.model_uri]
+    unless model
+      model = OpenTox::Model::PredictionModel.find(validation.model_uri)
+      raise "model not found '"+validation.model_uri+"'" unless validation.model_uri && model
+      @model_store[validation.model_uri] = model
+    end
+    return model
+  end
+  
   
 end
 

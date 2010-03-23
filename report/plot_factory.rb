@@ -84,12 +84,17 @@ module Reports
     def self.create_ranking_plot( svg_out_file, validation_set, compare_attribute, equal_attribute, rank_attribute, class_value=nil )
 
       #compute ranks
+      #puts "rank attibute is "+rank_attribute.to_s
+      
       rank_set = validation_set.compute_ranking([equal_attribute],rank_attribute,class_value)
-      #puts rank_set.to_array([:algorithm_uri, :dataset_uri, :acc, :acc_ranking]).collect{|a| a.inspect}.join("\n")
-
+      #puts compare_attribute
+      #puts rank_set.to_array([:algorithm_uri, :dataset_uri, :percent_correct, :percent_correct_ranking]).collect{|a| a.inspect}.join("\n")
+      #puts "\n"
+      
       #compute avg ranks
       merge_set = rank_set.merge([compare_attribute])
-      #puts merge_set.to_array([:algorithm_uri, :dataset_uri, :acc, :acc_ranking]).collect{|a| a.inspect}.join("\n")
+      #puts merge_set.to_array([:algorithm_uri, :dataset_uri, :percent_correct, :percent_correct_ranking]).collect{|a| a.inspect}.join("\n")
+      
       
       comparables = merge_set.get_values(compare_attribute)
       ranks = merge_set.get_values((rank_attribute.to_s+"_ranking").to_sym,false)
@@ -97,7 +102,7 @@ module Reports
       plot_ranking( rank_attribute.to_s+" ranking",
                     comparables, 
                     ranks, 
-                    0.1, 
+                    nil, #0.1, 
                     validation_set.num_different_values(equal_attribute), 
                     svg_out_file) 
     end
@@ -121,6 +126,8 @@ module Reports
             res += line 
           end
       end
+      raise "rank plot failed" unless $?==0
+      
       if svg_out_file
         f = File.new(svg_out_file, "w")
         f.puts res
@@ -161,7 +168,7 @@ module Reports
         faint << false
         return { :names => names, :fp_rate => fp_rate, :tp_rate => tp_rate, :faint => faint }
       else
-        roc_values = validation_set.first.get_predictions.get_roc_values(class_value)
+        roc_values = validation_set.validations[0].get_predictions.get_roc_values(class_value)
         tp_fp_rates = get_tp_fp_rates(roc_values)
         return { :names => ["default"], :fp_rate => [tp_fp_rates[:fp_rate]], :tp_rate => [tp_fp_rates[:tp_rate]] }
       end
@@ -183,7 +190,7 @@ module Reports
           end
         end
       end
-      #puts c.inspect+"\n"+a.inspect+"\n"+p.inspect
+      #puts c.inspect+"\n"+a.inspect+"\n"+p.inspect+"\n\n"
      
       tp_rate = [0]
       fp_rate = [0]
@@ -196,13 +203,13 @@ module Reports
           tp_rate << tp_rate[-1]
         end
       end
-      #puts tp_rate.inspect+"\n"+fp_rate.inspect
+      #puts tp_rate.inspect+"\n"+fp_rate.inspect+"\n\n"
       
       (0..tp_rate.size-1).each do |i|
         tp_rate[i] = tp_rate[-1]>0 ? tp_rate[i]/tp_rate[-1].to_f*100 : 100
         fp_rate[i] = fp_rate[-1]>0 ? fp_rate[i]/fp_rate[-1].to_f*100 : 100
       end
-      #puts tp_rate.inspect+"\n"+fp_rate.inspect
+      #puts tp_rate.inspect+"\n"+fp_rate.inspect+"\n\n"
       
       return {:tp_rate => tp_rate,:fp_rate => fp_rate}
     end

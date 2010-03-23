@@ -28,6 +28,10 @@ module Lib
       return m
     end
     
+    def self.merged?(object)
+      return merge_count(object)>1
+    end
+    
     def self.merge_objects( object1, object2 )
       
       raise "classes not equal" if object1.class != object2.class
@@ -51,7 +55,7 @@ module Lib
     end 
      
     def self.register_merge_attributes( object_class, avg_attributes, sum_attributes, non_numeric_attributes)
-      @@avg_attributes[object_class] = avg_attributes
+      @@avg_attributes[object_class] = avg_attributes + avg_attributes.collect{ |a| (a.to_s+"_ranking").to_sym }
       @@sum_attributes[object_class] = sum_attributes
       @@non_numeric_attributes[object_class] = non_numeric_attributes
     end

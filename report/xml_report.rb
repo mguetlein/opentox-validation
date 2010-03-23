@@ -83,7 +83,7 @@ class Reports::XMLReport
     figure << Reports::XMLReportUtil.text_element("title", title)
     media = Element.new("mediaobject")
     image = Element.new("imageobject")
-    imagedata = Reports::XMLReportUtil.attribute_element("imagedata",{"contentwidth" => "75%", "fileref" => path, "format"=>filetype})
+    imagedata = Reports::XMLReportUtil.attribute_element("imagedata",{"contentwidth" => "100%", "fileref" => path, "format"=>filetype})
     #imagedata = Reports::XMLReportUtil.attribute_element("imagedata",{"width" => "6in", "fileref" => path, "format"=>filetype})
     @resource_path_elements[imagedata] = "fileref"
     image << imagedata

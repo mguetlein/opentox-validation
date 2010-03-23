@@ -12,8 +12,8 @@ require 'lib/merge.rb'
 before {$sinatra = self unless $sinatra}
 
 #unless(defined? LOGGER)
-  #LOGGER = Logger.new(STDOUT)
-  #LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
+  LOGGER = Logger.new(STDOUT)
+  LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 #end
 
 

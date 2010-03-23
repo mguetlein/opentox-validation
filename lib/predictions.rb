@@ -15,6 +15,10 @@ module Lib
   
   class Predictions
   
+    def identifier(instance_index)
+      return instance_index.to_s
+    end
+  
     def initialize( predicted_values, 
                     actual_values, 
                     confidence_values, 
@@ -27,6 +31,10 @@ module Lib
       @is_classification = is_classification
       @prediction_feature_values = prediction_feature_values
       @num_classes = 1
+      
+      #puts "predicted:  "+predicted_values.inspect
+      #puts "actual:     "+actual_values.inspect
+      #puts "confidence: "+confidence_values.inspect
       
       raise "no predictions" if @predicted_values.size == 0
       num_info = "predicted:"+@predicted_values.size.to_s+
@@ -369,9 +377,37 @@ module Lib
       return incorrect
     end
     
+    def weighted_area_under_roc
+      return weighted_measure( :area_under_roc )
+    end
+    
+    def weighted_f_measure
+      return weighted_measure( :f_measure )
+    end
+    
+    private
+    def weighted_measure( measure )
+      
+      sum_instances = 0
+      num_instances_per_class = Array.new(@num_classes, 0)
+      (0..@num_classes-1).each do |i|
+        (0..@num_classes-1).each do |j|
+          num_instances_per_class[i] += @confusion_matrix[i][j]
+        end
+        sum_instances += num_instances_per_class[i]
+      end
+      raise "sum instances ("+sum_instances.to_s+") != num predicted ("+@num_predicted.to_s+")" unless @num_predicted == sum_instances
+      
+      weighted = 0;
+      (0..@num_classes-1).each do |i|
+        weighted += self.send(measure,i) * num_instances_per_class[i]
+      end
+      return weighted / @num_predicted.to_f
+    end
     
     # regression #######################################################################################
     
+    public
     def root_mean_squared_error
       return 0 if (@num_with_actual_value - @num_unpredicted)==0
       Math.sqrt(@sum_squared_error / (@num_with_actual_value - @num_unpredicted).to_f)
@@ -403,6 +439,7 @@ module Lib
           a << @actual_values[i]
         end
       end
+      
       return {:predicted_values => p, :actual_values => a, :confidence_values => c}
     end
     
@@ -447,6 +484,10 @@ module Lib
     end
     
     ###################################################################################################################
+    
+    #def compound(instance_index)
+      #return "instance_index.to_s"
+    #end
     
     private
     def prediction_feature_value_map(proc)

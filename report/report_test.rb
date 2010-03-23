@@ -24,11 +24,15 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     #get '/report/validation/1',nil,'HTTP_ACCEPT' => "text/html"     
     #post '/report/validation/1/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
     
-    post 'http://ot.validation.de/report/crossvalidation',:validation_uris=>"http://ot.validation.de/crossvalidation/1"
-    uri = last_response.body.to_s
+    #post 'http://ot.validation.de/report/crossvalidation',:validation_uris=>"http://ot.validation.de/crossvalidation/1"
+    #uri = last_response.body.to_s
     
-    post uri.to_s+'/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
-    puts last_response.body.to_s.gsub(/\n.*/,"")
+    post 'http://ot.validation.de/report/validation',:validation_uris=>"http://ot.validation.de/validation/1"
+    uri = last_response.body.to_s
+    puts uri
+    
+    #post uri.to_s+'/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
+    #puts last_response.body.to_s.gsub(/\n.*/,"")
     
   end
 #

@@ -106,7 +106,7 @@ module Reports
     # no api-access for this method
     def delete_all_reports( type )
       
-      LOGGER.info "deleteing all reports of ype '"+type.to_s+"'"
+      LOGGER.info "deleting all reports of type '"+type.to_s+"'"
       check_report_type(type)
       @persistance.list_reports(type).each{ |id| @persistance.delete_report(type, id) }
     end

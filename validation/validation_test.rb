@@ -117,42 +117,66 @@ class ValidationTest < Test::Unit::TestCase
 #    end
 #  end
 #
-#  def test_validate_model
-#    begin
-##      data_uri_train = upload_data(WS_DATA, DATA_TRAIN, FILE_TRAIN)
-##      data_uri_test = upload_data(WS_DATA, DATA_TEST, FILE_TEST)
-##      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
-##      #data_uri_test = WS_DATA+"/"+DATA_TEST
-##       
-##      if WS_FEATURE_ALG
-##        feature_uri = RestClient.post WS_FEATURE_ALG, :dataset_uri => data_uri_train
-##        model_uri = RestClient.post(WS_CLASS_ALG,{ :activity_dataset_uri => data_uri_train, :feature_dataset_uri => feature_uri })
-##      else
-##        model_uri = RestClient.post(WS_CLASS_ALG,{ :dataset_uri => data_uri_train })
-##      end 
-#      
-#      #model_uri = "http://ot.model.de/12"
-#      #data_uri_test = "http://ot.dataset.de/67"
-#      
-#      model_uri = "http://ot.model.de/1" 
+  def test_validate_model
+    begin
+#      data_uri_train = upload_data(WS_DATA, DATA_TRAIN, FILE_TRAIN)
+#      data_uri_test = upload_data(WS_DATA, DATA_TEST, FILE_TEST)
+#      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
+#      #data_uri_test = WS_DATA+"/"+DATA_TEST
+#       
+#      if WS_FEATURE_ALG
+#        feature_uri = RestClient.post WS_FEATURE_ALG, :dataset_uri => data_uri_train
+#        model_uri = RestClient.post(WS_CLASS_ALG,{ :activity_dataset_uri => data_uri_train, :feature_dataset_uri => feature_uri })
+#      else
+#        model_uri = RestClient.post(WS_CLASS_ALG,{ :dataset_uri => data_uri_train })
+#      end 
+      
+#      model_uri = "http://ot.model.de/1"
 #      data_uri_test = "http://ot.dataset.de/3"
-#      
-#      post '', {:test_dataset_uri => data_uri_test, :model_uri => model_uri, :prediction_feature => FEATURE_URI}
-#      
-#      puts last_response.body
-#      #verify_validation
-#      
-#      task = OpenTox::Task.find(last_response.body)
-#      task.wait_for_completion
-#      val_uri = task.resource
-#      puts val_uri
-#      
-#      get val_uri
-#      verify_validation(last_response.body)
+      
+      #model_uri = "http://ot.model.de/7" 
+      #data_uri_test = "http://ot.dataset.de/41"
+      
+      model_uri = "http://opentox.ntua.gr:3000/model/9"
+      data_uri_test = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+      
+      post '', {:test_dataset_uri => data_uri_test, :model_uri => model_uri, :prediction_feature => FEATURE_URI}
+      
+      puts last_response.body
+      #verify_validation
+      
+      task = OpenTox::Task.find(last_response.body)
+      task.wait_for_completion
+      val_uri = task.resource
+      puts val_uri
+      
+      get val_uri
+      verify_validation(last_response.body)
+
+    ensure
+      #delete_resources
+    end
+  end
+  
+#  def test_prediction_dataset
+#    
+#    classification = false
+#    test_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+#    prediction_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/407"
+#    actual_feature="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+#    predicted_feature = OpenTox::Model::PredictionModel.find("http://opentox.ntua.gr:3000/model/9").predictedVariables
+#    assert predicted_feature=="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289","nope: "+predicted_feature.to_s
+#    #predicted_feature="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289"
 #
-#    ensure
-#      #delete_resources
-#    end
+##    classification = true
+##    test_dataset_uri = "http://ot.dataset.de/79"
+##    prediction_dataset_uri = "http://ot.dataset.de/101"
+##    actual_feature="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster"
+##    predicted_feature = OpenTox::Model::PredictionModel.find("http://ot.model.de/18").predictedVariables
+##    assert predicted_feature=="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster_lazar_prediction"
+##    #predicted_feature="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster_lazar_prediction"
+#
+#    puts Lib::OTPredictions.new( classification, test_dataset_uri, actual_feature, prediction_dataset_uri, predicted_feature ).compute_stats.each{|key,value| puts key.to_s+" => "+value.to_s }
 #  end
 #  
 #  def test_validate_algorithm
@@ -178,6 +202,11 @@ class ValidationTest < Test::Unit::TestCase
   
 #  def test_split
 #    begin
+#      
+#      #model = OpenTox::Model::PredictionModel.find("http://ot.model.de/18")
+#      #puts model.predictedVariables
+#      #exit
+#      
 #      data_uri = upload_data(WS_DATA, FILE)
 #      #data_uri =  "http://ot.dataset.de/199" #bbrc
 #      #data_uri = "http://ot.dataset.de/67" #hamster
@@ -204,6 +233,7 @@ class ValidationTest < Test::Unit::TestCase
   
   def verify_validation(val_yaml)
     
+    puts val_yaml
     val = YAML.load(val_yaml)
 
     puts val.inspect
@@ -258,31 +288,28 @@ class ValidationTest < Test::Unit::TestCase
     assert string_val.to_f<=max if max!=nil
   end
   
-  def test_nothing
-    
-    #puts "testing nothing"
-    
-    #get '/'     
-
-    #get '/crossvalidation/loo'
-    #get '/training_test_split'
-
-    get '/prepare_examples'
-    #get '/test_examples'
-
-    #get '/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
-    #get '/1',nil,'HTTP_ACCEPT' => "text/x-yaml"
-
-    
-    #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
-    #get '/crossvalidation/1/statistics',nil,'HTTP_ACCEPT' => "text/x-yaml"
-    
-    #puts last_response.body
-    
-    #get '/2'
-    #verify_validation(last_response.body)
-    
-  end
+#  def test_nothing
+#    
+#    #puts "testing nothing"
+#    
+#    #get '/'     
+#
+#    #get '/crossvalidation/loo'
+#    #get '/training_test_split'
+#
+#    #get '/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
+#    #get '/1',nil,'HTTP_ACCEPT' => "text/x-yaml"
+#
+#    
+#    #get '/crossvalidation/1',nil,'HTTP_ACCEPT' => "application/rdf+xml"
+#    #get '/crossvalidation/1/statistics',nil,'HTTP_ACCEPT' => "text/x-yaml"
+#    
+#    #puts last_response.body
+#    
+#    #get '/2'
+#    #verify_validation(last_response.body)
+#    
+#  end
   
 #  private
 #  def verify_validation (delete=true)
@@ -310,5 +337,13 @@ class ValidationTest < Test::Unit::TestCase
 ##      puts content
 ##    end
 #  end
+
   
+##  def test_prepare_examples
+##    get '/prepare_examples'
+##  end  
+#  
+#  def test_examples # USES CURL, DO NOT FORGET TO RESTART
+#    get '/test_examples'
+#  end
 end

@@ -5,15 +5,22 @@ module Lib
   
   class OTPredictions < Predictions
   
+    def identifier(instance_index)
+      return compound(instance_index)
+    end
+  
     def compound(instance_index)
       return @compounds[instance_index]
     end
   
-    def initialize(is_classification, prediction_feature, test_dataset_uri, prediction_dataset_uri)
+    def initialize(is_classification, test_dataset_uri, prediction_feature, prediction_dataset_uri, predicted_variable)
       
         LOGGER.debug("loading prediciton via test-dateset:'"+test_dataset_uri.to_s+
           "' and prediction-dataset:'"+prediction_dataset_uri.to_s+
-          "', prediction_feature: '"+prediction_feature.to_s+"'")
+          "', prediction_feature: '"+prediction_feature.to_s+"' "+
+          "', predicted_variable: '"+predicted_variable.to_s+"'")
+         
+        predicted_variable=prediction_feature if predicted_variable==nil
         
         test_dataset = OpenTox::Dataset.find test_dataset_uri
         prediction_dataset = OpenTox::Dataset.find prediction_dataset_uri
@@ -30,6 +37,8 @@ module Lib
           #@compounds << (OpenTox::Compound.new :uri=>compound.to_s).smiles
           
           value = nil
+          LOGGER.warn "value is hash, but no feature value '"+prediction_feature.to_s+
+            "', hash: '"+featuresValues.inspect+"'" if featuresValues.is_a?(Hash) and !featuresValues.has_key?(prediction_feature)
           value = featuresValues[prediction_feature] if featuresValues.is_a?(Hash)
           value = value[0] if value.is_a?(Array) and value.length == 1
           value = nil if value.to_s.size==0  # PENDING: hack to avoid illegal boolean values
@@ -39,10 +48,17 @@ module Lib
             raise "illegal class_value of actual value "+value.to_s+" class: "+value.class.to_s unless value==nil or class_values.index(value)!=nil
             actual_values.push class_values.index(value) 
           else
-            value = value.to_f unless value==nil or value.is_a?(Numeric)
+            begin
+              value = value.to_f unless value==nil or value.is_a?(Numeric)
+            rescue
+              LOGGER.warn "no numeric value for regression: '"+value.to_s+"'"
+              value = nil
+            end
             actual_values.push value
           end
         end
+        
+        raise "test dataset is empty" unless @compounds.size>0
         
         predicted_values = Array.new(actual_values.size)
         confidence_values = Array.new(actual_values.size)
@@ -53,7 +69,9 @@ module Lib
           raise "compound "+compound.to_s+" not found in\n"+@compounds.inspect if index==nil
     
           value = nil
-          value = featuresValues[prediction_feature] if featuresValues.is_a?(Hash)
+          LOGGER.warn "value is hash, but no feature value '"+predicted_variable.to_s+
+            "', hash: '"+featuresValues.inspect+"'" if featuresValues.is_a?(Hash) and !featuresValues.has_key?(predicted_variable)
+          value = featuresValues[predicted_variable] if featuresValues.is_a?(Hash)
           value = value[0] if value.is_a?(Array) and value.length == 1
           value = nil if value.to_s.size==0
 
@@ -73,7 +91,12 @@ module Lib
             predicted_values[index] = class_values.index(value) 
             confidence_values[index] = confidence if confidence!=nil
           else
-            value = value.to_f unless value==nil or value.is_a?(Numeric)
+            begin
+              value = value.to_f unless value==nil or value.is_a?(Numeric)
+            rescue
+              LOGGER.warn "no numeric value for regression: '"+value.to_s+"'"
+              value = nil
+            end
             predicted_values[index] = value
           end
           index += 1
