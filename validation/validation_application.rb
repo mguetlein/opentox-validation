@@ -6,16 +6,9 @@ end
 require 'validation/validation_service.rb'
 require 'lib/merge.rb'
 
-
 # hack: store self in $sinatra to make url_for method accessible in validation_service
 # (before is executed in every rest call, problem is that the request object is not set, until the first rest-call )
 before {$sinatra = self unless $sinatra}
-
-#unless(defined? LOGGER)
-  LOGGER = Logger.new(STDOUT)
-  LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
-#end
-
 
 class Sinatra::Base
   # overwriting halt to log halts (!= 202)
@@ -24,7 +17,6 @@ class Sinatra::Base
     throw :halt, [status, msg] 
   end
 end
-
 
 get '/crossvalidation/?' do
   LOGGER.info "list all crossvalidations"

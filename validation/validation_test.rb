@@ -13,17 +13,22 @@ WS_DATA=@@config[:services]["opentox-dataset"] #"localhost:4002"
 #DATA="hamster"
 #FILE=File.new("data/hamster_carcinogenicity.csv","r")
 #FILE=File.new("data/hamster_carcinogenicity_REG.csv","r")
-FILE=File.new("data/hamster_carcinogenicity.owl","r")
+
+#FILE=File.new("data/hamster_carcinogenicity.owl","r")
+FILE=File.new("data/hamster_carcinogenicity.yaml","r")
 
 ##DATA_TRAIN="hamster_train"
 #FILE_TRAIN= File.new("data/hamster_carcinogenicity_TRAIN.csv","r")
+
 FILE_TRAIN=File.new("data/hamster_carcinogenicity.owl","r")
+
 
 ##DATA_TEST="hamster_test"
 #FILE_TEST=File.new("data/hamster_carcinogenicity_TEST.csv","r")
 FILE_TEST=File.new("data/hamster_carcinogenicity.owl","r")
 
-FEATURE_URI="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster"
+#FEATURE_URI="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster"
+FEATURE_URI="http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
 
 #WS_CLASS_ALG="http://webservices.in-silico.ch/test/algorithm/lazar"
 WS_CLASS_ALG=File.join(@@config[:services]["opentox-algorithm"],"lazar") #"localhost:4003/lazar"
@@ -32,6 +37,9 @@ WS_CLASS_ALG=File.join(@@config[:services]["opentox-algorithm"],"lazar") #"local
 WS_FEATURE_ALG=File.join(@@config[:services]["opentox-algorithm"],"fminer") #"localhost:4003/fminer"
 #WS_FEATURE_ALG=nil
 
+
+LOGGER = Logger.new(STDOUT)
+LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 
 class ValidationTest < Test::Unit::TestCase
   include Rack::Test::Methods
@@ -82,9 +90,15 @@ class ValidationTest < Test::Unit::TestCase
 #        post '/crossvalidation', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
 #           :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :num_folds => num_folds, :random_seed => 2 }
 #      
-#        puts "crossvalidation: "+last_response.body
+#        uri = last_response.body
+#        if OpenTox::Utils.task_uri?(uri)
+#          puts "task: "+uri.to_s
+#          uri = OpenTox::Task.find(uri).wait_for_resource.to_s
+#        end
+#        puts "crossvalidation: "+uri
+#        
 #        assert last_response.ok?
-#        crossvalidation_id = last_response.body.split("/")[-1]
+#        crossvalidation_id = uri.split("/")[-1]
 #        add_resource("/crossvalidation/"+crossvalidation_id)
 #        puts "id:"+crossvalidation_id
 #      
@@ -117,64 +131,64 @@ class ValidationTest < Test::Unit::TestCase
 #    end
 #  end
 #
-  def test_validate_model
-    begin
-#      data_uri_train = upload_data(WS_DATA, DATA_TRAIN, FILE_TRAIN)
-#      data_uri_test = upload_data(WS_DATA, DATA_TEST, FILE_TEST)
-#      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
-#      #data_uri_test = WS_DATA+"/"+DATA_TEST
-#       
-#      if WS_FEATURE_ALG
-#        feature_uri = RestClient.post WS_FEATURE_ALG, :dataset_uri => data_uri_train
-#        model_uri = RestClient.post(WS_CLASS_ALG,{ :activity_dataset_uri => data_uri_train, :feature_dataset_uri => feature_uri })
-#      else
-#        model_uri = RestClient.post(WS_CLASS_ALG,{ :dataset_uri => data_uri_train })
-#      end 
-      
+#  def test_validate_model
+#    begin
+##      data_uri_train = upload_data(WS_DATA, DATA_TRAIN, FILE_TRAIN)
+##      data_uri_test = upload_data(WS_DATA, DATA_TEST, FILE_TEST)
+##      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
+##      #data_uri_test = WS_DATA+"/"+DATA_TEST
+##       
+##      if WS_FEATURE_ALG
+##        feature_uri = RestClient.post WS_FEATURE_ALG, :dataset_uri => data_uri_train
+##        model_uri = RestClient.post(WS_CLASS_ALG,{ :activity_dataset_uri => data_uri_train, :feature_dataset_uri => feature_uri })
+##      else
+##        model_uri = RestClient.post(WS_CLASS_ALG,{ :dataset_uri => data_uri_train })
+##      end 
+#      
 #      model_uri = "http://ot.model.de/1"
 #      data_uri_test = "http://ot.dataset.de/3"
-      
-      #model_uri = "http://ot.model.de/7" 
-      #data_uri_test = "http://ot.dataset.de/41"
-      
-      model_uri = "http://opentox.ntua.gr:3000/model/9"
-      data_uri_test = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-      
-      post '', {:test_dataset_uri => data_uri_test, :model_uri => model_uri, :prediction_feature => FEATURE_URI}
-      
-      puts last_response.body
-      #verify_validation
-      
-      task = OpenTox::Task.find(last_response.body)
-      task.wait_for_completion
-      val_uri = task.resource
-      puts val_uri
-      
-      get val_uri
-      verify_validation(last_response.body)
-
-    ensure
-      #delete_resources
-    end
-  end
+#      
+#      #model_uri = "http://ot.model.de/7" 
+#      #data_uri_test = "http://ot.dataset.de/41"
+#      
+##      model_uri = "http://opentox.ntua.gr:3000/model/9"
+##      data_uri_test = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+#      
+#      post '', {:test_dataset_uri => data_uri_test, :model_uri => model_uri, :prediction_feature => FEATURE_URI}
+#      
+#      puts last_response.body
+#      #verify_validation
+#      
+#      task = OpenTox::Task.find(last_response.body)
+#      task.wait_for_completion
+#      val_uri = task.resource
+#      puts val_uri
+#      
+#      get val_uri
+#      verify_validation(last_response.body)
+#
+#    ensure
+#      #delete_resources
+#    end
+#  end
   
 #  def test_prediction_dataset
 #    
-#    classification = false
-#    test_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-#    prediction_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/407"
-#    actual_feature="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
-#    predicted_feature = OpenTox::Model::PredictionModel.find("http://opentox.ntua.gr:3000/model/9").predictedVariables
-#    assert predicted_feature=="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289","nope: "+predicted_feature.to_s
-#    #predicted_feature="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289"
+##    classification = false
+##    test_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+##    prediction_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/407"
+##    actual_feature="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+##    predicted_feature = OpenTox::Model::PredictionModel.find("http://opentox.ntua.gr:3000/model/9").predictedVariables
+##    assert predicted_feature=="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289","nope: "+predicted_feature.to_s
+##    #predicted_feature="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289"
 #
-##    classification = true
-##    test_dataset_uri = "http://ot.dataset.de/79"
-##    prediction_dataset_uri = "http://ot.dataset.de/101"
-##    actual_feature="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster"
-##    predicted_feature = OpenTox::Model::PredictionModel.find("http://ot.model.de/18").predictedVariables
-##    assert predicted_feature=="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster_lazar_prediction"
-##    #predicted_feature="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster_lazar_prediction"
+#    classification = true
+#    test_dataset_uri = "http://ot.dataset.de/1"
+#    prediction_dataset_uri = "http://ot.dataset.de/27"
+#    actual_feature=FEATURE_URI
+#    predicted_feature = OpenTox::Model::PredictionModel.find("http://ot.model.de/1").predicted_variables#_lazar_classification
+#    assert predicted_feature==FEATURE_URI+"_lazar_classification"
+#    #predicted_feature="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster_lazar_prediction"
 #
 #    puts Lib::OTPredictions.new( classification, test_dataset_uri, actual_feature, prediction_dataset_uri, predicted_feature ).compute_stats.each{|key,value| puts key.to_s+" => "+value.to_s }
 #  end
@@ -200,35 +214,37 @@ class ValidationTest < Test::Unit::TestCase
 #    end
 #  end
   
-#  def test_split
-#    begin
-#      
-#      #model = OpenTox::Model::PredictionModel.find("http://ot.model.de/18")
-#      #puts model.predictedVariables
-#      #exit
-#      
-#      data_uri = upload_data(WS_DATA, FILE)
-#      #data_uri =  "http://ot.dataset.de/199" #bbrc
-#      #data_uri = "http://ot.dataset.de/67" #hamster
-#      #puts data_uri
-#      
-#      #data_uri=WS_DATA+"/"+DATA
-#      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
-#        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.75, :random_seed=>6}
-#      puts last_response.body
-#      
-#      task = OpenTox::Task.find(last_response.body)
-#      task.wait_for_completion
-#      val_uri = task.resource
-#      puts val_uri
-#            
-#      get val_uri
-#      puts last_response.body
-#      #verify_validation
-#    ensure
-#      #delete_resources
-#    end
-#  end
+  def test_split
+    begin
+      
+#      model = OpenTox::Model::PredictionModel.find("http://ot.model.de/66")
+#      puts model.predicted_variables
+#      exit
+      
+      data_uri = upload_data(WS_DATA, FILE)
+      #data_uri =  "http://ot.dataset.de/199" #bbrc
+      #data_uri = "http://ot.dataset.de/67" #hamster
+      #puts data_uri
+
+      #exit
+      
+      #data_uri=WS_DATA+"/"+DATA
+      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
+        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.75, :random_seed=>6}
+      puts last_response.body
+      
+      task = OpenTox::Task.find(last_response.body)
+      task.wait_for_completion
+      val_uri = task.resource
+      puts val_uri
+            
+      get val_uri
+      puts last_response.body
+      #verify_validation
+    ensure
+      #delete_resources
+    end
+  end
   
   
   def verify_validation(val_yaml)
@@ -339,10 +355,11 @@ class ValidationTest < Test::Unit::TestCase
 #  end
 
   
-##  def test_prepare_examples
-##    get '/prepare_examples'
-##  end  
-#  
+#  def test_prepare_examples
+#    get '/prepare_examples'
+#  end  
+ 
+  
 #  def test_examples # USES CURL, DO NOT FORGET TO RESTART
 #    get '/test_examples'
 #  end

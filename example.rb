@@ -1,9 +1,10 @@
 
 class Example
   
-  @@file=File.new("data/hamster_carcinogenicity.owl","r")
+  @@file=File.new("data/hamster_carcinogenicity.yaml","r")
+  @@file_type="text/x-yaml"
   @@model=File.join @@config[:services]["opentox-model"],"1"
-  @@feature="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster"
+  @@feature="http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
   @@alg = File.join @@config[:services]["opentox-algorithm"],"lazar"
   @@alg_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
   @@data=File.join @@config[:services]["opentox-dataset"],"1"
@@ -54,8 +55,8 @@ class Example
     log "upload dataset"
     halt 400,"File not found: "+@@file.path.to_s unless File.exist?(@@file.path)
     data = File.read(@@file.path)
-    task_uri = OpenTox::RestClientWrapper.post @@config[:services]["opentox-dataset"], data, :content_type => "application/rdf+xml"
-    data_uri = OpenTox::Task.find(task_uri).wait_for_resource
+    data_uri = OpenTox::RestClientWrapper.post @@config[:services]["opentox-dataset"], data, :content_type => @@file_type
+    data_uri = OpenTox::Task.find(data_uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(data_uri)
     
     log "train-test-validation"
     Lib::Validation.auto_migrate!
@@ -129,11 +130,9 @@ class Example
         end
         result.gsub!(/\n/, " \\n ")
         if ($?==0)
-          if (result.to_s =~ /task/)
-            log "wait for task: "+result.to_s
-            task = OpenTox::Task.find(result)
-            task.wait_for_completion
-            result = task.resource unless task.failed?
+          if OpenTox::Utils.task_uri?(result)
+            log "wait for task: "+result
+            result = OpenTox::Task.find(result).wait_for_resource.to_s
           end
           log "ok ( " +result.to_s[0,50]+" )"
           suc += 1

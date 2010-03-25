@@ -1,6 +1,4 @@
-
 require "lib/validation_db.rb"
-require "lib/wrapper.rb"
 
 # = Reports::ValidationAccess
 # 
@@ -104,7 +102,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
   end
   
   def get_prediction_feature_values( validation )
-    OpenTox::Feature.range( validation.prediction_feature )
+    OpenTox::Feature.domain( validation.prediction_feature )
   end
   
   def classification?( validation )
@@ -112,7 +110,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
   end
   
   def predicted_variable(validation)
-    get_model(validation).predictedVariables
+    get_model(validation).predicted_variables
   end
   
   private

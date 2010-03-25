@@ -2,7 +2,6 @@
 
 require "rdf/redland"
 
-require "lib/wrapper.rb"
 require "lib/validation_db.rb"
 require "lib/ot_predictions.rb"
 
@@ -102,7 +101,7 @@ module Validation
       end
       
       LOGGER.debug "computing prediction stats"
-      prediction = Lib::OTPredictions.new( model.classification?, @prediction_feature, @test_dataset_uri, prediction_dataset_uri )
+      prediction = Lib::OTPredictions.new( model.classification?, @test_dataset_uri, @prediction_feature, prediction_dataset_uri, model.predicted_variables )
       if prediction.classification?
         update :classification_statistics => prediction.compute_stats
       else
@@ -236,8 +235,6 @@ module Validation
       end
       LOGGER.debug "cv: num instances for each fold: "+split_compounds.collect{|c| c.size}.join(", ")
       
-      data = orig_dataset.data
-      
       (1..@num_folds).each do |n|
         
         datasetname = 'cv'+@id.to_s +
@@ -264,10 +261,10 @@ module Validation
         raise "internal error, num train compounds not correct" unless shuffled_compounds.size - test_compounds.size == train_compounds.size
         
         LOGGER.debug "training set: "+datasetname+"_train"
-        train_dataset_uri = Util::create_new_dataset( data, train_compounds, datasetname + '_train', source ) 
+        train_dataset_uri = orig_dataset.create_new_dataset( train_compounds, datasetname + '_train', source ) 
         
         LOGGER.debug "test set:     "+datasetname+"_test"
-        test_dataset_uri = Util::create_new_dataset( data, test_compounds, datasetname + '_test', source )
+        test_dataset_uri = orig_dataset.create_new_dataset( test_compounds, datasetname + '_test', source )
       
         validation = Validation.new :training_dataset_uri => train_dataset_uri, 
                                     :test_dataset_uri => test_dataset_uri,
@@ -280,38 +277,6 @@ module Validation
   
   module Util
     
-    # creates a new dataset from orig_dataset.data
-    # copies only features and compounds included in compounds array 
-    def self.create_new_dataset( orig_dataset_data, compounds, title, source )
-      
-      dataset = OpenTox::Dataset.new
-      dataset.title = title
-      dataset.source = source
-      
-      compounds.each do |c|
-        
-        compound = dataset.find_or_create_compound(c.to_s)
-        
-        featureValuesArray = orig_dataset_data[c]
-        
-        featureValuesArray.each do |f, v|
-        
-          raise "null value not handled yet" if v==nil
-          if v.is_a?(Hash)
-            tuple = dataset.create_tuple(f,v)
-            dataset.add_tuple(compound,tuple)
-          else
-            dataset.add(compound,f,v)
-          end
-        end
-      end
-  
-      uri = dataset.save
-      raise "no dataset uri" if uri==nil || uri.to_s.length<1
-      return uri
-    end
-    
-  
     # splits a dataset into test and training dataset
     # returns map with training_dataset_uri and test_dataset_uri
     def self.train_test_dataset_split( orig_dataset_uri, split_ratio=nil, random_seed=nil )
@@ -338,8 +303,6 @@ module Validation
       train_compounds = compounds[0..split]
       test_compounds = compounds[(split+1)..-1]
       
-      data = orig_dataset.data
-      
       result = {}
       {:training_dataset_uri => train_compounds, :test_dataset_uri => test_compounds}.each do |sym, compound_array|
         
@@ -349,7 +312,7 @@ module Validation
           title = "Test dataset split of "+orig_dataset.title.to_s
         end
         source = $sinatra.url_for('/training_test_split',:full)
-        result[sym] = create_new_dataset( data, compound_array, title, source )
+        result[sym] = orig_dataset.create_new_dataset( compound_array, title, source )
       end
       
       $sinatra.halt 400, "Training dataset not found: '"+result[:training_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:training_dataset_uri]

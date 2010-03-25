@@ -7,11 +7,20 @@ module Lib
     
     # updloads a dataset
     def upload_data(ws, file)
+        
+      case file.path  
+      when /yaml$/
+        type = "text/x-yaml"
+      when /owl$/
+        type = "application/rdf+xml"
+      else
+        raise "unknown type for file: "+file.path.to_s
+      end
          
       data = File.read(file.path)
-      task_uri = RestClient.post ws, data, :content_type => "application/rdf+xml"
-      print "uploading dataset "+task_uri.to_s+" - "
-      data_uri = OpenTox::Task.find(task_uri).wait_for_resource
+      task_uri = RestClient.post ws, data, :content_type => type 
+      data_uri = task_uri
+      #data_uri = OpenTox::Task.find(task_uri).wait_for_resource
       puts "done: "+data_uri.to_s
       add_resource(data_uri)
       return data_uri

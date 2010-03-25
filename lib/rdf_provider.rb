@@ -47,7 +47,7 @@ module Lib
   end
   
   class HashToOwl
-    include OpenTox::Owl
+    #include OpenTox::Owl
     
     def self.to_rdf( rdf_provider )
       owl = HashToOwl.new()
