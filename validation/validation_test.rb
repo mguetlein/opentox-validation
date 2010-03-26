@@ -1,46 +1,21 @@
 ENV['RACK_ENV'] = 'test'
-
-#require 'validation/validation_application.rb'
 require 'application.rb'
-
 require 'test/unit'
 require 'rack/test'
-
 require 'lib/test_util.rb'
-
-WS_DATA=@@config[:services]["opentox-dataset"] #"localhost:4002"
-
-#DATA="hamster"
-#FILE=File.new("data/hamster_carcinogenicity.csv","r")
-#FILE=File.new("data/hamster_carcinogenicity_REG.csv","r")
-
-#FILE=File.new("data/hamster_carcinogenicity.owl","r")
-FILE=File.new("data/hamster_carcinogenicity.yaml","r")
-
-##DATA_TRAIN="hamster_train"
-#FILE_TRAIN= File.new("data/hamster_carcinogenicity_TRAIN.csv","r")
-
-FILE_TRAIN=File.new("data/hamster_carcinogenicity.owl","r")
-
-
-##DATA_TEST="hamster_test"
-#FILE_TEST=File.new("data/hamster_carcinogenicity_TEST.csv","r")
-FILE_TEST=File.new("data/hamster_carcinogenicity.owl","r")
-
-#FEATURE_URI="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster"
-#FEATURE_URI="http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
-FEATURE_URI="http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
-
-#WS_CLASS_ALG="http://webservices.in-silico.ch/test/algorithm/lazar"
-WS_CLASS_ALG=File.join(@@config[:services]["opentox-algorithm"],"lazar") #"localhost:4003/lazar"
-#WS_CLASS_ALG=@@config[:services]["opentox-majority"]+"algorithm" #"localhost:4008/algorithm"
-
-WS_FEATURE_ALG=File.join(@@config[:services]["opentox-algorithm"],"fminer") #"localhost:4003/fminer"
-#WS_FEATURE_ALG=nil
-
-
 LOGGER = Logger.new(STDOUT)
 LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
+
+WS_DATA=@@config[:services]["opentox-dataset"] #"localhost:4002"
+#FILE=File.new("data/hamster_carcinogenicity.owl","r")
+FILE=File.new("data/hamster_carcinogenicity.yaml","r")
+FILE_TRAIN=File.new("data/hamster_carcinogenicity.owl","r")
+FILE_TEST=File.new("data/hamster_carcinogenicity.owl","r")
+#FEATURE_URI="http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+FEATURE_URI="http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
+#WS_CLASS_ALG="http://webservices.in-silico.ch/test/algorithm/lazar"
+WS_CLASS_ALG=File.join(@@config[:services]["opentox-algorithm"],"lazar") #"localhost:4003/lazar"
+WS_FEATURE_ALG=File.join(@@config[:services]["opentox-algorithm"],"fminer") #"localhost:4003/fminer"
 
 class ValidationTest < Test::Unit::TestCase
   include Rack::Test::Methods
@@ -48,6 +23,13 @@ class ValidationTest < Test::Unit::TestCase
 
   def app
     Sinatra::Application
+  end
+
+  def test_it
+  
+      #prepare_examples
+      do_test_examples # USES CURL, DO NOT FORGET TO RESTART
+      
   end
 
 #  def test_all_validations
@@ -173,45 +155,45 @@ class ValidationTest < Test::Unit::TestCase
 #    end
 #  end
   
-  def test_validate_algorithm
-    begin
-      
-      #get '/41',nil,'HTTP_ACCEPT' => "application/rdf+xml" #"text/x-yaml"
-      #puts last_response.body
-      
-      #data_uri_train = upload_data(WS_DATA, FILE_TRAIN)
-      #data_uri_test = upload_data(WS_DATA, FILE_TEST)
-      
-      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
-      #data_uri_test = WS_DATA+"/"+DATA_TEST
-      
-      
-#      data_uri_train="http://ot.dataset.de/57"
-#      data_uri_test="http://ot.dataset.de/56"
-#      feature_uri = FEATURE_URI
-#      algorithm_uri = WS_CLASS_ALG
-#      algorithm_params="feature_generation_uri="+WS_FEATURE_ALG
-      
-      data_uri_train="http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-      data_uri_test=data_uri_train
-      feature_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
-      algorithm_uri = "http://opentox.ntua.gr:3000/algorithm/mlr"
-      algorithm_params=nil
-      
-      post '', { :training_dataset_uri => data_uri_train, :test_dataset_uri => data_uri_test,
-        :algorithm_uri => algorithm_uri, :prediction_feature => feature_uri, :algorithm_params => algorithm_params }
-        
-      task = OpenTox::Task.find(last_response.body)
-      task.wait_for_completion
-      val_uri = task.resource
-      puts val_uri
-      get val_uri
-      verify_validation(last_response.body)
-      #verify_validation
-    ensure
-      #delete_resources
-    end
-  end  
+#  def test_validate_algorithm
+#    begin
+#      
+#      #get '/41',nil,'HTTP_ACCEPT' => "application/rdf+xml" #"text/x-yaml"
+#      #puts last_response.body
+#      
+#      #data_uri_train = upload_data(WS_DATA, FILE_TRAIN)
+#      #data_uri_test = upload_data(WS_DATA, FILE_TEST)
+#      
+#      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
+#      #data_uri_test = WS_DATA+"/"+DATA_TEST
+#      
+#      
+##      data_uri_train="http://ot.dataset.de/57"
+##      data_uri_test="http://ot.dataset.de/56"
+##      feature_uri = FEATURE_URI
+##      algorithm_uri = WS_CLASS_ALG
+##      algorithm_params="feature_generation_uri="+WS_FEATURE_ALG
+#      
+#      data_uri_train="http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+#      data_uri_test=data_uri_train
+#      feature_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+#      algorithm_uri = "http://opentox.ntua.gr:3000/algorithm/mlr"
+#      algorithm_params=nil
+#      
+#      post '', { :training_dataset_uri => data_uri_train, :test_dataset_uri => data_uri_test,
+#        :algorithm_uri => algorithm_uri, :prediction_feature => feature_uri, :algorithm_params => algorithm_params }
+#        
+#      task = OpenTox::Task.find(last_response.body)
+#      task.wait_for_completion
+#      val_uri = task.resource
+#      puts val_uri
+#      get val_uri
+#      verify_validation(last_response.body)
+#      #verify_validation
+#    ensure
+#      #delete_resources
+#    end
+#  end  
   
 #  def test_prediction_dataset
 #    
@@ -381,11 +363,11 @@ class ValidationTest < Test::Unit::TestCase
 ##    end
 #  end
 
-#  def test_prepare_examples
-#    get '/prepare_examples'
-#  end  
+  def prepare_examples
+    get '/prepare_examples'
+  end  
   
-#  def test_examples # USES CURL, DO NOT FORGET TO RESTART
-#    get '/test_examples'
-#  end
+ def do_test_examples # USES CURL, DO NOT FORGET TO RESTART
+   get '/test_examples'
+ end
 end
