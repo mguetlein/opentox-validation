@@ -146,16 +146,16 @@ class ValidationTest < Test::Unit::TestCase
 ##        model_uri = RestClient.post(WS_CLASS_ALG,{ :dataset_uri => data_uri_train })
 ##      end 
 #      
-#      model_uri = "http://ot.model.de/1"
-#      data_uri_test = "http://ot.dataset.de/3"
+##      model_uri = "http://ot.model.de/1"
+##      data_uri_test = "http://ot.dataset.de/3"
 #      
 #      #model_uri = "http://ot.model.de/7" 
 #      #data_uri_test = "http://ot.dataset.de/41"
 #      
-##      model_uri = "http://opentox.ntua.gr:3000/model/9"
-##      data_uri_test = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+#      model_uri = "http://opentox.ntua.gr:3000/model/9"
+#      data_uri_test = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
 #      
-#      post '', {:test_dataset_uri => data_uri_test, :model_uri => model_uri, :prediction_feature => FEATURE_URI}
+#      post '', {:test_dataset_uri => data_uri_test, :model_uri => model_uri} #, :prediction_feature => FEATURE_URI}
 #      
 #      puts last_response.body
 #      #verify_validation
@@ -173,79 +173,100 @@ class ValidationTest < Test::Unit::TestCase
 #    end
 #  end
   
+  def test_validate_algorithm
+    begin
+      
+      #get '/41',nil,'HTTP_ACCEPT' => "application/rdf+xml" #"text/x-yaml"
+      #puts last_response.body
+      
+      #data_uri_train = upload_data(WS_DATA, FILE_TRAIN)
+      #data_uri_test = upload_data(WS_DATA, FILE_TEST)
+      
+      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
+      #data_uri_test = WS_DATA+"/"+DATA_TEST
+      
+      
+#      data_uri_train="http://ot.dataset.de/57"
+#      data_uri_test="http://ot.dataset.de/56"
+#      feature_uri = FEATURE_URI
+#      algorithm_uri = WS_CLASS_ALG
+#      algorithm_params="feature_generation_uri="+WS_FEATURE_ALG
+      
+      data_uri_train="http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+      data_uri_test=data_uri_train
+      feature_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+      algorithm_uri = "http://opentox.ntua.gr:3000/algorithm/mlr"
+      algorithm_params=nil
+      
+      post '', { :training_dataset_uri => data_uri_train, :test_dataset_uri => data_uri_test,
+        :algorithm_uri => algorithm_uri, :prediction_feature => feature_uri, :algorithm_params => algorithm_params }
+        
+      task = OpenTox::Task.find(last_response.body)
+      task.wait_for_completion
+      val_uri = task.resource
+      puts val_uri
+      get val_uri
+      verify_validation(last_response.body)
+      #verify_validation
+    ensure
+      #delete_resources
+    end
+  end  
+  
 #  def test_prediction_dataset
 #    
-##    classification = false
-##    test_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-##    prediction_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/407"
-##    actual_feature="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
-##    predicted_feature = OpenTox::Model::PredictionModel.find("http://opentox.ntua.gr:3000/model/9").predictedVariables
-##    assert predicted_feature=="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289","nope: "+predicted_feature.to_s
-##    #predicted_feature="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289"
+#    classification = false
+#    test_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+#    prediction_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/407"
+#    actual_feature="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+#    predicted_feature = OpenTox::Model::PredictionModel.find("http://opentox.ntua.gr:3000/model/9").predicted_variables
+#    assert predicted_feature=="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289","nope: "+predicted_feature.to_s
+#    #predicted_feature="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289"
 #
-#    classification = true
-#    test_dataset_uri = "http://ot.dataset.de/1"
-#    prediction_dataset_uri = "http://ot.dataset.de/27"
-#    actual_feature=FEATURE_URI
-#    predicted_feature = OpenTox::Model::PredictionModel.find("http://ot.model.de/1").predicted_variables#_lazar_classification
-#    assert predicted_feature==FEATURE_URI+"_lazar_classification"
-#    #predicted_feature="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster_lazar_prediction"
+##    classification = true
+##    test_dataset_uri = "http://ot.dataset.de/1"
+##    prediction_dataset_uri = "http://ot.dataset.de/5"
+##    actual_feature=URI.encode(FEATURE_URI)
+##    predicted_feature = OpenTox::Model::PredictionModel.find("http://ot.model.de/1").predicted_variables#_lazar_classification
+##    assert predicted_feature==URI.encode(FEATURE_URI+"_lazar_classification"), predicted_feature
+##    #predicted_feature="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster_lazar_prediction"
 #
 #    puts Lib::OTPredictions.new( classification, test_dataset_uri, actual_feature, prediction_dataset_uri, predicted_feature ).compute_stats.each{|key,value| puts key.to_s+" => "+value.to_s }
 #  end
 #  
-#  def test_validate_algorithm
+
+  
+#  def test_split
 #    begin
 #      
-#      #get '/41',nil,'HTTP_ACCEPT' => "application/rdf+xml" #"text/x-yaml"
-#      #puts last_response.body
+##      model = OpenTox::Model::PredictionModel.find("http://ot.model.de/66")
+##      puts model.predicted_variables
+##      exit
 #      
-#      #data_uri_train = upload_data(WS_DATA, FILE_TRAIN)
-#      #data_uri_test = upload_data(WS_DATA, FILE_TEST)
+#      data_uri = upload_data(WS_DATA, FILE)
+#      #data_uri =  "http://ot.dataset.de/199" #bbrc
+#      #data_uri = "http://ot.dataset.de/67" #hamster
+#      #puts data_uri
+#
+#      #exit
 #      
-#      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
-#      #data_uri_test = WS_DATA+"/"+DATA_TEST
-#      post '', { :training_dataset_uri => data_uri_train, :test_dataset_uri => data_uri_test,
-#        :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI, :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG }
-#        
+#      #data_uri=WS_DATA+"/"+DATA
+#      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
+#        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.75, :random_seed=>6}
+#      puts last_response.body
+#      
+#      task = OpenTox::Task.find(last_response.body)
+#      task.wait_for_completion
+#      val_uri = task.resource
+#      puts val_uri
+#            
+#      get val_uri
 #      puts last_response.body
 #      #verify_validation
 #    ensure
 #      #delete_resources
 #    end
 #  end
-  
-  def test_split
-    begin
-      
-#      model = OpenTox::Model::PredictionModel.find("http://ot.model.de/66")
-#      puts model.predicted_variables
-#      exit
-      
-      data_uri = upload_data(WS_DATA, FILE)
-      #data_uri =  "http://ot.dataset.de/199" #bbrc
-      #data_uri = "http://ot.dataset.de/67" #hamster
-      #puts data_uri
-
-      #exit
-      
-      #data_uri=WS_DATA+"/"+DATA
-      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
-        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.75, :random_seed=>6}
-      puts last_response.body
-      
-      task = OpenTox::Task.find(last_response.body)
-      task.wait_for_completion
-      val_uri = task.resource
-      puts val_uri
-            
-      get val_uri
-      puts last_response.body
-      #verify_validation
-    ensure
-      #delete_resources
-    end
-  end
   
   
   def verify_validation(val_yaml)
@@ -268,20 +289,25 @@ class ValidationTest < Test::Unit::TestCase
     assert_float_equal(val["percent_without_class".to_sym].to_f,100*num_without_class/num_instances.to_f,"percent_without_class")
     
     class_stats = val["classification_statistics".to_sym]
-    class_value_stats = class_stats["class_value_statistics".to_sym]
-    class_values = []
-    class_value_stats.each do |cvs|
-      class_values << cvs["class_value".to_sym]
+    if class_stats
+      class_value_stats = class_stats["class_value_statistics".to_sym]
+      class_values = []
+      class_value_stats.each do |cvs|
+        class_values << cvs["class_value".to_sym]
+      end
+      puts class_values.inspect
+      
+      confusion_matrix = class_stats["confusion_matrix".to_sym]
+      confusion_matrix_cells = confusion_matrix["confusion_matrix_cell".to_sym]
+      predictions = 0
+      confusion_matrix_cells.each do |confusion_matrix_cell|
+        predictions += confusion_matrix_cell["confusion_matrix_value".to_sym].to_i
+      end
+      assert_int_equal(predictions, num_instances-num_unpredicted)
+    else
+      regr_stats = val["regression_statistics".to_sym]
+      assert regr_stats!=nil
     end
-    puts class_values.inspect
-    
-    confusion_matrix = class_stats["confusion_matrix".to_sym]
-    confusion_matrix_cells = confusion_matrix["confusion_matrix_cell".to_sym]
-    predictions = 0
-    confusion_matrix_cells.each do |confusion_matrix_cell|
-      predictions += confusion_matrix_cell["confusion_matrix_value".to_sym].to_i
-    end
-    assert_int_equal(predictions, num_instances-num_unpredicted)
   end
   
   def assert_int_equal(val1,val2,msg_suffix=nil)
@@ -359,7 +385,7 @@ class ValidationTest < Test::Unit::TestCase
 #    get '/prepare_examples'
 #  end  
   
-  def test_examples # USES CURL, DO NOT FORGET TO RESTART
-    get '/test_examples'
-  end
+#  def test_examples # USES CURL, DO NOT FORGET TO RESTART
+#    get '/test_examples'
+#  end
 end

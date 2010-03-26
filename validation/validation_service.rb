@@ -69,7 +69,7 @@ module Validation
       $sinatra.halt 404, "prediction_feature is already encoded: "+@prediction_feature if @prediction_feature=~/%20/
       update :prediction_feature => URI.encode(@prediction_feature)
       
-      params = { :dataset_uri => @training_dataset_uri, :feature_uri => @prediction_feature }
+      params = { :dataset_uri => @training_dataset_uri, :prediction_feature => @prediction_feature }
       if (algorithm_params!=nil)
         algorithm_params.split(";").each do |alg_params|
           alg_param = alg_params.split("=")

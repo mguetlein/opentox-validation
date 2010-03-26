@@ -79,7 +79,15 @@ module Lib
               predicted_values << class_values.index(value)
               confidence_values << prediction_dataset.get_prediction_confidence(c, predicted_variable)
             else
-              raise "TODO regression"
+              value = prediction_dataset.get_value(c, predicted_variable)
+              begin
+                value = value.to_f unless value==nil or value.is_a?(Numeric)
+              rescue
+                LOGGER.warn "no numeric value for regression: '"+value.to_s+"'"
+                value = nil
+              end
+              predicted_values << value
+              confidence_values << nil
             end
           end
         end
