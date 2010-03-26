@@ -39,7 +39,6 @@ validate model on test-dateset
 
 >>> curl -X POST -d model_uri="<model_uri>" \
  -d test_dataset_uri="<test_dataset_uri>" \
- -d prediction_feature="<prediction_feature>" \
  <validation_service>
 	
 result example (accept-header: application/rdf-xml)			

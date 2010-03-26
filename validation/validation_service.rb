@@ -65,13 +65,17 @@ module Validation
     def validate_algorithm( algorithm_uri, algorithm_params=nil )
       
       $sinatra.halt 404, "no algorithm uri: '"+algorithm_uri+"'" if algorithm_uri==nil or algorithm_uri.to_s.size<1
+
+      $sinatra.halt 404, "prediction_feature is already encoded: "+@prediction_feature if @prediction_feature=~/%20/
+      update :prediction_feature => URI.encode(@prediction_feature)
       
       params = { :dataset_uri => @training_dataset_uri, :feature_uri => @prediction_feature }
       if (algorithm_params!=nil)
         algorithm_params.split(";").each do |alg_params|
           alg_param = alg_params.split("=")
           #puts "param "+alg_param.to_s
-          $sinatra.halt 404, "invalid algorithm param: '"+alg_params.to_s+"'" unless alg_param.size==2 or alg_param[0].to_s.size<1 or alg_param[1].to_s.size<1 
+          $sinatra.halt 404, "invalid algorithm param: '"+alg_params.to_s+"'" unless alg_param.size==2 or alg_param[0].to_s.size<1 or alg_param[1].to_s.size<1
+          LOGGER.warn "algorihtm param contains empty space, encode? "+alg_param[1].to_s if alg_param[1] =~ /\s/
           params[alg_param[0].to_sym] = alg_param[1]
         end
       end
@@ -80,6 +84,9 @@ module Validation
       model = OpenTox::Model::PredictionModel.build(algorithm_uri, params)
       raise "model building failed" unless model
       update :model_uri => model.uri
+      
+      raise "error after building model: model.dependent_variable != validation.prediciton_feature ("+
+        model.dependent_variables+" != "+@prediction_feature+")" if @prediction_feature!=model.dependent_variables
           
       validate_model
     end
@@ -94,6 +101,13 @@ module Validation
       
       model = OpenTox::Model::PredictionModel.find(@model_uri)
       $sinatra.halt 400, "model not found: "+@model_uri.to_s unless model
+      
+      if @prediction_feature
+        $sinatra.halt 400, "error validating model: model.dependent_variable != validation.prediciton_feature ("+
+          model.dependent_variables+" != "+@prediction_feature+")" if @prediction_feature!=model.dependent_variables
+      else
+        update :prediction_feature => model.dependent_variables
+      end
       
       prediction_dataset_uri = ""
       benchmark = Benchmark.measure do 

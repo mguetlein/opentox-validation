@@ -10,13 +10,7 @@ require 'lib/merge.rb'
 # (before is executed in every rest call, problem is that the request object is not set, until the first rest-call )
 before {$sinatra = self unless $sinatra}
 
-class Sinatra::Base
-  # overwriting halt to log halts (!= 202)
-  def halt(status,msg)
-    LOGGER.error "halt "+status.to_s+" "+msg.to_s if (status != 202)
-    throw :halt, [status, msg] 
-  end
-end
+
 
 get '/crossvalidation/?' do
   LOGGER.info "list all crossvalidations"
@@ -88,6 +82,7 @@ post '/crossvalidation/?' do
     halt 400, "dataset_uri missing" unless params[:dataset_uri]
     halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
     halt 400, "prediction_feature missing" unless params[:prediction_feature]
+    
     cv_params = { :dataset_uri => params[:dataset_uri],  
                   :algorithm_uri => params[:algorithm_uri] }
     [ :num_folds, :random_seed, :stratified ].each{ |sym| cv_params[sym] = params[sym] if params[sym] }
@@ -129,7 +124,7 @@ end
 post '/?' do
   OpenTox::Task.as_task do
     LOGGER.info "creating validation "+params.inspect
-    if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri] and params[:prediction_feature]
+    if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri]
       v = Validation::Validation.new :model_uri => params[:model_uri], 
                        :test_dataset_uri => params[:test_dataset_uri],
                        :prediction_feature => params[:prediction_feature]
@@ -141,7 +136,7 @@ post '/?' do
      v.validate_algorithm( params[:algorithm_uri], params[:algorithm_params]) 
     else
       halt 400, "illegal parameter combination for validation, use either\n"+
-        "* model_uri, test_dataset_uri, prediction_feature\n"+ 
+        "* model_uri, test_dataset_uri\n"+ 
         "* algorithm_uri, training_dataset_uri, test_dataset_uri, prediction_feature\n"
         "params given: "+params.inspect
     end

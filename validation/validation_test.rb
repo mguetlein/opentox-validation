@@ -28,7 +28,8 @@ FILE_TRAIN=File.new("data/hamster_carcinogenicity.owl","r")
 FILE_TEST=File.new("data/hamster_carcinogenicity.owl","r")
 
 #FEATURE_URI="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster"
-FEATURE_URI="http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+#FEATURE_URI="http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+FEATURE_URI="http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
 
 #WS_CLASS_ALG="http://webservices.in-silico.ch/test/algorithm/lazar"
 WS_CLASS_ALG=File.join(@@config[:services]["opentox-algorithm"],"lazar") #"localhost:4003/lazar"
@@ -354,13 +355,11 @@ class ValidationTest < Test::Unit::TestCase
 ##    end
 #  end
 
-  
 #  def test_prepare_examples
 #    get '/prepare_examples'
 #  end  
- 
   
-#  def test_examples # USES CURL, DO NOT FORGET TO RESTART
-#    get '/test_examples'
-#  end
+  def test_examples # USES CURL, DO NOT FORGET TO RESTART
+    get '/test_examples'
+  end
 end
