@@ -36,7 +36,7 @@ module Lib
   VAL_CLASS_PROPS_EXTENDED = VAL_CLASS_PROPS + [:accuracy]
 
   # :regression_statistics
-  VAL_REGR_PROPS = [ :root_mean_squared_error, :mean_absolute_error, :r_square ]
+  VAL_REGR_PROPS = [ :root_mean_squared_error, :mean_absolute_error, :r_square, :target_variance_actual, :target_variance_predicted ]
   CROSS_VAL_PROPS = [:algorithm_uri, :dataset_uri, :num_folds, :stratified, :random_seed]
   
   ALL_PROPS = VAL_PROPS + VAL_CV_PROPS + VAL_CLASS_PROPS_EXTENDED + VAL_REGR_PROPS + CROSS_VAL_PROPS

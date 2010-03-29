@@ -27,7 +27,7 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     #post 'http://ot.validation.de/report/crossvalidation',:validation_uris=>"http://ot.validation.de/crossvalidation/1"
     #uri = last_response.body.to_s
     
-    post 'http://ot.validation.de/report/validation',:validation_uris=>"http://ot.validation.de/validation/1"
+    post 'http://ot.validation.de/report/validation',:validation_uris=>"http://ot.validation.de/validation/19"
     uri = last_response.body.to_s
     puts uri
     

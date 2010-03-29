@@ -29,26 +29,61 @@ class ValidationTest < Test::Unit::TestCase
   
       #prepare_examples
       #do_test_examples # USES CURL, DO NOT FORGET TO RESTART
-      #validate_prediction_dataset(ex2)
-      #validate_model(ex2)
-      validate_algorithm(ex2)
+      validate_prediction_dataset(ex_ntua)
+      #validate_model(ex_ntua)
+      #validate_algorithm(ex_ntua2)
+      
+      #test_dataset = OpenTox::Dataset.find ex_ntua2.pred_data
+      #puts ex_ntua2.pred_data.to_s+", "+test_dataset.compounds.size.to_s+" compounds"
+      #puts test_dataset.compounds.collect{|c| c.to_s}.join("\n")
   end
 
   def app
     Sinatra::Application
   end
   
-  def ex2
+  def ex_ntua2
+    ex = Example.new
+    ex.classification = false
+    ex.alg = "http://opentox.ntua.gr:3000/algorithm/mlr"
+    ex.train_data = "http://apps.ideaconsult.net:8180/ambit2/dataset/54" #53
+    ex.test_data = "http://apps.ideaconsult.net:8180/ambit2/dataset/55" #53
+    ex.act_feat = "http://apps.ideaconsult.net:8180/ambit2/feature/22200" #22190"
+    # example model
+    ex.model = "http://opentox.ntua.gr:3000/model/29"
+    ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/261687"
+    # example prediction data
+    ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/625"
+    return ex
+  end
+  
+  def ex_ntua
+    ex = Example.new
+    ex.classification = false
+    ex.alg = "http://opentox.ntua.gr:3000/algorithm/mlr"
+    ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+    # example model
+    ex.model = "http://opentox.ntua.gr:3000/model/9"
+    ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289"
+    # example prediction data
+    ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/407"
+    return ex
+  end
+  
+  def ex_tum
     ex = Example.new
     ex.classification = false
     ex.alg = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/kNNregression"
     ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
     ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-    ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/601"
     ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
-    
+    # example model
     ex.model = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/model/TUMOpenToxModel_kNN_11"
     ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/261129"
+    # example prediction data
+    ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/601"
     return ex
   end
 

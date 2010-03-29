@@ -5,7 +5,7 @@ module Lib
   
   class OTPredictions < Predictions
   
-    CHECK_VALUES = ENV['RACK_ENV']=="test"
+    CHECK_VALUES = ENV['RACK_ENV'] =~ /debug|test/
   
     def identifier(instance_index)
       return compound(instance_index)
@@ -34,13 +34,15 @@ module Lib
         class_values = OpenTox::Feature.domain(prediction_feature)
         
         @compounds = test_dataset.compounds
+        LOGGER.debug "test dataset size: "+@compounds.size.to_s
         raise "test dataset is empty" unless @compounds.size>0
         raise "more predicted than test compounds test:"+@compounds.size.to_s+" < prediction:"+
           prediction_dataset.compounds.size.to_s if @compounds.size < prediction_dataset.compounds.size
         
         if CHECK_VALUES
           prediction_dataset.compounds.each do |c| 
-            raise "predicted compound not found in test dataset" if @compounds.index(c)==nil
+            raise "predicted compound not found in test dataset:\n"+c+"\ntest-compounds:\n"+
+              @compounds.collect{|c| c.to_s}.join("\n") if @compounds.index(c)==nil
           end
         end
         

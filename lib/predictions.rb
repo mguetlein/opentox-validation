@@ -423,6 +423,14 @@ module Lib
       return @variance_predicted / @variance_actual
     end
     
+    def target_variance_predicted
+      return @variance_predicted
+    end
+
+    def target_variance_actual
+      return @variance_actual
+    end
+
     # data for roc-plots ###################################################################################
     
     def get_roc_values(class_value)
