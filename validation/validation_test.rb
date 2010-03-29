@@ -17,20 +17,42 @@ FEATURE_URI="http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/C
 WS_CLASS_ALG=File.join(@@config[:services]["opentox-algorithm"],"lazar") #"localhost:4003/lazar"
 WS_FEATURE_ALG=File.join(@@config[:services]["opentox-algorithm"],"fminer") #"localhost:4003/fminer"
 
+class Example
+  attr_accessor :alg, :train_data, :test_data, :model, :pred_data, :act_feat, :pred_feat, :classification, :alg_params  
+end
+
 class ValidationTest < Test::Unit::TestCase
   include Rack::Test::Methods
   include Lib::TestUtil
+  
+  def test_it
+  
+      #prepare_examples
+      #do_test_examples # USES CURL, DO NOT FORGET TO RESTART
+      #validate_prediction_dataset(ex2)
+      #validate_model(ex2)
+      validate_algorithm(ex2)
+  end
 
   def app
     Sinatra::Application
   end
-
-  def test_it
   
-      #prepare_examples
-      do_test_examples # USES CURL, DO NOT FORGET TO RESTART
-      
+  def ex2
+    ex = Example.new
+    ex.classification = false
+    ex.alg = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/kNNregression"
+    ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/601"
+    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+    
+    ex.model = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/model/TUMOpenToxModel_kNN_11"
+    ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/261129"
+    return ex
   end
+
+
 
 #  def test_all_validations
 #    get '/'
@@ -114,89 +136,91 @@ class ValidationTest < Test::Unit::TestCase
 #    end
 #  end
 #
-#  def test_validate_model
-#    begin
-##      data_uri_train = upload_data(WS_DATA, DATA_TRAIN, FILE_TRAIN)
-##      data_uri_test = upload_data(WS_DATA, DATA_TEST, FILE_TEST)
-##      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
-##      #data_uri_test = WS_DATA+"/"+DATA_TEST
-##       
-##      if WS_FEATURE_ALG
-##        feature_uri = RestClient.post WS_FEATURE_ALG, :dataset_uri => data_uri_train
-##        model_uri = RestClient.post(WS_CLASS_ALG,{ :activity_dataset_uri => data_uri_train, :feature_dataset_uri => feature_uri })
-##      else
-##        model_uri = RestClient.post(WS_CLASS_ALG,{ :dataset_uri => data_uri_train })
-##      end 
-#      
-##      model_uri = "http://ot.model.de/1"
-##      data_uri_test = "http://ot.dataset.de/3"
-#      
-#      #model_uri = "http://ot.model.de/7" 
-#      #data_uri_test = "http://ot.dataset.de/41"
-#      
-#      model_uri = "http://opentox.ntua.gr:3000/model/9"
-#      data_uri_test = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-#      
-#      post '', {:test_dataset_uri => data_uri_test, :model_uri => model_uri} #, :prediction_feature => FEATURE_URI}
-#      
-#      puts last_response.body
-#      #verify_validation
-#      
-#      task = OpenTox::Task.find(last_response.body)
-#      task.wait_for_completion
-#      val_uri = task.resource
-#      puts val_uri
-#      
-#      get val_uri
-#      verify_validation(last_response.body)
-#
-#    ensure
-#      #delete_resources
-#    end
-#  end
-  
-#  def test_validate_algorithm
-#    begin
-#      
-#      #get '/41',nil,'HTTP_ACCEPT' => "application/rdf+xml" #"text/x-yaml"
-#      #puts last_response.body
-#      
-#      #data_uri_train = upload_data(WS_DATA, FILE_TRAIN)
-#      #data_uri_test = upload_data(WS_DATA, FILE_TEST)
-#      
+  def validate_model(ex)
+    begin
+#      data_uri_train = upload_data(WS_DATA, DATA_TRAIN, FILE_TRAIN)
+#      data_uri_test = upload_data(WS_DATA, DATA_TEST, FILE_TEST)
 #      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
 #      #data_uri_test = WS_DATA+"/"+DATA_TEST
-#      
-#      
-##      data_uri_train="http://ot.dataset.de/57"
-##      data_uri_test="http://ot.dataset.de/56"
-##      feature_uri = FEATURE_URI
-##      algorithm_uri = WS_CLASS_ALG
-##      algorithm_params="feature_generation_uri="+WS_FEATURE_ALG
-#      
-#      data_uri_train="http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-#      data_uri_test=data_uri_train
-#      feature_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
-#      algorithm_uri = "http://opentox.ntua.gr:3000/algorithm/mlr"
-#      algorithm_params=nil
-#      
-#      post '', { :training_dataset_uri => data_uri_train, :test_dataset_uri => data_uri_test,
-#        :algorithm_uri => algorithm_uri, :prediction_feature => feature_uri, :algorithm_params => algorithm_params }
-#        
-#      task = OpenTox::Task.find(last_response.body)
-#      task.wait_for_completion
-#      val_uri = task.resource
-#      puts val_uri
-#      get val_uri
-#      verify_validation(last_response.body)
-#      #verify_validation
-#    ensure
-#      #delete_resources
-#    end
-#  end  
+#       
+#      if WS_FEATURE_ALG
+#        feature_uri = RestClient.post WS_FEATURE_ALG, :dataset_uri => data_uri_train
+#        model_uri = RestClient.post(WS_CLASS_ALG,{ :activity_dataset_uri => data_uri_train, :feature_dataset_uri => feature_uri })
+#      else
+#        model_uri = RestClient.post(WS_CLASS_ALG,{ :dataset_uri => data_uri_train })
+#      end 
+      
+#      model_uri = "http://ot.model.de/1"
+#      data_uri_test = "http://ot.dataset.de/3"
+      
+      #model_uri = "http://ot.model.de/7" 
+      #data_uri_test = "http://ot.dataset.de/41"
+      
+     # model_uri = "http://opentox.ntua.gr:3000/model/9"
+     # data_uri_test = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+      
+      post '', {:test_dataset_uri => ex.test_data, :model_uri => ex.model} #, :prediction_feature => FEATURE_URI}
+      
+      puts last_response.body
+      #verify_validation
+      
+      task = OpenTox::Task.find(last_response.body)
+      task.wait_for_completion
+      val_uri = task.resource
+      puts val_uri
+      
+      get val_uri
+      verify_validation(last_response.body)
+
+    ensure
+      #delete_resources
+    end
+  end
   
-#  def test_prediction_dataset
-#    
+  def validate_algorithm(ex)
+    begin
+      
+      #get '/41',nil,'HTTP_ACCEPT' => "application/rdf+xml" #"text/x-yaml"
+      #puts last_response.body
+      
+      #data_uri_train = upload_data(WS_DATA, FILE_TRAIN)
+      #data_uri_test = upload_data(WS_DATA, FILE_TEST)
+      
+      #data_uri_train = WS_DATA+"/"+DATA_TRAIN
+      #data_uri_test = WS_DATA+"/"+DATA_TEST
+      
+      
+#      data_uri_train="http://ot.dataset.de/57"
+#      data_uri_test="http://ot.dataset.de/56"
+#      feature_uri = FEATURE_URI
+#      algorithm_uri = WS_CLASS_ALG
+#      algorithm_params="feature_generation_uri="+WS_FEATURE_ALG
+      
+      #data_uri_train="http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+      #data_uri_test=data_uri_train
+      #feature_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+      #algorithm_uri = "http://opentox.ntua.gr:3000/algorithm/mlr"
+      #algorithm_params=nil
+      
+      #post '', { :training_dataset_uri => data_uri_train, :test_dataset_uri => data_uri_test,
+        #:algorithm_uri => algorithm_uri, :prediction_feature => feature_uri, :algorithm_params => algorithm_params }
+      post '', { :training_dataset_uri => ex.train_data, :test_dataset_uri => ex.test_data,
+        :algorithm_uri => ex.alg, :prediction_feature => ex.act_feat, :algorithm_params => ex.alg_params }
+        
+      task = OpenTox::Task.find(last_response.body)
+      task.wait_for_completion
+      val_uri = task.resource
+      puts val_uri
+      get val_uri
+      verify_validation(last_response.body)
+      #verify_validation
+    ensure
+      #delete_resources
+    end
+  end  
+  
+  def validate_prediction_dataset(ex)
+    
 #    classification = false
 #    test_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
 #    prediction_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/407"
@@ -204,18 +228,30 @@ class ValidationTest < Test::Unit::TestCase
 #    predicted_feature = OpenTox::Model::PredictionModel.find("http://opentox.ntua.gr:3000/model/9").predicted_variables
 #    assert predicted_feature=="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289","nope: "+predicted_feature.to_s
 #    #predicted_feature="http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289"
-#
-##    classification = true
-##    test_dataset_uri = "http://ot.dataset.de/1"
-##    prediction_dataset_uri = "http://ot.dataset.de/5"
-##    actual_feature=URI.encode(FEATURE_URI)
-##    predicted_feature = OpenTox::Model::PredictionModel.find("http://ot.model.de/1").predicted_variables#_lazar_classification
-##    assert predicted_feature==URI.encode(FEATURE_URI+"_lazar_classification"), predicted_feature
-##    #predicted_feature="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster_lazar_prediction"
-#
-#    puts Lib::OTPredictions.new( classification, test_dataset_uri, actual_feature, prediction_dataset_uri, predicted_feature ).compute_stats.each{|key,value| puts key.to_s+" => "+value.to_s }
-#  end
-#  
+
+#    classification = false
+#    test_dataset_uri = EX2_TEST
+#    prediction_dataset_uri = EX2_PRED
+#    actual_feature= EX2_ACT_FEAT
+#    predicted_feature = OpenTox::Model::PredictionModel.find(EX2_MODEL).predicted_variables
+#    assert predicted_feature==EX2_PRED_FEAT,"nope: "+predicted_feature.to_s
+
+#    classification = true
+#    test_dataset_uri = "http://ot.dataset.de/1"
+#    prediction_dataset_uri = "http://ot.dataset.de/5"
+#    actual_feature=URI.encode(FEATURE_URI)
+#    predicted_feature = OpenTox::Model::PredictionModel.find("http://ot.model.de/1").predicted_variables#_lazar_classification
+#    assert predicted_feature==URI.encode(FEATURE_URI+"_lazar_classification"), predicted_feature
+#    #predicted_feature="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster_lazar_prediction"
+
+
+    #puts Lib::OTPredictions.new( classification, test_dataset_uri, actual_feature, prediction_dataset_uri, predicted_feature ).compute_stats.each{|key,value| puts key.to_s+" => "+value.to_s }
+    
+    predicted_feature = OpenTox::Model::PredictionModel.find(ex.model).predicted_variables
+    assert predicted_feature==ex.pred_feat,"nope: "+predicted_feature.to_s
+    
+    puts Lib::OTPredictions.new( ex.classification, ex.test_data, ex.act_feat, ex.pred_data, ex.pred_feat ).compute_stats.each{|key,value| puts key.to_s+" => "+value.to_s }
+  end
 
   
 #  def test_split
