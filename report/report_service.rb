@@ -48,7 +48,7 @@ module Reports
       
       # step1: load validations
       raise Reports::BadRequest.new("validation_uris missing") unless validation_uris
-      LOGGER.debug "validation_uris: '"+validation_uris.inspect+"'"
+      LOGGER.debug "validation_uri(s): '"+validation_uris.inspect+"'"
       validation_set = Reports::ValidationSet.new(validation_uris)
       raise Reports::BadRequest.new("cannot get validations from validation_uris '"+validation_uris.inspect+"'") unless validation_set and validation_set.size > 0
       LOGGER.debug "loaded "+validation_set.size.to_s+" validation/s"

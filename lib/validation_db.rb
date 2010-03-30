@@ -7,7 +7,7 @@ require "lib/merge.rb"
 
 module Lib
 
-  VAL_PROPS_GENERAL = [ :id, :uri, :model_uri, :training_dataset_uri, :prediction_feature,
+  VAL_PROPS_GENERAL = [ :id, :uri, :model_uri, :algorithm_uri, :training_dataset_uri, :prediction_feature,
                 :test_dataset_uri, :prediction_dataset_uri, :created_at ] 
   VAL_PROPS_SUM = [ :num_instances, :num_without_class, :num_unpredicted ]
   VAL_PROPS_AVG = [:real_runtime, :percent_without_class, :percent_unpredicted ]
@@ -37,7 +37,9 @@ module Lib
 
   # :regression_statistics
   VAL_REGR_PROPS = [ :root_mean_squared_error, :mean_absolute_error, :r_square, :target_variance_actual, :target_variance_predicted ]
-  CROSS_VAL_PROPS = [:algorithm_uri, :dataset_uri, :num_folds, :stratified, :random_seed]
+  
+  CROSS_VAL_PROPS = [:dataset_uri, :num_folds, :stratified, :random_seed]
+  CROSS_VAL_PROPS_REDUNDANT = [:algorithm_uri] + CROSS_VAL_PROPS 
   
   ALL_PROPS = VAL_PROPS + VAL_CV_PROPS + VAL_CLASS_PROPS_EXTENDED + VAL_REGR_PROPS + CROSS_VAL_PROPS
 
@@ -51,6 +53,7 @@ module Lib
     property :id, Serial
     property :uri, String, :length => 255
     property :model_uri, String, :length => 255
+    property :algorithm_uri, String, :length => 255
     property :training_dataset_uri, String, :length => 255
     property :test_dataset_uri, String, :length => 255
     property :prediction_dataset_uri, String, :length => 255

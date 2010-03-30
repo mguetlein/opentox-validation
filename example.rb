@@ -66,8 +66,9 @@ class Example
     split_params = Validation::Util.train_test_dataset_split(data_uri, 0.9, 1)
     v = Validation::Validation.new :training_dataset_uri => split_params[:training_dataset_uri], 
                    :test_dataset_uri => split_params[:test_dataset_uri],
-                   :prediction_feature => URI.decode(@@feature)
-    v.validate_algorithm( @@alg, @@alg_params ) 
+                   :prediction_feature => URI.decode(@@feature),
+                   :algorithm_uri => @@alg
+    v.validate_algorithm( @@alg_params ) 
     
     log "crossvalidation"
     Lib::Crossvalidation.auto_migrate!

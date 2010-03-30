@@ -22,29 +22,21 @@ module Lib
           "', prediction_feature: '"+prediction_feature.to_s+"' "+
           "', predicted_variable: '"+predicted_variable.to_s+"'")
          
+        if prediction_feature =~ /ambit.uni-plovdiv.bg.*feature.*264185/
+          LOGGER.warn "HACK for report example"  
+          prediction_feature = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264187"
+        end
+         
         predicted_variable=prediction_feature if predicted_variable==nil
         
         test_dataset = OpenTox::Dataset.find test_dataset_uri
-        prediction_dataset = OpenTox::Dataset.find prediction_dataset_uri
         raise "test dataset not found: '"+test_dataset_uri.to_s+"'" unless test_dataset
-        raise "prediction dataset not found: '"+prediction_dataset_uri.to_s+"'" unless prediction_dataset
-        raise "test dataset feature not found: '"+prediction_feature+"', available features: "+test_dataset.features.inspect if test_dataset.features.index(prediction_feature)==nil
-        raise "prediction dataset feature not found: '"+predicted_variable+"', available features: "+prediction_dataset.features.inspect if prediction_dataset.features.index(predicted_variable)==nil
-        
-        class_values = OpenTox::Feature.domain(prediction_feature)
+        raise "test dataset feature not found: '"+prediction_feature.to_s+"', available features: "+test_dataset.features.inspect if test_dataset.features.index(prediction_feature)==nil
         
         @compounds = test_dataset.compounds
         LOGGER.debug "test dataset size: "+@compounds.size.to_s
         raise "test dataset is empty" unless @compounds.size>0
-        raise "more predicted than test compounds test:"+@compounds.size.to_s+" < prediction:"+
-          prediction_dataset.compounds.size.to_s if @compounds.size < prediction_dataset.compounds.size
-        
-        if CHECK_VALUES
-          prediction_dataset.compounds.each do |c| 
-            raise "predicted compound not found in test dataset:\n"+c+"\ntest-compounds:\n"+
-              @compounds.collect{|c| c.to_s}.join("\n") if @compounds.index(c)==nil
-          end
-        end
+        class_values = OpenTox::Feature.domain(prediction_feature)
         
         actual_values = []
         @compounds.each do |c|
@@ -64,6 +56,19 @@ module Lib
               value = nil
             end
             actual_values.push value
+          end
+        end
+        
+        prediction_dataset = OpenTox::Dataset.find prediction_dataset_uri
+        raise "prediction dataset not found: '"+prediction_dataset_uri.to_s+"'" unless prediction_dataset
+        raise "prediction dataset feature not found: '"+predicted_variable+"', available features: "+prediction_dataset.features.inspect if prediction_dataset.features.index(predicted_variable)==nil
+        
+        raise "more predicted than test compounds test:"+@compounds.size.to_s+" < prediction:"+
+          prediction_dataset.compounds.size.to_s if @compounds.size < prediction_dataset.compounds.size
+        if CHECK_VALUES
+          prediction_dataset.compounds.each do |c| 
+            raise "predicted compound not found in test dataset:\n"+c+"\ntest-compounds:\n"+
+              @compounds.collect{|c| c.to_s}.join("\n") if @compounds.index(c)==nil
           end
         end
         

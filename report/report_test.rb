@@ -1,12 +1,11 @@
 require "fileutils"
 ENV['RACK_ENV'] = 'test'
-
 require 'report/report_application.rb'
 require 'test/unit'
 require 'rack/test'
-
 require "lib/test_util.rb"
-
+LOGGER = Logger.new(STDOUT)
+LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 
 class Reports::ApplicationTest < Test::Unit::TestCase
   include Rack::Test::Methods
@@ -16,6 +15,9 @@ class Reports::ApplicationTest < Test::Unit::TestCase
   end
   
   def test_nothing
+    
+    #Reports::XMLReport.generate_demo_xml_report.write_to
+    #raise "stop"
     
     #uri = '/report/css_style_sheet?css_style_sheet='+CGI.escape("http://apps.ideaconsult.net:8180/ToxPredict/style/global.css")
     #puts uri
@@ -27,12 +29,14 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     #post 'http://ot.validation.de/report/crossvalidation',:validation_uris=>"http://ot.validation.de/crossvalidation/1"
     #uri = last_response.body.to_s
     
-    post 'http://ot.validation.de/report/validation',:validation_uris=>"http://ot.validation.de/validation/19"
+    post 'http://ot.validation.de/report/algorithm_comparison',:validation_uris=>"http://ot.validation.de/validation/15\n"+
+      "http://ot.validation.de/validation/16\n"+
+      "http://ot.validation.de/validation/18\n"
     uri = last_response.body.to_s
     puts uri
     
-    #post uri.to_s+'/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
-    #puts last_response.body.to_s.gsub(/\n.*/,"")
+    post uri.to_s+'/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
+    puts last_response.body.to_s.gsub(/\n.*/,"")
     
   end
 #

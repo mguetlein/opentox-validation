@@ -62,10 +62,9 @@ module Validation
     end
     
     # validates an algorithm by building a model and validating this model
-    def validate_algorithm( algorithm_uri, algorithm_params=nil )
+    def validate_algorithm( algorithm_params=nil )
       
-      $sinatra.halt 404, "no algorithm uri: '"+algorithm_uri+"'" if algorithm_uri==nil or algorithm_uri.to_s.size<1
-
+      $sinatra.halt 404, "no algorithm uri: '"+algorithm_uri.to_s+"'" if @algorithm_uri==nil or @algorithm_uri.to_s.size<1
       $sinatra.halt 404, "prediction_feature is already encoded: "+@prediction_feature if @prediction_feature=~/%20/
       update :prediction_feature => URI.encode(@prediction_feature)
       
@@ -96,11 +95,16 @@ module Validation
     def validate_model
       
       LOGGER.debug "validating model '"+@model_uri+"'"
-      test_dataset = OpenTox::Dataset.find @test_dataset_uri
-      $sinatra.halt 400, "test dataset no found: "+@test_dataset_uri.to_s unless test_dataset
+      
+      #test_dataset = OpenTox::Dataset.find @test_dataset_uri
+      #$sinatra.halt 400, "test dataset no found: "+@test_dataset_uri.to_s unless test_dataset
       
       model = OpenTox::Model::PredictionModel.find(@model_uri)
       $sinatra.halt 400, "model not found: "+@model_uri.to_s unless model
+      
+      unless @algorithm_uri
+        update :algorithm_uri => model.algorithm
+      end
       
       if @prediction_feature
         $sinatra.halt 400, "error validating model: model.dependent_variable != validation.prediciton_feature ("+
@@ -113,18 +117,29 @@ module Validation
       benchmark = Benchmark.measure do 
         prediction_dataset_uri = model.predict_dataset(@test_dataset_uri)
       end
+      update :prediction_dataset_uri => prediction_dataset_uri,
+             :real_runtime => benchmark.real
+      
+      compute_validation_stats(model)
+    end
+    
+    def compute_validation_stats(model = nil)
+      
+      model = OpenTox::Model::PredictionModel.find(@model_uri) unless model
+      $sinatra.halt 400, "model not found: "+@model_uri.to_s unless model
+      
+      update :prediction_feature => model.dependent_variables unless @prediction_feature
+      update :algorithm_uri => model.algorithm unless @algorithm_uri
       
       LOGGER.debug "computing prediction stats"
-      prediction = Lib::OTPredictions.new( model.classification?, @test_dataset_uri, @prediction_feature, prediction_dataset_uri, model.predicted_variables )
+      prediction = Lib::OTPredictions.new( model.classification?, @test_dataset_uri, @prediction_feature, @prediction_dataset_uri, model.predicted_variables )
       if prediction.classification?
         update :classification_statistics => prediction.compute_stats
       else
         update :regression_statistics => prediction.compute_stats
       end
       
-      update :prediction_dataset_uri => prediction_dataset_uri, 
-             :real_runtime => benchmark.real,
-             :num_instances => prediction.num_instances,
+      update :num_instances => prediction.num_instances,
              :num_without_class => prediction.num_without_class,
              :percent_without_class => prediction.percent_without_class,
              :num_unpredicted => prediction.num_unpredicted,
@@ -165,7 +180,7 @@ module Validation
       
       LOGGER.debug "perform cv validations"
       Validation.all( :crossvalidation_id => id ).each do |v|
-        v.validate_algorithm( @algorithm_uri, algorithm_params )
+        v.validate_algorithm( algorithm_params )
         #break
       end
     end
@@ -193,7 +208,8 @@ module Validation
         validation = Validation.new :crossvalidation_id => @id,
                                     :crossvalidation_fold => v.crossvalidation_fold,
                                     :training_dataset_uri => v.training_dataset_uri, 
-                                    :test_dataset_uri => v.test_dataset_uri
+                                    :test_dataset_uri => v.test_dataset_uri,
+                                    :algorithm_uri => @algorithm_uri
       end
       LOGGER.debug "copyied dataset uris from cv "+cv.uri.to_s
       return true
@@ -283,7 +299,8 @@ module Validation
         validation = Validation.new :training_dataset_uri => train_dataset_uri, 
                                     :test_dataset_uri => test_dataset_uri,
                                     :crossvalidation_id => @id, :crossvalidation_fold => n,
-                                    :prediction_feature => prediction_feature
+                                    :prediction_feature => prediction_feature,
+                                    :algorithm_uri => @algorithm_uri
       end
     end
   end

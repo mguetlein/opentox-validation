@@ -5,9 +5,10 @@ VAL_ATTR_TRAIN_TEST = [ :model_uri, :training_dataset_uri, :test_dataset_uri, :p
 VAL_ATTR_CV = [ :algorithm_uri, :dataset_uri, :num_folds, :crossvalidation_fold ]
 # selected attributes of interest when performing classification
 VAL_ATTR_CLASS = [ :percent_correct, :weighted_area_under_roc, :area_under_roc, :f_measure, :true_positive_rate, :true_negative_rate ]
-VAL_ATTR_BAR_PLOT_CLASS = [ :accuracy, :weighted_area_under_roc, :area_under_roc, :f_measure, :true_positive_rate, :true_negative_rate ]
 VAL_ATTR_REGR = [ :root_mean_squared_error, :mean_absolute_error, :r_square ]
 
+VAL_ATTR_BAR_PLOT_CLASS = [ :accuracy, :weighted_area_under_roc, :area_under_roc, :f_measure, :true_positive_rate, :true_negative_rate ]
+VAL_ATTR_BAR_PLOT_REGR = [ :root_mean_squared_error, :mean_absolute_error, :r_square ]
 
 # = Reports::ReportFactory 
 #
@@ -105,11 +106,12 @@ module Reports::ReportFactory
   
   def self.create_report_compare_algorithms(validation_set)
     
-    #validation_set.to_array([:fold, :test_dataset_uri, :model_uri]).each{|a| puts a.inspect}
+    #validation_set.to_array([:test_dataset_uri, :model_uri, :algorithm_uri], false).each{|a| puts a.inspect}
     raise Reports::BadRequest.new("num validations is not >1") unless validation_set.size>1
     raise Reports::BadRequest.new("validations must be either all regression, "+
       +"or all classification validations") unless validation_set.all_classification? or validation_set.all_regression?
-    raise Reports::BadRequest.new("number of different algorithms <2") if validation_set.num_different_values(:algorithm_uri)<2
+    raise Reports::BadRequest.new("number of different algorithms <2: "+
+      validation_set.get_values(:algorithm_uri).inspect) if validation_set.num_different_values(:algorithm_uri)<2
       
     if validation_set.has_nil_values?(:crossvalidation_id)
       if validation_set.num_different_values(:test_dataset_uri)>1
@@ -146,10 +148,15 @@ module Reports::ReportFactory
             #report.add_section_roc_plot(validation_set, class_value, :algorithm_uri, "roc-plot-"+class_value+".svg")
           #end
           report.add_section_result(validation_set,[:algorithm_uri]+VAL_ATTR_CLASS,"Results","Results")
-        else #regression
+        else
+          #regression
+          report.add_section_result(validation_set,[:algorithm_uri]+VAL_ATTR_REGR,"Results","Results")
+          report.add_section_bar_plot(validation_set,nil,:algorithm_uri,VAL_ATTR_BAR_PLOT_REGR, "bar-plot.svg")
+          
           #report.add_section_result(merged, VAL_ATTR_CV+VAL_ATTR_REGR-[:crossvalidation_fold],"Mean Results","Mean Results")
           #report.add_section_result(validation_set, VAL_ATTR_CV+VAL_ATTR_REGR-[:num_folds], "Results","Results")
         end
+        report.add_section_result(validation_set, Lib::ALL_PROPS, "All Results", "All Results")
         return report
       end
     else
@@ -250,9 +257,8 @@ class Reports::ReportContent
                                 
     section_table = @xml_report.add_section(xml_report.get_root_element, section_title)
     @xml_report.add_paragraph(section_table, section_text) if section_text
-    vals = validation_set.to_array(validation_attributes,false,validation_set.get_true_prediction_feature_value)
-    #PENDING rexml strings in tables not working when >66  
-    vals = vals.collect{|a| a.collect{|v| v.to_s[0,66] }}
+    vals = validation_set.to_array(validation_attributes,true,validation_set.get_true_prediction_feature_value)
+    vals = vals.collect{|a| a.collect{|v| v.to_s }}
     #PENDING transpose values if there more than 4 columns, and there are more than columns than rows
     transpose = vals[0].size>4 && vals[0].size>vals.size
     @xml_report.add_table(section_table, table_title, vals, !transpose, transpose)

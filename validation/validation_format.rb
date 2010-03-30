@@ -132,7 +132,7 @@ module Validation
     
     def get_content_as_hash
       h = {}
-      Lib::CROSS_VAL_PROPS.each{|p| h[p] = self.send(p)}
+      Lib::CROSS_VAL_PROPS_REDUNDANT.each{|p| h[p] = self.send(p)}
       
       v = []
       Validation.all(:crossvalidation_id => self.id).each do |val|

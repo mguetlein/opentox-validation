@@ -83,6 +83,6 @@ end
 post '/report/:type' do
   perform do |rs|
     content_type "text/uri-list"
-    rs.create_report(params[:type],params[:validation_uris]?params[:validation_uris].split("\n"):nil)
+    rs.create_report(params[:type],params[:validation_uris]?params[:validation_uris].split(/\n|,/):nil)
   end
 end

@@ -130,10 +130,11 @@ post '/?' do
                        :prediction_feature => params[:prediction_feature]
       v.validate_model
     elsif params[:algorithm_uri] and params[:training_dataset_uri] and params[:test_dataset_uri] and params[:prediction_feature] and !params[:model_uri]
-     v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
+     v = Validation::Validation.new :algorithm_uri => params[:algorithm_uri],
+                        :training_dataset_uri => params[:training_dataset_uri], 
                         :test_dataset_uri => params[:test_dataset_uri],
                         :prediction_feature => params[:prediction_feature]
-     v.validate_algorithm( params[:algorithm_uri], params[:algorithm_params]) 
+     v.validate_algorithm( params[:algorithm_params]) 
     else
       halt 400, "illegal parameter combination for validation, use either\n"+
         "* model_uri, test_dataset_uri\n"+ 
@@ -156,12 +157,36 @@ post '/training_test_split' do
     v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
                      :test_dataset_uri => params[:test_dataset_uri],
                      :prediction_feature => params[:prediction_feature]
-    content_type "text/uri-list"
     v.validate_algorithm( params[:algorithm_uri], params[:algorithm_params])
     content_type "text/uri-list"
     v.uri
   end
 end
+
+
+post '/plain_training_test_split' do
+    LOGGER.info "creating pure training test split "+params.inspect
+    halt 400, "dataset_uri missing" unless params[:dataset_uri]
+    
+    result = Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:split_ratio], params[:random_seed])
+    content_type "text/uri-list"
+    result[:training_dataset_uri]+"\n"+result[:test_dataset_uri]+"\n"
+end
+
+post '/create_validation' do
+  OpenTox::Task.as_task do
+    LOGGER.info "creating validation "+params.inspect
+    halt 400, "test_dataset_uri missing" unless params[:test_dataset_uri]
+    halt 400, "prediction_datset_uri missing" unless params[:prediction_dataset_uri]
+    halt 400, "model_uri missing" unless params[:model_uri]
+    
+    v = Validation::Validation.new params
+    v.compute_validation_stats()
+    content_type "text/uri-list"
+    v.uri
+  end
+end
+
 
 get '/:id/:attribute' do
   LOGGER.info "access validation attribute "+params.inspect

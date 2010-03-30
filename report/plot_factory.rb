@@ -51,6 +51,8 @@ module Reports
       LOGGER.debug "creating bar plot, out-file:"+out_file.to_s
       
       data = []
+      titles = []
+      
       validation_set.validations.each do |v|
         values = []
         value_attributes.each do |a|
@@ -68,7 +70,13 @@ module Reports
           values.push(value)
         end
         
-        data << [v.send(title_attribute).to_s] + values
+        titles << v.send(title_attribute).to_s
+        data << values
+      end
+      
+      titles = titles.remove_common_prefix
+      (0..titles.size-1).each do |i|
+        data[i] = [titles[i]] + data[i]
       end
       
       labels = value_attributes.collect{|a| a.to_s.gsub("_","-")}
@@ -77,7 +85,6 @@ module Reports
       LOGGER.debug "bar plot data: "+data.inspect
       
       RubyPlot::plot_bars('Bar plot', labels, data, out_file)
-      
     end
     
     

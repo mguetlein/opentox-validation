@@ -60,6 +60,13 @@ module Reports::XMLReportUtil
     return node
   end
   
+  def self.url_element(url, description=url )
+    ulink = Element.new("ulink")
+    ulink.add_attributes({"url" => url})
+    ulink.text = description
+    return ulink
+  end
+  
   def self.attribute_element(name, attributes)
     node = Element.new(name)
     node.add_attributes(attributes)

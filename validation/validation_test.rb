@@ -1,3 +1,6 @@
+require "logger"
+require "uri"
+require "yaml"
 ENV['RACK_ENV'] = 'test'
 require 'application.rb'
 require 'test/unit'
@@ -6,19 +9,8 @@ require 'lib/test_util.rb'
 LOGGER = Logger.new(STDOUT)
 LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 
-WS_DATA=@@config[:services]["opentox-dataset"] #"localhost:4002"
-#FILE=File.new("data/hamster_carcinogenicity.owl","r")
-FILE=File.new("data/hamster_carcinogenicity.yaml","r")
-FILE_TRAIN=File.new("data/hamster_carcinogenicity.owl","r")
-FILE_TEST=File.new("data/hamster_carcinogenicity.owl","r")
-#FEATURE_URI="http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
-FEATURE_URI="http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
-#WS_CLASS_ALG="http://webservices.in-silico.ch/test/algorithm/lazar"
-WS_CLASS_ALG=File.join(@@config[:services]["opentox-algorithm"],"lazar") #"localhost:4003/lazar"
-WS_FEATURE_ALG=File.join(@@config[:services]["opentox-algorithm"],"fminer") #"localhost:4003/fminer"
-
 class Example
-  attr_accessor :alg, :train_data, :test_data, :model, :pred_data, :act_feat, :pred_feat, :classification, :alg_params  
+  attr_accessor :alg, :train_data, :test_data, :model, :pred_data, :act_feat, :pred_feat, :classification, :alg_params, :val, :orig_data  
 end
 
 class ValidationTest < Test::Unit::TestCase
@@ -26,12 +18,17 @@ class ValidationTest < Test::Unit::TestCase
   include Lib::TestUtil
   
   def test_it
-  
+      
       #prepare_examples
-      #do_test_examples # USES CURL, DO NOT FORGET TO RESTART
-      validate_prediction_dataset(ex_ntua)
-      #validate_model(ex_ntua)
-      #validate_algorithm(ex_ntua2)
+      do_test_examples # USES CURL, DO NOT FORGET TO RESTART
+      
+      #ex = ex_ntua
+      #ex = ex_tum
+      
+      #create_validation(ex)
+      #validate_model(ex)
+      #validate_algorithm(ex)
+      #validate_split(ex)
       
       #test_dataset = OpenTox::Dataset.find ex_ntua2.pred_data
       #puts ex_ntua2.pred_data.to_s+", "+test_dataset.compounds.size.to_s+" compounds"
@@ -42,6 +39,46 @@ class ValidationTest < Test::Unit::TestCase
     Sinatra::Application
   end
   
+  def ex_local
+    ex = Example.new
+    ex.classification = false
+    
+    ex.alg = File.join(@@config[:services]["opentox-algorithm"],"lazar")
+    ex.alg_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
+    
+    dataset = @@config[:services]["opentox-dataset"]
+    
+    ex.orig_data = File.join(dataset,"1")
+    begin
+      orig = OpenTox::Dataset.find(ex.orig_data)
+      raise "not correct, upload" if (orig == nil || orig.compounds.size!=85)
+    rescue
+      upload_uri = upload_data(dataset, File.new("data/hamster_carcinogenicity.yaml","r"))
+      ex.orig_data = upload_uri
+    end
+    
+    ex.train_data = File.join(dataset,"2")
+    ex.test_data = File.join(dataset,"3")
+    begin
+      train = OpenTox::Dataset.find(ex.train_data)
+      test = OpenTox::Dataset.find(ex.test_data)
+      raise "not correct, split" if (train == nil || test == nil || train.compounds.size>=85 || test.compounds.size>=test.compounds.size)
+    rescue
+      post '/plain_training_test_split', { :dataset_uri => ex.orig_data, :split_ratio=>0.75, :random_seed=>6}
+      split = last_response.body.split("\n")
+      ex.train_data = split[0] 
+      ex.test_data = split[1]
+    end
+    
+    ex.act_feat = "http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
+    # example model
+    #ex.model = "http://opentox.ntua.gr:3000/model/29"
+    #ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/261687"
+    # example prediction data
+    #ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/625"
+    return ex
+  end
+  
   def ex_ntua2
     ex = Example.new
     ex.classification = false
@@ -50,10 +87,10 @@ class ValidationTest < Test::Unit::TestCase
     ex.test_data = "http://apps.ideaconsult.net:8180/ambit2/dataset/55" #53
     ex.act_feat = "http://apps.ideaconsult.net:8180/ambit2/feature/22200" #22190"
     # example model
-    ex.model = "http://opentox.ntua.gr:3000/model/29"
-    ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/261687"
+    #ex.model = "http://opentox.ntua.gr:3000/model/29"
+    #ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/261687"
     # example prediction data
-    ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/625"
+    #ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/625"
     return ex
   end
   
@@ -61,14 +98,21 @@ class ValidationTest < Test::Unit::TestCase
     ex = Example.new
     ex.classification = false
     ex.alg = "http://opentox.ntua.gr:3000/algorithm/mlr"
+    
+    #ex.orig_data = "http://apps.ideaconsult.net:8180/ambit2/dataset/52" 
+    
     ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
     ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    
     ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+    
     # example model
-    ex.model = "http://opentox.ntua.gr:3000/model/9"
-    ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/227289"
+    ex.model = "http://opentox.ntua.gr:3000/model/36"
+    #ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264783"
     # example prediction data
-    ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/407"
+    ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/656"
+    # validation
+    #ex.val = "http://ot.validation.de/21"
     return ex
   end
   
@@ -76,14 +120,34 @@ class ValidationTest < Test::Unit::TestCase
     ex = Example.new
     ex.classification = false
     ex.alg = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/kNNregression"
-    ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-    ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+    #ex.alg = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/M5P"
+    #ex.alg = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/GaussP"
+
+    #mini
+    #ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    #ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/03141"
+
+    #big
+    ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/639"
+    ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/640"
+    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264185"
+    #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264187" #test
+    
     # example model
-    ex.model = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/model/TUMOpenToxModel_kNN_11"
-    ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/261129"
+    ex.model = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/model/TUMOpenToxModel_kNN_23"
+    #ex.model = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/model/TUMOpenToxModel_M5P_13"
+    #ex.model = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/model/TUMOpenToxModel_GaussP_4"
+
+    #ex.pred_feat = 
+
     # example prediction data
-    ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/601"
+    ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/659" #knn 
+    #ex.pred_data = http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/658" #m5p
+    #ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/653" #gaus 
+
+    # validataion
+    # ex.val = "http://ot.validation.de/34"
     return ex
   end
 
@@ -254,7 +318,7 @@ class ValidationTest < Test::Unit::TestCase
     end
   end  
   
-  def validate_prediction_dataset(ex)
+  def create_validation(ex)
     
 #    classification = false
 #    test_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
@@ -279,47 +343,64 @@ class ValidationTest < Test::Unit::TestCase
 #    assert predicted_feature==URI.encode(FEATURE_URI+"_lazar_classification"), predicted_feature
 #    #predicted_feature="http://www.epa.gov/NCCT/dsstox/CentralFieldDef.html#ActivityOutcome_CPDBAS_Hamster_lazar_prediction"
 
-
     #puts Lib::OTPredictions.new( classification, test_dataset_uri, actual_feature, prediction_dataset_uri, predicted_feature ).compute_stats.each{|key,value| puts key.to_s+" => "+value.to_s }
     
-    predicted_feature = OpenTox::Model::PredictionModel.find(ex.model).predicted_variables
-    assert predicted_feature==ex.pred_feat,"nope: "+predicted_feature.to_s
     
-    puts Lib::OTPredictions.new( ex.classification, ex.test_data, ex.act_feat, ex.pred_data, ex.pred_feat ).compute_stats.each{|key,value| puts key.to_s+" => "+value.to_s }
+    
+    #predicted_feature = OpenTox::Model::PredictionModel.find(ex.model).predicted_variables
+    #puts "predicted feature "+predicted_feature.to_s
+    
+    assert(predicted_feature==ex.pred_feat,"nope: "+predicted_feature.to_s) if ex.pred_feat
+    
+    post '/create_validation', { :test_dataset_uri => ex.test_data, :model_uri => ex.model, :prediction_dataset_uri=> ex.pred_data}
+    puts last_response.body
+    
+    task = OpenTox::Task.find(last_response.body)
+    task.wait_for_completion
+    val_uri = task.resource
+    puts val_uri
+          
+    get val_uri
+    puts last_response.body
+      
+    #puts Lib::OTPredictions.new( ex.classification, ex.test_data, ex.act_feat, ex.pred_data, ex.pred_feat ).compute_stats.each{|key,value| puts key.to_s+" => "+value.to_s }
   end
 
   
-#  def test_split
-#    begin
-#      
-##      model = OpenTox::Model::PredictionModel.find("http://ot.model.de/66")
-##      puts model.predicted_variables
-##      exit
-#      
-#      data_uri = upload_data(WS_DATA, FILE)
-#      #data_uri =  "http://ot.dataset.de/199" #bbrc
-#      #data_uri = "http://ot.dataset.de/67" #hamster
-#      #puts data_uri
-#
-#      #exit
-#      
-#      #data_uri=WS_DATA+"/"+DATA
+  def validate_split(ex)
+    begin
+      
+#      model = OpenTox::Model::PredictionModel.find("http://ot.model.de/66")
+#      puts model.predicted_variables
+#      exit
+      
+      #data_uri = upload_data(WS_DATA, FILE)
+      #data_uri =  "http://ot.dataset.de/199" #bbrc
+      #data_uri = "http://ot.dataset.de/67" #hamster
+      #puts data_uri
+
+      #exit
+      
+      #data_uri=WS_DATA+"/"+DATA
 #      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
 #        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.75, :random_seed=>6}
-#      puts last_response.body
-#      
-#      task = OpenTox::Task.find(last_response.body)
-#      task.wait_for_completion
-#      val_uri = task.resource
-#      puts val_uri
-#            
-#      get val_uri
-#      puts last_response.body
-#      #verify_validation
-#    ensure
-#      #delete_resources
-#    end
-#  end
+      post '/training_test_split', { :dataset_uri => ex.orig_data, :algorithm_uri => ex.alg, :prediction_feature => ex.pred_feat,
+        :algorithm_params => ex.alg_params, :split_ratio=>0.75, :random_seed=>6}
+
+      puts last_response.body
+      
+      task = OpenTox::Task.find(last_response.body)
+      task.wait_for_completion
+      val_uri = task.resource
+      puts val_uri
+            
+      get val_uri
+      puts last_response.body
+      #verify_validation
+    ensure
+      #delete_resources
+    end
+  end
   
   
   def verify_validation(val_yaml)
