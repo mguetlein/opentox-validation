@@ -156,8 +156,9 @@ post '/training_test_split' do
     params.merge!(Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:split_ratio], params[:random_seed]))
     v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
                      :test_dataset_uri => params[:test_dataset_uri],
-                     :prediction_feature => params[:prediction_feature]
-    v.validate_algorithm( params[:algorithm_uri], params[:algorithm_params])
+                     :prediction_feature => params[:prediction_feature],
+                     :algorithm_uri => params[:algorithm_uri]
+    v.validate_algorithm( params[:algorithm_params])
     content_type "text/uri-list"
     v.uri
   end
