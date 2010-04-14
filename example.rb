@@ -63,9 +63,10 @@ class Example
     #delete_all(@@config[:services]["opentox-model"])
     OpenTox::RestClientWrapper.delete @@config[:services]["opentox-model"]
     
-    split_params = Validation::Util.train_test_dataset_split(data_uri, 0.9, 1)
+    split_params = Validation::Util.train_test_dataset_split(data_uri, URI.decode(@@feature), 0.9, 1)
     v = Validation::Validation.new :training_dataset_uri => split_params[:training_dataset_uri], 
                    :test_dataset_uri => split_params[:test_dataset_uri],
+                   :test_class_dataset_uri => data_uri,
                    :prediction_feature => URI.decode(@@feature),
                    :algorithm_uri => @@alg
     v.validate_algorithm( @@alg_params ) 

@@ -9,7 +9,7 @@ class Array
   end
   
   def remove_common_prefix()
-      if self.size > 2
+      if self.size > 1
         prefix = self.common_prefix
         if prefix.size>0
           return self.collect{|word| word[prefix.size..-1]}

@@ -132,7 +132,7 @@ module Validation
       update :algorithm_uri => model.algorithm unless @algorithm_uri
       
       LOGGER.debug "computing prediction stats"
-      prediction = Lib::OTPredictions.new( model.classification?, @test_dataset_uri, @prediction_feature, @prediction_dataset_uri, model.predicted_variables )
+      prediction = Lib::OTPredictions.new( model.classification?, @test_dataset_uri, @test_class_dataset_uri, @prediction_feature, @prediction_dataset_uri, model.predicted_variables )
       if prediction.classification?
         update :classification_statistics => prediction.compute_stats
       else
@@ -265,6 +265,8 @@ module Validation
       end
       LOGGER.debug "cv: num instances for each fold: "+split_compounds.collect{|c| c.size}.join(", ")
       
+      test_features = orig_dataset.features.dclone - [prediction_feature]
+      
       (1..@num_folds).each do |n|
         
         datasetname = 'cv'+@id.to_s +
@@ -291,13 +293,14 @@ module Validation
         raise "internal error, num train compounds not correct" unless shuffled_compounds.size - test_compounds.size == train_compounds.size
         
         LOGGER.debug "training set: "+datasetname+"_train"
-        train_dataset_uri = orig_dataset.create_new_dataset( train_compounds, datasetname + '_train', source ) 
+        train_dataset_uri = orig_dataset.create_new_dataset( train_compounds, orig_dataset.features, datasetname + '_train', source ) 
         
         LOGGER.debug "test set:     "+datasetname+"_test"
-        test_dataset_uri = orig_dataset.create_new_dataset( test_compounds, datasetname + '_test', source )
+        test_dataset_uri = orig_dataset.create_new_dataset( test_compounds, test_features, datasetname + '_test', source )
       
         validation = Validation.new :training_dataset_uri => train_dataset_uri, 
                                     :test_dataset_uri => test_dataset_uri,
+                                    :test_class_dataset_uri => @dataset_uri,
                                     :crossvalidation_id => @id, :crossvalidation_fold => n,
                                     :prediction_feature => prediction_feature,
                                     :algorithm_uri => @algorithm_uri
@@ -310,15 +313,23 @@ module Validation
     
     # splits a dataset into test and training dataset
     # returns map with training_dataset_uri and test_dataset_uri
-    def self.train_test_dataset_split( orig_dataset_uri, split_ratio=nil, random_seed=nil )
+    def self.train_test_dataset_split( orig_dataset_uri, prediction_feature, split_ratio=nil, random_seed=nil )
       
       split_ratio=0.67 unless split_ratio
       random_seed=1 unless random_seed
       
       orig_dataset = OpenTox::Dataset.find orig_dataset_uri
       $sinatra.halt 400, "Dataset not found: "+orig_dataset_uri.to_s unless orig_dataset
-      $sinatra.halt 400, "Split ratio invalid: "+split_ratio unless split_ratio and split_ratio=split_ratio.to_f
-      $sinatra.halt 400, "Split ratio not >0 and <1" unless split_ratio>0 && split_ratio<1
+      $sinatra.halt 400, "Split ratio invalid: "+split_ratio.to_s unless split_ratio and split_ratio=split_ratio.to_f
+      $sinatra.halt 400, "Split ratio not >0 and <1 :"+split_ratio.to_s unless split_ratio>0 && split_ratio<1
+      if prediction_feature
+        $sinatra.halt 404, "prediction_feature is already encoded: "+prediction_feature.to_s if prediction_feature=~/%20/
+        prediction_feature = URI.encode(prediction_feature)
+        $sinatra.halt 400, "Prediction feature not found in dataset features: "+prediction_feature.to_s+
+          ", features are: \n"+orig_dataset.features.inspect unless orig_dataset.features.include?(prediction_feature)
+      else
+        LOGGER.warn "no prediciton feature given, all features included in test dataset"
+      end
       
       compounds = orig_dataset.compounds
       $sinatra.halt 400, "Cannot split datset, num compounds in dataset < 2 ("+compounds.size.to_s+")" if compounds.size<2
@@ -338,12 +349,15 @@ module Validation
       {:training_dataset_uri => train_compounds, :test_dataset_uri => test_compounds}.each do |sym, compound_array|
         
         if sym == :training_dataset_uri
+          features = orig_dataset.features
           title = "Training dataset split of "+orig_dataset.title.to_s
         else
+          features = orig_dataset.features.dclone - [prediction_feature]
           title = "Test dataset split of "+orig_dataset.title.to_s
         end
         source = $sinatra.url_for('/training_test_split',:full)
-        result[sym] = orig_dataset.create_new_dataset( compound_array, title, source )
+        
+        result[sym] = orig_dataset.create_new_dataset( compound_array, features, title, source )
       end
       
       $sinatra.halt 400, "Training dataset not found: '"+result[:training_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:training_dataset_uri]

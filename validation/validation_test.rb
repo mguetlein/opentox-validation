@@ -10,7 +10,7 @@ LOGGER = Logger.new(STDOUT)
 LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 
 class Example
-  attr_accessor :alg, :train_data, :test_data, :model, :pred_data, :act_feat, :pred_feat, :classification, :alg_params, :val, :orig_data  
+  attr_accessor :alg, :train_data, :test_data, :model, :pred_data, :act_feat, :pred_feat, :classification, :alg_params, :val, :orig_data, :num_folds, :random_seed  
 end
 
 class ValidationTest < Test::Unit::TestCase
@@ -24,11 +24,13 @@ class ValidationTest < Test::Unit::TestCase
       
       #ex = ex_ntua
       #ex = ex_tum
+      #ex = ex_local
       
       #create_validation(ex)
       #validate_model(ex)
       #validate_algorithm(ex)
       #validate_split(ex)
+      #xval(ex)
       
       #test_dataset = OpenTox::Dataset.find ex_ntua2.pred_data
       #puts ex_ntua2.pred_data.to_s+", "+test_dataset.compounds.size.to_s+" compounds"
@@ -52,25 +54,30 @@ class ValidationTest < Test::Unit::TestCase
     begin
       orig = OpenTox::Dataset.find(ex.orig_data)
       raise "not correct, upload" if (orig == nil || orig.compounds.size!=85)
-    rescue
+    rescue => e
+      puts e.message
       upload_uri = upload_data(dataset, File.new("data/hamster_carcinogenicity.yaml","r"))
       ex.orig_data = upload_uri
     end
+    
+    ex.act_feat = "http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
     
     ex.train_data = File.join(dataset,"2")
     ex.test_data = File.join(dataset,"3")
     begin
       train = OpenTox::Dataset.find(ex.train_data)
       test = OpenTox::Dataset.find(ex.test_data)
-      raise "not correct, split" if (train == nil || test == nil || train.compounds.size>=85 || test.compounds.size>=test.compounds.size)
-    rescue
-      post '/plain_training_test_split', { :dataset_uri => ex.orig_data, :split_ratio=>0.75, :random_seed=>6}
+      raise "not correct, split "+train.to_s+" "+test.to_s+
+        " "+train.compounds.size.to_s+" "+test.compounds.size.to_s if (train == nil || test == nil || train.compounds.size>=85 || test.compounds.size>=train.compounds.size)
+    rescue => e
+      puts e.message
+      post '/plain_training_test_split', { :dataset_uri => ex.orig_data, :prediction_feature=>ex.act_feat, :split_ratio=>0.75, :random_seed=>6}
       split = last_response.body.split("\n")
       ex.train_data = split[0] 
       ex.test_data = split[1]
     end
     
-    ex.act_feat = "http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
+    
     # example model
     #ex.model = "http://opentox.ntua.gr:3000/model/29"
     #ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/261687"
@@ -124,14 +131,14 @@ class ValidationTest < Test::Unit::TestCase
     #ex.alg = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/GaussP"
 
     #mini
-    #ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-    #ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-    #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/03141"
+    ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/03141"
 
     #big
-    ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/639"
-    ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/640"
-    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264185"
+    #ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/639"
+    #ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/640"
+    #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264185"
     #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264187" #test
     
     # example model
@@ -183,57 +190,60 @@ class ValidationTest < Test::Unit::TestCase
 #    end   
 #  end
 #  
-#  def test_cv
-#    begin
-#      data_uri = upload_data(WS_DATA, FILE)
-#      
-##      first_validation=nil
-##      2.times do 
-#        
-#        num_folds = 9
-#        post '/crossvalidation', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
-#           :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :num_folds => num_folds, :random_seed => 2 }
-#      
-#        uri = last_response.body
-#        if OpenTox::Utils.task_uri?(uri)
-#          puts "task: "+uri.to_s
-#          uri = OpenTox::Task.find(uri).wait_for_resource.to_s
+  def xval(ex)
+    begin
+      #data_uri = upload_data(WS_DATA, FILE)
+      
+#      first_validation=nil
+#      2.times do 
+
+      raise "no orig data" unless ex.orig_data
+      num_folds = ex.num_folds ? ex.num_folds : 3
+      random_seed = ex.random_seed ? ex.random_seed : 1
+      
+        post '/crossvalidation', { :dataset_uri => ex.orig_data, :algorithm_uri => ex.alg, :prediction_feature => ex.act_feat,
+           :algorithm_params => ex.alg_params, :num_folds => num_folds, :random_seed => random_seed }
+      
+        uri = last_response.body
+        if OpenTox::Utils.task_uri?(uri)
+          puts "task: "+uri.to_s
+          uri = OpenTox::Task.find(uri).wait_for_resource.to_s
+        end
+        puts "crossvalidation: "+uri
+        
+        assert last_response.ok?
+        crossvalidation_id = uri.split("/")[-1]
+        add_resource("/crossvalidation/"+crossvalidation_id)
+        puts "id:"+crossvalidation_id
+      
+        get '/crossvalidation/'+crossvalidation_id
+        puts last_response.body
+        assert last_response.ok? || last_response.status==202
+        
+        get '/crossvalidation/'+crossvalidation_id+'/validations'
+        puts "validations:\n"+last_response.body
+        assert last_response.ok?
+        assert last_response.body.split("\n").size == num_folds, "num-folds:"+num_folds.to_s+" but num lines is "+last_response.body.split("\n").size.to_s
+        
+#        if first_validation
+#          # assert that both cross validaitons use the same datasets
+#          first_validation2 = last_response.body.split("\n")[0].split("/")[-1]
+#          
+#          get '/'+first_validation+'/test_dataset_uri'
+#          assert last_response.ok?
+#          first_val_test_data = last_response.body
+#
+#          get '/'+first_validation2+'/test_dataset_uri'
+#          assert last_response.ok?
+#          first_val2_test_data = last_response.body
+#          assert first_val_test_data==first_val2_test_data
 #        end
-#        puts "crossvalidation: "+uri
-#        
-#        assert last_response.ok?
-#        crossvalidation_id = uri.split("/")[-1]
-#        add_resource("/crossvalidation/"+crossvalidation_id)
-#        puts "id:"+crossvalidation_id
-#      
-#        get '/crossvalidation/'+crossvalidation_id
-#        puts last_response.body
-#        assert last_response.ok? || last_response.status==202
-#        
-#        get '/crossvalidation/'+crossvalidation_id+'/validations'
-#        puts "validations:\n"+last_response.body
-#        assert last_response.ok?
-#        assert last_response.body.split("\n").size == num_folds, "num-folds:"+num_folds.to_s+" but num lines is "+last_response.body.split("\n").size.to_s
-#        
-##        if first_validation
-##          # assert that both cross validaitons use the same datasets
-##          first_validation2 = last_response.body.split("\n")[0].split("/")[-1]
-##          
-##          get '/'+first_validation+'/test_dataset_uri'
-##          assert last_response.ok?
-##          first_val_test_data = last_response.body
-##
-##          get '/'+first_validation2+'/test_dataset_uri'
-##          assert last_response.ok?
-##          first_val2_test_data = last_response.body
-##          assert first_val_test_data==first_val2_test_data
-##        end
-##        first_validation = last_response.body.split("\n")[0].split("/")[-1]
-##      end
-#    ensure
-#      #delete_resources
-#    end
-#  end
+#        first_validation = last_response.body.split("\n")[0].split("/")[-1]
+#      end
+    ensure
+      #delete_resources
+    end
+  end
 #
   def validate_model(ex)
     begin
@@ -257,6 +267,8 @@ class ValidationTest < Test::Unit::TestCase
       
      # model_uri = "http://opentox.ntua.gr:3000/model/9"
      # data_uri_test = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+      
+      raise "model not defined" unless ex.model
       
       post '', {:test_dataset_uri => ex.test_data, :model_uri => ex.model} #, :prediction_feature => FEATURE_URI}
       
@@ -384,7 +396,7 @@ class ValidationTest < Test::Unit::TestCase
       #data_uri=WS_DATA+"/"+DATA
 #      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
 #        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.75, :random_seed=>6}
-      post '/training_test_split', { :dataset_uri => ex.orig_data, :algorithm_uri => ex.alg, :prediction_feature => ex.pred_feat,
+      post '/training_test_split', { :dataset_uri => ex.orig_data, :algorithm_uri => ex.alg, :prediction_feature => ex.act_feat,
         :algorithm_params => ex.alg_params, :split_ratio=>0.75, :random_seed=>6}
 
       puts last_response.body

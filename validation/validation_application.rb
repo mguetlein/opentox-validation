@@ -138,7 +138,7 @@ post '/?' do
     else
       halt 400, "illegal parameter combination for validation, use either\n"+
         "* model_uri, test_dataset_uri\n"+ 
-        "* algorithm_uri, training_dataset_uri, test_dataset_uri, prediction_feature\n"
+        "* algorithm_uri, training_dataset_uri, test_dataset_uri, prediction_feature\n"+
         "params given: "+params.inspect
     end
     content_type "text/uri-list"
@@ -153,9 +153,10 @@ post '/training_test_split' do
     halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
     halt 400, "prediction_feature missing" unless params[:prediction_feature]
     
-    params.merge!(Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:split_ratio], params[:random_seed]))
+    params.merge!(Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:prediction_feature], params[:split_ratio], params[:random_seed]))
     v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
                      :test_dataset_uri => params[:test_dataset_uri],
+                     :test_class_dataset_uri => params[:dataset_uri],
                      :prediction_feature => params[:prediction_feature],
                      :algorithm_uri => params[:algorithm_uri]
     v.validate_algorithm( params[:algorithm_params])
@@ -169,7 +170,7 @@ post '/plain_training_test_split' do
     LOGGER.info "creating pure training test split "+params.inspect
     halt 400, "dataset_uri missing" unless params[:dataset_uri]
     
-    result = Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:split_ratio], params[:random_seed])
+    result = Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:prediction_feature], params[:split_ratio], params[:random_seed])
     content_type "text/uri-list"
     result[:training_dataset_uri]+"\n"+result[:test_dataset_uri]+"\n"
 end
