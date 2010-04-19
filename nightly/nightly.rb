@@ -7,6 +7,7 @@ class Nightly
   NIGHTLY_REPORT_HTML = "nightly_report.html"
   
   def self.get_nightly
+    LOGGER.info("Accessing nightly report.")
     if File.exist?(File.join(NIGHTLY_REP_DIR,NIGHTLY_REPORT_HTML))
       return File.new(File.join(NIGHTLY_REP_DIR,NIGHTLY_REPORT_HTML))
     else
@@ -171,12 +172,12 @@ class Nightly
         Thread.new do 
           running << @comparables[i]+i.to_s
           begin
-            LOGGER.info "validate: "+@algs[i].to_s
+            LOGGER.debug "validate: "+@algs[i].to_s
             @validations[i] = Util.validate_alg(@train_data, @test_data, @test_class_data,
               @algs[i], URI.decode(@pred_feature), @alg_params[i]).to_s
               
             begin
-              LOGGER.info "building validation-report"
+              LOGGER.debug "building validation-report"
               @reports[i] = Util.create_report(@validations[i])
             rescue => ex
               LOGGER.error "validation-report error: "+ex.message
