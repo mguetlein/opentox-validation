@@ -51,6 +51,7 @@ module Reports::ReportFormat
   end
   
   def self.format_report_to_html(directory, xml_filename, html_filename, css_style_sheet)
+    css_style_sheet = "http://opentox.informatik.uni-freiburg.de/simple_ot_stylesheet.css" unless css_style_sheet
     css = css_style_sheet ? " html.stylesheet=css_style_sheet?css_style_sheet="+URI.encode(css_style_sheet.to_s) : nil
       
     cmd = "java -jar "+ENV['SAXON_JAR']+" -o:" + File.join(directory,html_filename.to_s)+

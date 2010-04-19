@@ -15,7 +15,7 @@ class Nightly
   end
   
   def self.build_nightly
-    #OpenTox::Task.as_task do
+    OpenTox::Task.as_task do
       LOGGER.info("Building nightly report.")
       
       benchmarks = [ HamsterTrainingTestBenchmark.new, MiniRegressionBenchmark.new ]
@@ -72,13 +72,13 @@ class Nightly
       Reports::ReportFormat.format_report_to_html(NIGHTLY_REP_DIR,
         NIGHTLY_REPORT_XML, 
         NIGHTLY_REPORT_HTML, 
-        "http://opentox.informatik.uni-freiburg.de/simple_ot_stylesheet.css")
+        nil)
         #"http://www.opentox.org/portal_css/Opentox%20Theme/base-cachekey7442.css")
         #"http://apps.ideaconsult.net:8080/ToxPredict/style/global.css")
       
       LOGGER.info("Nightly report completed")
       return "Nightly report completed"
-    #end
+    end
   end
   
   class ValidationBenchmark

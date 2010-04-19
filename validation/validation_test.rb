@@ -19,8 +19,8 @@ class ValidationTest < Test::Unit::TestCase
   
   def test_it
     
-      Nightly.build_nightly
-      #get "/build_nightly" 
+      #Nightly.build_nightly
+      get "/build_nightly" 
       #get "/nightly"  
       #get '1',nil,'HTTP_ACCEPT' => "application/rdf+xml"     
       #puts last_response.body

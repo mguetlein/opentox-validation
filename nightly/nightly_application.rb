@@ -15,7 +15,7 @@ get '/nightly/?' do
   content_type "text/html"
   rep = Nightly.get_nightly
   if rep.is_a?(File)
-    result = body(File.new("/home/martin/software/sinatra/opentox-validation/nightly_report.html"))
+    result = body(rep)
   else
     result = rep
   end
