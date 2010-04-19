@@ -36,13 +36,12 @@ module Validation
       
     # constructs a validation object, Rsets id und uri
     def initialize( params={} )
-      
-      raise "do not set id manually" if params[:id]
-      raise "do not set uri manually" if params[:uri]
+      $sinatra.halt 500,"do not set id manually" if params[:id]
+      $sinatra.halt 500,"do not set uri manually" if params[:uri]
       super params
       # hack to overcome datamapper bug: save to set id
       save unless attribute_dirty?("id")
-      raise "internal error, id not set "+to_yaml unless @id
+      $sinatra.halt 500,"internal error, id not set "+to_yaml unless @id
       update :uri => $sinatra.url_for("/"+@id.to_s, :full)
     end
     
@@ -81,11 +80,11 @@ module Validation
       LOGGER.debug "building model '"+algorithm_uri.to_s+"' "+params.inspect
       
       model = OpenTox::Model::PredictionModel.build(algorithm_uri, params)
-      raise "model building failed" unless model
+      $sinatra.halt 500,"model building failed" unless model
       update :model_uri => model.uri
       
-      raise "error after building model: model.dependent_variable != validation.prediciton_feature ("+
-        model.dependent_variables+" != "+@prediction_feature+")" if @prediction_feature!=model.dependent_variables
+      $sinatra.halt 500,"error after building model: model.dependent_variable != validation.prediciton_feature ("+
+        model.dependent_variables.to_s+" != "+@prediction_feature+")" if @prediction_feature!=model.dependent_variables
           
       validate_model
     end
@@ -132,7 +131,9 @@ module Validation
       update :algorithm_uri => model.algorithm unless @algorithm_uri
       
       LOGGER.debug "computing prediction stats"
-      prediction = Lib::OTPredictions.new( model.classification?, @test_dataset_uri, @test_class_dataset_uri, @prediction_feature, @prediction_dataset_uri, model.predicted_variables )
+      prediction = Lib::OTPredictions.new( model.classification?, 
+        @test_dataset_uri, @test_target_dataset_uri, @prediction_feature, 
+        @prediction_dataset_uri, model.predicted_variables )
       if prediction.classification?
         update :classification_statistics => prediction.compute_stats
       else
@@ -152,12 +153,12 @@ module Validation
     # constructs a crossvalidation, id and uri are set
     def initialize( params={} )
       
-      raise "do not set id manually" if params[:id]
-      raise "do not set uri manually" if params[:uri]
+      $sinatra.halt 500,"do not set id manually" if params[:id]
+      $sinatra.halt 500,"do not set uri manually" if params[:uri]
       super params
       # hack to overcome datamapper bug: save to set id
       save unless attribute_dirty?("id")
-      raise "internal error, id not set" unless @id
+      $sinatra.halt 500,"internal error, id not set" unless @id
       update :uri => $sinatra.url_for("/crossvalidation/"+@id.to_s, :full)
     end
     
@@ -289,8 +290,8 @@ module Validation
           end 
         end
         
-        raise "internal error, num test compounds not correct" unless (shuffled_compounds.size/@num_folds - test_compounds.size).abs <= 1 
-        raise "internal error, num train compounds not correct" unless shuffled_compounds.size - test_compounds.size == train_compounds.size
+        $sinatra.halt 500,"internal error, num test compounds not correct" unless (shuffled_compounds.size/@num_folds - test_compounds.size).abs <= 1 
+        $sinatra.halt 500,"internal error, num train compounds not correct" unless shuffled_compounds.size - test_compounds.size == train_compounds.size
         
         LOGGER.debug "training set: "+datasetname+"_train"
         train_dataset_uri = orig_dataset.create_new_dataset( train_compounds, orig_dataset.features, datasetname + '_train', source ) 
@@ -300,7 +301,7 @@ module Validation
       
         validation = Validation.new :training_dataset_uri => train_dataset_uri, 
                                     :test_dataset_uri => test_dataset_uri,
-                                    :test_class_dataset_uri => @dataset_uri,
+                                    :test_target_dataset_uri => @dataset_uri,
                                     :crossvalidation_id => @id, :crossvalidation_fold => n,
                                     :prediction_feature => prediction_feature,
                                     :algorithm_uri => @algorithm_uri

@@ -1,4 +1,6 @@
 
+require 'lib/test_util.rb'
+
 class Example
   
   @@file=File.new("data/hamster_carcinogenicity.yaml","r")
@@ -10,7 +12,7 @@ class Example
   @@data=File.join @@config[:services]["opentox-dataset"],"1"
   @@train_data=File.join @@config[:services]["opentox-dataset"],"2"
   @@test_data=File.join @@config[:services]["opentox-dataset"],"3"
-  @@css_file="http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
+  @@css_file="http://apps.ideaconsult.net:8080/ToxPredict/style/global.css"
   
   @@summary=""
   
@@ -55,8 +57,7 @@ class Example
     log "upload dataset"
     halt 400,"File not found: "+@@file.path.to_s unless File.exist?(@@file.path)
     data = File.read(@@file.path)
-    data_uri = OpenTox::RestClientWrapper.post @@config[:services]["opentox-dataset"], data, :content_type => @@file_type
-    data_uri = OpenTox::Task.find(data_uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(data_uri)
+    data_uri = OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],data,{:content_type => @@file_type},true).chomp("\n")
     
     log "train-test-validation"
     Lib::Validation.auto_migrate!
@@ -66,7 +67,7 @@ class Example
     split_params = Validation::Util.train_test_dataset_split(data_uri, URI.decode(@@feature), 0.9, 1)
     v = Validation::Validation.new :training_dataset_uri => split_params[:training_dataset_uri], 
                    :test_dataset_uri => split_params[:test_dataset_uri],
-                   :test_class_dataset_uri => data_uri,
+                   :test_target_dataset_uri => data_uri,
                    :prediction_feature => URI.decode(@@feature),
                    :algorithm_uri => @@alg
     v.validate_algorithm( @@alg_params ) 
@@ -134,7 +135,7 @@ class Example
         if ($?==0)
           if OpenTox::Utils.task_uri?(result)
             log "wait for task: "+result
-            result = OpenTox::Task.find(result).wait_for_resource.to_s
+            result = Lib::TestUtil.wait_for_task(result)
           end
           log "ok ( " +result.to_s[0,50]+" )"
           suc += 1

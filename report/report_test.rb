@@ -14,7 +14,12 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     Sinatra::Application
   end
   
+  
+  
   def test_nothing
+  
+#    get "/match"
+#    puts last_response.body.to_s
     
     #Reports::XMLReport.generate_demo_xml_report.write_to
     #raise "stop"
@@ -29,14 +34,14 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     #post 'http://ot.validation.de/report/crossvalidation',:validation_uris=>"http://ot.validation.de/crossvalidation/1"
     #uri = last_response.body.to_s
     
-    post 'http://ot.validation.de/report/algorithm_comparison',:validation_uris=>"http://ot.validation.de/validation/15\n"+
-      "http://ot.validation.de/validation/16\n"+
-      "http://ot.validation.de/validation/18\n"
-    uri = last_response.body.to_s
-    puts uri
-    
-    post uri.to_s+'/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
-    puts last_response.body.to_s.gsub(/\n.*/,"")
+#    post 'http://ot.validation.de/report/algorithm_comparison',:validation_uris=>"http://ot.validation.de/validation/15\n"+
+#      "http://ot.validation.de/validation/16\n"+
+#      "http://ot.validation.de/validation/18\n"
+#    uri = last_response.body.to_s
+#    puts uri
+#    
+#    post uri.to_s+'/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
+#    puts last_response.body.to_s.gsub(/\n.*/,"")
     
   end
 #

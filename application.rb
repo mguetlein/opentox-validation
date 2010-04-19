@@ -28,6 +28,8 @@ get '/test_examples/?' do
   Example.test_examples
 end
 
+require "nightly/nightly_application.rb"
+
 # order is important, first add example methods and reports, than validation 
 # (otherwise sinatra will try to locate a validation with name examples or report)
 

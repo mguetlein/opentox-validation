@@ -15,14 +15,14 @@ module Lib
       return @compounds[instance_index]
     end
   
-    def initialize(is_classification, test_dataset_uri, test_target_datset_uri, prediction_feature, prediction_dataset_uri, predicted_variable)
+    def initialize(is_classification, test_dataset_uri, test_target_dataset_uri, prediction_feature, prediction_dataset_uri, predicted_variable)
       
         LOGGER.debug("loading prediciton via test-dateset:'"+test_dataset_uri.to_s+
-          "', test-target-datset:'"+test_target_datset_uri.to_s+
+          "', test-target-datset:'"+test_target_dataset_uri.to_s+
           "', prediction-dataset:'"+prediction_dataset_uri.to_s+
           "', prediction_feature: '"+prediction_feature.to_s+"' "+
           "', predicted_variable: '"+predicted_variable.to_s+"'")
-         
+          
         if prediction_feature =~ /ambit.uni-plovdiv.bg.*feature.*264185/
           LOGGER.warn "HACK for report example"  
           prediction_feature = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264187"
@@ -32,19 +32,28 @@ module Lib
         
         test_dataset = OpenTox::Dataset.find test_dataset_uri
         raise "test dataset not found: '"+test_dataset_uri.to_s+"'" unless test_dataset
+        raise "prediction_feature missing" unless prediction_feature
         
-        if test_target_datset_uri == nil || test_target_datset_uri==test_dataset_uri
-          test_class_dataset = test_dataset
+        if test_target_dataset_uri == nil || test_target_dataset_uri==test_dataset_uri
+          test_target_dataset_uri = test_dataset_uri
+          test_target_dataset = test_dataset
+          raise "prediction_feature not found in test_dataset, specify a test_target_dataset\n"+
+                "prediction_feature: '"+prediction_feature.to_s+"'\n"+
+                "test_dataset: '"+test_target_dataset_uri.to_s+"'\n"+
+                "available features are: "+test_target_dataset.features.inspect if test_target_dataset.features.index(prediction_feature)==nil
         else
-          test_class_dataset = OpenTox::Dataset.find test_target_datset_uri
-          raise "test target datset not found: '"+test_target_datset_uri.to_s+"'" unless test_class_dataset
+          test_target_dataset = OpenTox::Dataset.find test_target_dataset_uri
+          raise "test target datset not found: '"+test_target_dataset_uri.to_s+"'" unless test_target_dataset
           if CHECK_VALUES
             test_dataset.compounds.each do |c|
-              raise "test compound not found on test class dataset "+c.to_s unless test_class_dataset.compounds.include?(c)
+              raise "test compound not found on test class dataset "+c.to_s unless test_target_dataset.compounds.include?(c)
             end
           end
+          raise "prediction_feature not found in test_target_dataset\n"+
+                "prediction_feature: '"+prediction_feature.to_s+"'\n"+
+                "test_target_dataset: '"+test_target_dataset_uri.to_s+"'\n"+
+                "available features are: "+test_target_dataset.features.inspect if test_target_dataset.features.index(prediction_feature)==nil
         end
-        raise "test dataset feature not found: '"+prediction_feature.to_s+"', available features: "+test_class_dataset.features.inspect if test_class_dataset.features.index(prediction_feature)==nil
         
         @compounds = test_dataset.compounds
         LOGGER.debug "test dataset size: "+@compounds.size.to_s
@@ -53,8 +62,7 @@ module Lib
         
         actual_values = []
         @compounds.each do |c|
-          
-          value = test_class_dataset.get_value(c, prediction_feature)
+          value = test_target_dataset.get_value(c, prediction_feature)
           
           if is_classification
             value = value.to_s unless value==nil

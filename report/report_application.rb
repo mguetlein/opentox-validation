@@ -9,7 +9,7 @@ def perform
   rescue Reports::BadRequest => ex
     halt 400, ex.message
   rescue Exception => ex
-    LOGGER.error(ex.message)
+    #LOGGER.error(ex.message)
     #raise ex # sinatra returns 501
     halt 500, ex.message 
   end

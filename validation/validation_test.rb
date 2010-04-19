@@ -18,13 +18,21 @@ class ValidationTest < Test::Unit::TestCase
   include Lib::TestUtil
   
   def test_it
+    
+      Nightly.build_nightly
+      #get "/build_nightly" 
+      #get "/nightly"  
+      #get '1',nil,'HTTP_ACCEPT' => "application/rdf+xml"     
+      #puts last_response.body
       
       #prepare_examples
-      do_test_examples # USES CURL, DO NOT FORGET TO RESTART
+      #do_test_examples # USES CURL, DO NOT FORGET TO RESTART
       
       #ex = ex_ntua
+      #ex = ex_ntua2
       #ex = ex_tum
       #ex = ex_local
+      #ex = ex_ambit
       
       #create_validation(ex)
       #validate_model(ex)
@@ -77,7 +85,13 @@ class ValidationTest < Test::Unit::TestCase
       ex.test_data = split[1]
     end
     
-    
+    {:orig => ex.orig_data ,:train => ex.train_data, :test=> ex.test_data}.each do |k,v|
+      puts k.to_s+": "+v
+      OpenTox::Dataset.find(v).compounds.each do |c|
+            puts "XX "+c.to_s if c.to_s =~ /C6H12/
+      end
+    end
+    ex.model = "http://ot.model.de/9"
     # example model
     #ex.model = "http://opentox.ntua.gr:3000/model/29"
     #ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/261687"
@@ -86,13 +100,39 @@ class ValidationTest < Test::Unit::TestCase
     return ex
   end
   
+  def ex_ambit
+    ex = Example.new
+    ex.classification = false
+    
+    #ex.alg = "http://ambit.uni-plovdiv.bg:8080/ambit2/algorithm/pka"
+    #ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+    
+    #ex.test_data = "http://194.141.0.136:8080/compound/1"
+    #ex.model = "http://194.141.0.136:8080/model/414" 
+    
+    #ex.alg = "http://ambit.uni-plovdiv.bg:8080/ambit2/algorithm/pka"
+    #ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+    
+    #ex.alg = "http://apps.ideaconsult.net:8080/ambit2/algorithm/pka"
+    #ex.train_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/54" #53
+    ex.test_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/55" #53
+    #ex.act_feat = "http://apps.ideaconsult.net:8080/ambit2/feature/22200" #22190"
+    ex.model = "http://apps.ideaconsult.net:8080/ambit2/model/20"
+    
+    return ex
+  end
+  
   def ex_ntua2
     ex = Example.new
     ex.classification = false
     ex.alg = "http://opentox.ntua.gr:3000/algorithm/mlr"
-    ex.train_data = "http://apps.ideaconsult.net:8180/ambit2/dataset/54" #53
-    ex.test_data = "http://apps.ideaconsult.net:8180/ambit2/dataset/55" #53
-    ex.act_feat = "http://apps.ideaconsult.net:8180/ambit2/feature/22200" #22190"
+    ex.train_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/54" #53
+    ex.test_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/55" #53
+    ex.act_feat = "http://apps.ideaconsult.net:8080/ambit2/feature/22200" #22190"
+    
+    
     # example model
     #ex.model = "http://opentox.ntua.gr:3000/model/29"
     #ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/261687"
@@ -133,7 +173,7 @@ class ValidationTest < Test::Unit::TestCase
     #mini
     ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
     ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/03141"
+    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
 
     #big
     #ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/639"
@@ -205,10 +245,7 @@ class ValidationTest < Test::Unit::TestCase
            :algorithm_params => ex.alg_params, :num_folds => num_folds, :random_seed => random_seed }
       
         uri = last_response.body
-        if OpenTox::Utils.task_uri?(uri)
-          puts "task: "+uri.to_s
-          uri = OpenTox::Task.find(uri).wait_for_resource.to_s
-        end
+        uri = wait_for_task(uri)
         puts "crossvalidation: "+uri
         
         assert last_response.ok?
@@ -270,18 +307,18 @@ class ValidationTest < Test::Unit::TestCase
       
       raise "model not defined" unless ex.model
       
-      post '', {:test_dataset_uri => ex.test_data, :model_uri => ex.model} #, :prediction_feature => FEATURE_URI}
+      post '', {:test_dataset_uri => ex.test_data, 
+        :test_target_dataset_uri => ex.orig_data, 
+        :model_uri => ex.model} #, :prediction_feature => FEATURE_URI}
       
       puts last_response.body
       #verify_validation
       
-      task = OpenTox::Task.find(last_response.body)
-      task.wait_for_completion
-      val_uri = task.resource
+      val_uri = wait_for_task(last_response.body)
       puts val_uri
       
-      get val_uri
-      verify_validation(last_response.body)
+      #get val_uri
+      #verify_validation(last_response.body)
 
     ensure
       #delete_resources
@@ -315,15 +352,24 @@ class ValidationTest < Test::Unit::TestCase
       
       #post '', { :training_dataset_uri => data_uri_train, :test_dataset_uri => data_uri_test,
         #:algorithm_uri => algorithm_uri, :prediction_feature => feature_uri, :algorithm_params => algorithm_params }
-      post '', { :training_dataset_uri => ex.train_data, :test_dataset_uri => ex.test_data,
-        :algorithm_uri => ex.alg, :prediction_feature => ex.act_feat, :algorithm_params => ex.alg_params }
+       
+#      uri = OpenTox::RestClientWrapper.post(@@config[:services]["opentox-validation"],{ :training_dataset_uri => ex.train_data, 
+#        :test_dataset_uri => ex.test_data, 
+#        :test_target_dataset_uri => ex.orig_data, 
+#        :algorithm_uri => ex.alg, 
+#        :prediction_feature => ex.act_feat, 
+#        :algorithm_params => ex.alg_params 
+#        },nil,true)
         
-      task = OpenTox::Task.find(last_response.body)
-      task.wait_for_completion
-      val_uri = task.resource
-      puts val_uri
-      get val_uri
-      verify_validation(last_response.body)
+      post '', { :training_dataset_uri => ex.train_data, :test_dataset_uri => ex.test_data, :test_target_dataset_uri => ex.orig_data,
+        :algorithm_uri => ex.alg, :prediction_feature => ex.act_feat, :algorithm_params => ex.alg_params }
+      uri = last_response.body.to_s.chomp("\n")
+      puts uri
+      uri = wait_for_task(uri)
+      
+      puts uri
+      #get uri
+      #verify_validation(last_response.body)
       #verify_validation
     ensure
       #delete_resources
@@ -367,9 +413,7 @@ class ValidationTest < Test::Unit::TestCase
     post '/create_validation', { :test_dataset_uri => ex.test_data, :model_uri => ex.model, :prediction_dataset_uri=> ex.pred_data}
     puts last_response.body
     
-    task = OpenTox::Task.find(last_response.body)
-    task.wait_for_completion
-    val_uri = task.resource
+    val_uri = wait_for_task(last_response.body)
     puts val_uri
           
     get val_uri
@@ -401,9 +445,7 @@ class ValidationTest < Test::Unit::TestCase
 
       puts last_response.body
       
-      task = OpenTox::Task.find(last_response.body)
-      task.wait_for_completion
-      val_uri = task.resource
+      val_uri = wait_for_task(last_response.body)
       puts val_uri
             
       get val_uri

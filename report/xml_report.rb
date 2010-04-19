@@ -1,5 +1,6 @@
 
 require 'rexml/document'
+require "report/xml_report_util.rb"
 
 ENV['REPORT_DTD'] = "docbook-xml-4.5/docbookx.dtd" unless ENV['REPORT_DTD']
 #transfer to absolute path
@@ -64,11 +65,17 @@ module Reports
     # call-seq:
     #   add_paragraph( element, text ) => REXML::Element
     #
-    def add_paragraph( element, text )
+    def add_paragraph( element, text, literallayout=false )
       
-      para = Reports::XMLReportUtil.text_element("para", text)
-      element << para
-      return para
+      unless literallayout
+        para = Reports::XMLReportUtil.text_element("para", text)
+        element << para
+        return para
+      else
+        literal = Reports::XMLReportUtil.text_element("literallayout", Text.new(text,true))
+        element << literal
+        return literal
+      end
     end
     
     # adds a new image to a REXML:Element, returns the figure as element
@@ -143,7 +150,7 @@ module Reports
           if auto_link_urls && v.to_s =~ /^http:\/\//
            add_url(entry, v.to_s, v.to_s)
           else
-            entry.text = v.to_s
+           entry.text = v.to_s
           end
           row << entry
         end
@@ -175,25 +182,11 @@ module Reports
       return list
     end
     
-    def add_url (element, url, description=url, check_url_length=true )
+    def add_url (element, url, description=url )
       
-      if (check_url_length)
-        #HACK nice solution wanted
-        d = description
-        i = d.index("/")
-        while d.size > 60 && i!=nil
-          #puts d+" "+i.to_s
-          d = d[(i+1)..-1]
-          i = d.index("/")
-        end
-        raise "still too long" if d.size > 60
-        d = "..."+d if d!=description
-      else
-        d = description
-      end
       ulink = Element.new("ulink")
       ulink.add_attributes({"url" => url})
-      ulink.text = d
+      ulink.text = description
       element << ulink
       return ulink
     end
@@ -209,7 +202,8 @@ module Reports
         end
       end
       
-      @doc.write(out,2)
+      @doc.write(out,2, true, true)
+      out.flush
     end
   
     # call-seq:
@@ -226,16 +220,20 @@ module Reports
       rep.add_section(section2,"A Subsection")
       rep.add_section(section2,"Another Subsection")
       rep.add_url(section2,"www.google.de", "link zu google")
-      rep.add_section(rep.get_root_element,"Third Section")
+      sec3 = rep.add_section(rep.get_root_element,"Third Section")
+      rep.add_paragraph(sec3, "some    \n              more text for section 3",true)
       
-      vals= [["a", "b", "c"],["a2", "b2", "c2"],["1", "2", "http://3"]]
-      rep.add_table(rep.get_root_element, "demo-table", vals)
+      #vals= [["a", "b", "c"],["a2", "b2", "c2"],["1", "2", "http://3"]]
+      #rep.add_table(rep.get_root_element, "demo-table", vals)
       return rep
     end
-    
   end
 end
 
+
+#Reports::XMLReport.generate_demo_xml_report.write_to
+#puts "\n\n"
+#puts REXML::Text.new("hey ho,                       lets go!\nasdf",false).to_s
 
 
 

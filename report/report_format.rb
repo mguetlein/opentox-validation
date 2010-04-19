@@ -50,7 +50,6 @@ module Reports::ReportFormat
     end
   end
   
-  private
   def self.format_report_to_html(directory, xml_filename, html_filename, css_style_sheet)
     css = css_style_sheet ? " html.stylesheet=css_style_sheet?css_style_sheet="+URI.encode(css_style_sheet.to_s) : nil
       

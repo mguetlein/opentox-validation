@@ -112,27 +112,29 @@ get '/:id' do
   when "application/rdf+xml"
     content_type "application/rdf+xml"
     result = validation.to_rdf
-  when /text\/x-yaml|\*\/\*|/ # matches 'text/x-yaml', '*/*', ''
+  when /text\/x-yaml|\*\/\*|^$/ # matches 'text/x-yaml', '*/*', ''
     content_type "text/x-yaml"
     result = validation.to_yaml
   else
-    halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported."
+    halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported, valid Accept-Headers are \"application/rdf+xml\" and \"text/x-yaml\"."
   end
   result
 end
 
 post '/?' do
-  OpenTox::Task.as_task do
+  OpenTox::Task.as_task do |task|
     LOGGER.info "creating validation "+params.inspect
     if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri]
       v = Validation::Validation.new :model_uri => params[:model_uri], 
                        :test_dataset_uri => params[:test_dataset_uri],
+                       :test_target_dataset_uri => params[:test_target_dataset_uri],
                        :prediction_feature => params[:prediction_feature]
       v.validate_model
     elsif params[:algorithm_uri] and params[:training_dataset_uri] and params[:test_dataset_uri] and params[:prediction_feature] and !params[:model_uri]
      v = Validation::Validation.new :algorithm_uri => params[:algorithm_uri],
                         :training_dataset_uri => params[:training_dataset_uri], 
                         :test_dataset_uri => params[:test_dataset_uri],
+                        :test_target_dataset_uri => params[:test_target_dataset_uri],
                         :prediction_feature => params[:prediction_feature]
      v.validate_algorithm( params[:algorithm_params]) 
     else
@@ -156,7 +158,7 @@ post '/training_test_split' do
     params.merge!(Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:prediction_feature], params[:split_ratio], params[:random_seed]))
     v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
                      :test_dataset_uri => params[:test_dataset_uri],
-                     :test_class_dataset_uri => params[:dataset_uri],
+                     :test_target_dataset_uri => params[:dataset_uri],
                      :prediction_feature => params[:prediction_feature],
                      :algorithm_uri => params[:algorithm_uri]
     v.validate_algorithm( params[:algorithm_params])

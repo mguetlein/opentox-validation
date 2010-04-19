@@ -50,11 +50,11 @@ module Lib
     #include OpenTox::Owl
     
     def self.to_rdf( rdf_provider )
-      owl = HashToOwl.new()
-      owl.title = rdf_provider.rdf_title
-      owl.uri = rdf_provider.uri
-      owl.add_content( rdf_provider )
-      owl.rdf
+      
+      owl = OpenTox::Owl.create(rdf_provider.rdf_title, rdf_provider.uri )
+      toOwl = HashToOwl.new(owl)
+      toOwl.add_content(rdf_provider)
+      toOwl.rdf
     end
   
     def add_content( rdf_provider ) 
@@ -62,7 +62,16 @@ module Lib
       recursiv_add_content( @rdf_provider.get_content_as_hash, @model.subject(RDF['type'],rdf_provider.rdf_title) )
     end
     
+    def rdf
+      @owl.rdf
+    end
+    
     private
+    def initialize(owl)
+      @owl = owl
+      @model = owl.model
+    end
+    
     def recursiv_add_content( output, node )
       output.each do |k,v|
         raise "null value: "+k.to_s if v==nil

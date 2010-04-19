@@ -97,7 +97,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
   end
 
   def get_predictions(validation)
-    Lib::OTPredictions.new( validation.classification?, validation.test_dataset_uri, validation.test_class_dataset_uri,
+    Lib::OTPredictions.new( validation.classification?, validation.test_dataset_uri, validation.test_target_dataset_uri,
     validation.prediction_feature, validation.prediction_dataset_uri, validation.predicted_variable)
   end
   

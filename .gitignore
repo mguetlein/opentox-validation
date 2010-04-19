@@ -6,3 +6,5 @@ log/*
 dist
 reports
 public/server.log
+nightly/nightly_report.html
+nightly/nightly_report.xml

@@ -30,7 +30,7 @@ module Validation
         # transpose results per class
         class_values = {}
         Lib::VAL_CLASS_PROPS_PER_CLASS.each do |p|
-          raise "missing classification statitstics: "+p.to_s+" "+classification_statistics.inspect unless classification_statistics[p]
+          $sinatra.halt 500, "missing classification statitstics: "+p.to_s+" "+classification_statistics.inspect unless classification_statistics[p]
           classification_statistics[p].each do |class_value, property_value|
             class_values[class_value] = {:class_value => class_value} unless class_values.has_key?(class_value)
             map = class_values[class_value]
@@ -41,7 +41,7 @@ module Validation
         
         #converting confusion matrix
         cells = []
-        raise "confusion matrix missing" unless classification_statistics[:confusion_matrix]!=nil
+        $sinatra.halt 500,"confusion matrix missing" unless classification_statistics[:confusion_matrix]!=nil
         classification_statistics[:confusion_matrix].each do |k,v|
           cell = {}
           # key in confusion matrix is map with predicted and actual attribute 
@@ -77,13 +77,13 @@ module Validation
     
     @@literals = [ :created_at, :real_runtime, :num_instances, :num_without_class,
                    :percent_without_class, :num_unpredicted, :percent_unpredicted, 
-                   :crossvalidation_fold, :crossvalidation_id,
+                   :crossvalidation_fold, :crossvalidation_id, 
                    :num_correct, :num_incorrect, :percent_correct, :percent_incorrect,
                    :area_under_roc, :false_negative_rate, :false_positive_rate,
                    :f_measure, :num_false_positives, :num_false_negatives, 
                    :num_true_positives, :num_true_negatives, :precision, 
                    :recall, :true_negative_rate, :true_positive_rate,
-                   :confusion_matrix_value ]
+                   :confusion_matrix_value, :weighted_area_under_roc ]
     # created at -> date
     #      owl.set_literal(OT['numInstances'],validation.num_instances)
     #      owl.set_literal(OT['numWithoutClass'],validation.num_without_class)
@@ -92,12 +92,12 @@ module Validation
     #      owl.set_literal(OT['percentUnpredicted'],validation.percent_unpredicted)
                  
                  
-    @@object_properties = { :model_uri => OT['validationModel'], :training_dataset_uri => OT['validationTrainingDataset'], 
-                     :prediction_feature => OT['predictedFeature'], :test_dataset_uri => OT['validationTestDataset'], 
+    @@object_properties = { :model_uri => OT['validationModel'], :training_dataset_uri => OT['validationTrainingDataset'], :algorithm_uri => OT['validationAlgorithm'],
+                     :prediction_feature => OT['predictedFeature'], :test_dataset_uri => OT['validationTestDataset'], :test_target_dataset_uri => OT['validationTestClassDataset'],
                      :prediction_dataset_uri => OT['validationPredictionDataset'], :crossvalidation_info => OT['hasValidationInfo'],
                      :classification_statistics => OT['hasValidationInfo'],
                      :class_value_statistics => OT['classValueStatistics'], :confusion_matrix => OT['confusionMatrix'],
-                     :confusion_matrix_cell => OT['confusionMatrixCell'], :class_value => OT['class_value'], 
+                     :confusion_matrix_cell => OT['confusionMatrixCell'], :class_value => OT['classValue'], 
                      :confusion_matrix_actual => OT['confusionMatrixActual'], :confusion_matrix_predicted => OT['confusionMatrixPredicted'] } 
                      
     @@classes = { :crossvalidation_info => OT['CrossvalidationInfo'], :classification_statistics => OT['ClassificationStatistics'],

@@ -8,7 +8,7 @@ require "lib/merge.rb"
 module Lib
 
   VAL_PROPS_GENERAL = [ :id, :uri, :model_uri, :algorithm_uri, :training_dataset_uri, :prediction_feature,
-                :test_dataset_uri, :test_class_dataset_uri, :prediction_dataset_uri, :created_at ] 
+                :test_dataset_uri, :test_target_dataset_uri, :prediction_dataset_uri, :created_at ] 
   VAL_PROPS_SUM = [ :num_instances, :num_without_class, :num_unpredicted ]
   VAL_PROPS_AVG = [:real_runtime, :percent_without_class, :percent_unpredicted ]
   VAL_PROPS = VAL_PROPS_GENERAL + VAL_PROPS_SUM + VAL_PROPS_AVG
@@ -55,7 +55,7 @@ module Lib
     property :model_uri, String, :length => 255
     property :algorithm_uri, String, :length => 255
     property :training_dataset_uri, String, :length => 255
-    property :test_class_dataset_uri, String, :length => 255
+    property :test_target_dataset_uri, String, :length => 255
     property :test_dataset_uri, String, :length => 255
     property :prediction_dataset_uri, String, :length => 255
     property :prediction_feature, String, :length => 255

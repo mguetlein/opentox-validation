@@ -5,6 +5,20 @@ module Lib
   # test utitily, to be included rack unit tests
   module TestUtil
     
+    def wait_for_task(uri)
+      return TestUtil.wait_for_task(uri)
+    end
+    
+    def self.wait_for_task(uri)
+      if OpenTox::Utils.task_uri?(uri)
+        task = OpenTox::Task.find(uri)
+        task.wait_for_completion
+        raise "task failed: "+uri.to_s if task.failed?
+        uri = task.resource
+      end
+      return uri
+    end
+    
     # updloads a dataset
     def upload_data(ws, file)
         
@@ -20,7 +34,6 @@ module Lib
       data = File.read(file.path)
       task_uri = RestClient.post ws, data, :content_type => type 
       data_uri = task_uri
-      #data_uri = OpenTox::Task.find(task_uri).wait_for_resource
       puts "done: "+data_uri.to_s
       add_resource(data_uri)
       return data_uri
