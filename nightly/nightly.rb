@@ -173,7 +173,7 @@ class Nightly
           begin
             LOGGER.info "validate: "+@algs[i].to_s
             @validations[i] = Util.validate_alg(@train_data, @test_data, @test_class_data,
-              @algs[i], URI.decode(@pred_feature), @alg_params[i])
+              @algs[i], URI.decode(@pred_feature), @alg_params[i]).to_s
               
             begin
               LOGGER.info "building validation-report"
@@ -272,7 +272,7 @@ class Nightly
     end
     
     def self.split_dataset(data_uri, feature, split_ratio, random_seed)
-      res = OpenTox::RestClientWrapper.post @@validation_service+'/plain_training_test_split', { :dataset_uri => data_uri, :prediction_feature=>feature, :split_ratio=>split_ratio, :random_seed=>random_seed}
+      res = OpenTox::RestClientWrapper.post File.join(@@validation_service,'plain_training_test_split'), { :dataset_uri => data_uri, :prediction_feature=>feature, :split_ratio=>split_ratio, :random_seed=>random_seed}
       return res.split("\n")
     end
     
@@ -287,7 +287,7 @@ class Nightly
     end
     
     def self.create_report(validation)
-      uri = OpenTox::RestClientWrapper.post @@validation_service+"/report/validation", { :validation_uris => validation }, nil, true
+      uri = OpenTox::RestClientWrapper.post File.join(@@validation_service,"report/validation"), { :validation_uris => validation }, nil, true
       #uri = OpenTox::Task.find(uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(uri)
       return uri
     end
