@@ -42,7 +42,8 @@ class Nightly
       section_about = report.add_section(report.get_root_element, "About this report")
       report.add_paragraph(section_about,
         "This a opentox internal test report. Its purpose is to maintain interoperability between the OT validation web service "+
-        "and other OT web services. Please email to guetlein@informatik.uni-freiburg.de if you wish your service/test case to be added.")
+        "and other OT web services. If you have any comments, remarks, or wish your service/test-case to be added, please email "+
+        "to guetlein@informatik.uni-freiburg.de or use the issue tracker at http://opentox.informatik.uni-freiburg.de/simple_ot_stylesheet.css")
       
       benchmarks.each do |b|  
          section = report.add_section(report.get_root_element, b.title)
