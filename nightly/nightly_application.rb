@@ -11,7 +11,6 @@ get '/css_style_sheet/?' do
 end
 
 get '/nightly/?' do
-  LOGGER.info "get nightly"
   content_type "text/html"
   rep = Nightly.get_nightly
   if rep.is_a?(File)

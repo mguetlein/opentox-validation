@@ -19,8 +19,8 @@ class ValidationTest < Test::Unit::TestCase
   
   def test_it
     
-      #Nightly.build_nightly
-      get "/build_nightly" 
+      Nightly.build_nightly
+      #get "/build_nightly" 
       #get "/nightly"  
       #get '1',nil,'HTTP_ACCEPT' => "application/rdf+xml"     
       #puts last_response.body
@@ -171,14 +171,14 @@ class ValidationTest < Test::Unit::TestCase
     #ex.alg = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/GaussP"
 
     #mini
-    ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-    ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+    #ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    #ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
 
     #big
-    #ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/639"
-    #ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/640"
-    #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264185"
+    ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/639"
+    ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/640"
+    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264185"
     #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264187" #test
     
     # example model

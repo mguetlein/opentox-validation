@@ -19,7 +19,10 @@ class Nightly
     OpenTox::Task.as_task do
       LOGGER.info("Building nightly report.")
       
-      benchmarks = [ HamsterTrainingTestBenchmark.new, MiniRegressionBenchmark.new ]
+      benchmarks = [ HamsterTrainingTestBenchmark.new, 
+                     MiniRegressionBenchmark.new,
+                     FatheadRegressionBenchmark.new,
+                     ]
       
       running = []
       report = Reports::XMLReport.new("Nightly Validation", Time.now.strftime("Created at %m.%d.%Y - %H:%M"))
@@ -49,10 +52,10 @@ class Nightly
       benchmarks.each do |b|  
          section = report.add_section(report.get_root_element, b.title)
          
-         section_about = report.add_section(section, "Info")
-         b.info.each{|i| report.add_paragraph(section_about,i)}
+         section_info = report.add_section(section, "Info")
+         b.info.each{|i| report.add_paragraph(section_info,i)}
          info_table = b.info_table
-         report.add_table(section_about, b.info_table_title, info_table) if info_table
+         report.add_table(section_info, b.info_table_title, info_table) if info_table
          
          section_results = report.add_section(section, "Results")
          report.add_table(section_results, b.result_table_title, b.result_table)
@@ -205,9 +208,8 @@ class Nightly
   
   class MiniRegressionBenchmark < TrainingTestValidationBenchmark
     
-    
     def title
-      "Training test set validation, regression"
+      "Training test set validation, small regression dataset"
     end
     
     def info
@@ -219,13 +221,35 @@ class Nightly
       @algs = [ "http://opentox.ntua.gr:3000/algorithm/mlr", 
         "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/kNNregression"]
       @alg_params = [nil, nil]
-      #@pred_feature = "http://apps.ideaconsult.net:8080/ambit2/feature/22200"
-      #@train_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/54"
-      #@test_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/55"
-      
       @train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
       @test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
       @pred_feature = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+      super
+    end
+  end
+  
+  class FatheadRegressionBenchmark < TrainingTestValidationBenchmark
+    
+    def title
+      "Training test set validation, regression with fathead minnow dataset"
+    end
+    
+    def info
+      res = [ "This is the regression use case used in D2.2."+
+              "The task is to predict LC50 values of the well known Fathead Minnow Acute Toxicity dataset."+
+              "JOELIB was used to compute numerical descriptors as features." ] + super
+      return res
+    end
+    
+    def build()
+      @algs = [ 
+        "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/kNNregression",
+        "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/M5P",
+        "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/GaussP"]
+      @alg_params = [nil, nil, nil]
+      @train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/639"
+      @test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/640"
+      @pred_feature = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264185"
       super
     end
   end

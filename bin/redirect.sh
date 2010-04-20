@@ -12,6 +12,8 @@ if [ -z $ERR ]; then
   ERR="no error"
 else
   echo "ERROR" 1>&2 
+  cmd="curl $1"
+  echo `$cmd 2> /dev/null`
   exit 1
 fi
 
@@ -24,7 +26,7 @@ if [ -z $RES ]; then
   exit 0
 else
   #cat $OUTFILE
-  RES=`grep "< Location: " $OUTFILE`
+  RES=`grep -a "< Location: " $OUTFILE`
   RES=${RES//"< Location: "/} # remove lcoation spaces
   echo $RES
 fi
