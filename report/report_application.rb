@@ -15,6 +15,7 @@ def perform
   end
 end
 
+
 get '/report/:type/css_style_sheet/?' do
   perform do |rs|
     "@import \""+params[:css_style_sheet]+"\";"
@@ -81,8 +82,10 @@ delete '/report/:type/:id' do
 end
 
 post '/report/:type' do
-  perform do |rs|
-    content_type "text/uri-list"
-    rs.create_report(params[:type],params[:validation_uris]?params[:validation_uris].split(/\n|,/):nil)
+  OpenTox::Task.as_task do
+    perform do |rs|
+      content_type "text/uri-list"
+      rs.create_report(params[:type],params[:validation_uris]?params[:validation_uris].split(/\n|,/):nil)
+    end
   end
 end

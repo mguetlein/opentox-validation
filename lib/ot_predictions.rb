@@ -34,7 +34,7 @@ module Lib
         raise "test dataset not found: '"+test_dataset_uri.to_s+"'" unless test_dataset
         raise "prediction_feature missing" unless prediction_feature
         
-        if test_target_dataset_uri == nil || test_target_dataset_uri==test_dataset_uri
+        if test_target_dataset_uri == nil || test_target_dataset_uri.strip.size==0 || test_target_dataset_uri==test_dataset_uri
           test_target_dataset_uri = test_dataset_uri
           test_target_dataset = test_dataset
           raise "prediction_feature not found in test_dataset, specify a test_target_dataset\n"+

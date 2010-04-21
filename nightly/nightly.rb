@@ -17,7 +17,7 @@ class Nightly
   
   def self.build_nightly
     OpenTox::Task.as_task do
-      LOGGER.info("Building nightly report.")
+      LOGGER.info("Building nightly report")
       
       benchmarks = [ HamsterTrainingTestBenchmark.new, 
                      MiniRegressionBenchmark.new,
@@ -27,18 +27,18 @@ class Nightly
       running = []
       report = Reports::XMLReport.new("Nightly Validation", Time.now.strftime("Created at %m.%d.%Y - %H:%M"))
       benchmarks.each do |b|
-        running << b.class.to_s+b.object_id.to_s
+        running << b.class.to_s.gsub(/Nightly::/, "")+b.object_id.to_s
         Thread.new do
           begin
             b.build
           ensure
-            running.delete(b.class.to_s+b.object_id.to_s)
+            running.delete(b.class.to_s.gsub(/Nightly::/, "")+b.object_id.to_s)
           end
         end
       end
       wait = 0
       while running.size>0
-        LOGGER.debug "Nighlty report waiting for "+running.inspect if wait%10==0
+        LOGGER.debug "Nighlty report waiting for "+running.inspect if wait%60==0
         wait += 1
         sleep 1
       end
@@ -175,12 +175,12 @@ class Nightly
         Thread.new do 
           running << @comparables[i]+i.to_s
           begin
-            LOGGER.debug "validate: "+@algs[i].to_s
+            LOGGER.debug "Validate: "+@algs[i].to_s
             @validations[i] = Util.validate_alg(@train_data, @test_data, @test_class_data,
               @algs[i], URI.decode(@pred_feature), @alg_params[i]).to_s
               
             begin
-              LOGGER.debug "building validation-report"
+              LOGGER.debug "Building validation-report for "+@validations[i].to_s+" ("+@algs[i].to_s+")"
               @reports[i] = Util.create_report(@validations[i])
             rescue => ex
               LOGGER.error "validation-report error: "+ex.message
@@ -199,7 +199,7 @@ class Nightly
       end
       wait = 0
       while running.size>0
-        LOGGER.debug self.class.to_s+" waiting for "+running.inspect if wait%5==0
+        LOGGER.debug self.class.to_s.gsub(/Nightly::/, "")+" waiting for "+running.inspect if wait%20==0
         wait += 1
         sleep 1
       end
@@ -235,8 +235,8 @@ class Nightly
     end
     
     def info
-      res = [ "This is the regression use case used in D2.2."+
-              "The task is to predict LC50 values of the well known Fathead Minnow Acute Toxicity dataset."+
+      res = [ "This is the regression use case used in D2.2. "+
+              "The task is to predict LC50 values of the well known Fathead Minnow Acute Toxicity dataset. "+
               "JOELIB was used to compute numerical descriptors as features." ] + super
       return res
     end
@@ -245,7 +245,8 @@ class Nightly
       @algs = [ 
         "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/kNNregression",
         "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/M5P",
-        "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/GaussP"]
+        "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/GaussP"
+        ]
       @alg_params = [nil, nil, nil]
       @train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/639"
       @test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/640"
@@ -291,7 +292,7 @@ class Nightly
     def self.upload_dataset(dataset_service, file, file_type)
       raise "File not found: "+file.path.to_s unless File.exist?(file.path)
       data = File.read(file.path)
-      data_uri = OpenTox::RestClientWrapper.post dataset_service, data, {:content_type => file_type}, true
+      data_uri = OpenTox::RestClientWrapper.post dataset_service, {:content_type => file_type}, data
       #data_uri = OpenTox::Task.find(data_uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(data_uri)
       return data_uri
     end
@@ -304,7 +305,7 @@ class Nightly
     def self.validate_alg(train_data, test_data, test_class_data, alg, feature, alg_params)
       uri = OpenTox::RestClientWrapper.post @@validation_service, { :training_dataset_uri => train_data, :test_dataset_uri => test_data, 
         :test_target_dataset_uri => test_class_data,
-        :algorithm_uri => alg, :prediction_feature => feature, :algorithm_params => alg_params }, nil, true
+        :algorithm_uri => alg, :prediction_feature => feature, :algorithm_params => alg_params }
       #LOGGER.info "waiting for validation "+uri.to_s
       #uri = OpenTox::Task.find(uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(uri)
       #LOGGER.info "validaiton done "+uri.to_s
@@ -312,7 +313,7 @@ class Nightly
     end
     
     def self.create_report(validation)
-      uri = OpenTox::RestClientWrapper.post File.join(@@validation_service,"report/validation"), { :validation_uris => validation }, nil, true
+      uri = OpenTox::RestClientWrapper.post File.join(@@validation_service,"report/validation"), { :validation_uris => validation }
       #uri = OpenTox::Task.find(uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(uri)
       return uri
     end

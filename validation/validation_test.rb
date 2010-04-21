@@ -26,7 +26,7 @@ class ValidationTest < Test::Unit::TestCase
       #puts last_response.body
       
       #prepare_examples
-      #do_test_examples # USES CURL, DO NOT FORGET TO RESTART
+      #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
       
       #ex = ex_ntua
       #ex = ex_ntua2
@@ -144,7 +144,7 @@ class ValidationTest < Test::Unit::TestCase
   def ex_ntua
     ex = Example.new
     ex.classification = false
-    ex.alg = "http://opentox.ntua.gr:3000/algorithm/mlr"
+    ex.alg = "http://opentox.ntua.gr:3003/algorithm/mlr"
     
     #ex.orig_data = "http://apps.ideaconsult.net:8180/ambit2/dataset/52" 
     
@@ -171,14 +171,14 @@ class ValidationTest < Test::Unit::TestCase
     #ex.alg = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/GaussP"
 
     #mini
-    #ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-    #ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
-    #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+    ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
 
     #big
-    ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/639"
-    ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/640"
-    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264185"
+    #ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/639"
+    #ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/640"
+    #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264185"
     #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264187" #test
     
     # example model

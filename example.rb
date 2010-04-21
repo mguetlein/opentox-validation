@@ -57,7 +57,7 @@ class Example
     log "upload dataset"
     halt 400,"File not found: "+@@file.path.to_s unless File.exist?(@@file.path)
     data = File.read(@@file.path)
-    data_uri = OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],data,{:content_type => @@file_type},true).chomp("\n")
+    data_uri = OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],{:content_type => @@file_type},data).chomp("\n")
     
     log "train-test-validation"
     Lib::Validation.auto_migrate!
@@ -153,6 +153,7 @@ class Example
   # deletes resources listed by service
   def self.delete_all(uri_list_service)
     uri_list = OpenTox::RestClientWrapper.get(uri_list_service)
+    LOGGER.debug "deleting: "+uri_list.inspect
     uri_list.split("\n").each do |uri|
       OpenTox::RestClientWrapper.delete(uri)
     end
