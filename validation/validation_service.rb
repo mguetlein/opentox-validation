@@ -84,7 +84,7 @@ module Validation
       update :model_uri => model.uri
       
       $sinatra.halt 500,"error after building model: model.dependent_variable != validation.prediciton_feature ("+
-        model.dependent_variables.to_s+" != "+@prediction_feature+")" if @prediction_feature!=model.dependent_variables
+        model.dependentVariables.to_s+" != "+@prediction_feature+")" if @prediction_feature!=model.dependentVariables
           
       validate_model
     end
@@ -107,9 +107,9 @@ module Validation
       
       if @prediction_feature
         $sinatra.halt 400, "error validating model: model.dependent_variable != validation.prediciton_feature ("+
-          model.dependent_variables+" != "+@prediction_feature+")" if @prediction_feature!=model.dependent_variables
+          model.dependentVariables+" != "+@prediction_feature+")" if @prediction_feature!=model.dependentVariables
       else
-        update :prediction_feature => model.dependent_variables
+        update :prediction_feature => model.dependentVariables
       end
       
       prediction_dataset_uri = ""
@@ -127,13 +127,13 @@ module Validation
       model = OpenTox::Model::PredictionModel.find(@model_uri) unless model
       $sinatra.halt 400, "model not found: "+@model_uri.to_s unless model
       
-      update :prediction_feature => model.dependent_variables unless @prediction_feature
+      update :prediction_feature => model.dependentVariables unless @prediction_feature
       update :algorithm_uri => model.algorithm unless @algorithm_uri
       
       LOGGER.debug "computing prediction stats"
       prediction = Lib::OTPredictions.new( model.classification?, 
         @test_dataset_uri, @test_target_dataset_uri, @prediction_feature, 
-        @prediction_dataset_uri, model.predicted_variables )
+        @prediction_dataset_uri, model.predictedVariables )
       if prediction.classification?
         update :classification_statistics => prediction.compute_stats
       else

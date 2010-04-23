@@ -31,6 +31,9 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     #get '/report/validation/1',nil,'HTTP_ACCEPT' => "text/html"     
     #post '/report/validation/1/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
     
+    post 'http://ot.validation.de/report/validation',:validation_uris=>"http://ot.validation.de/validation/90"
+    puts last_response.body.to_s
+
     #post 'http://ot.validation.de/report/crossvalidation',:validation_uris=>"http://ot.validation.de/crossvalidation/1"
     #uri = last_response.body.to_s
     

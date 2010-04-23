@@ -218,8 +218,9 @@ class Nightly
     end
     
     def build()
-      @algs = [ "http://opentox.ntua.gr:3000/algorithm/mlr", 
-        "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/kNNregression"]
+      @algs = [ "http://opentox.ntua.gr:3003/algorithm/mlr", 
+        "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/kNNregression"
+        ]
       @alg_params = [nil, nil]
       @train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
       @test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"

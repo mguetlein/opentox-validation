@@ -13,8 +13,8 @@ module Lib
       if OpenTox::Utils.task_uri?(uri)
         task = OpenTox::Task.find(uri)
         task.wait_for_completion
-        raise "task failed: "+uri.to_s if task.failed?
-        uri = task.resource
+        raise "task failed: "+uri.to_s if task.error?
+        uri = task.resultURI
       end
       return uri
     end

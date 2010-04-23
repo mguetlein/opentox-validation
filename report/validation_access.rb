@@ -110,7 +110,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
   end
   
   def predicted_variable(validation)
-    get_model(validation).predicted_variables
+    get_model(validation).predictedVariables
   end
   
   private

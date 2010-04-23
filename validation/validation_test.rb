@@ -19,14 +19,14 @@ class ValidationTest < Test::Unit::TestCase
   
   def test_it
     
-      Nightly.build_nightly
+      #Nightly.build_nightly
       #get "/build_nightly" 
       #get "/nightly"  
       #get '1',nil,'HTTP_ACCEPT' => "application/rdf+xml"     
       #puts last_response.body
       
       #prepare_examples
-      #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
+      do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
       
       #ex = ex_ntua
       #ex = ex_ntua2
@@ -85,12 +85,12 @@ class ValidationTest < Test::Unit::TestCase
       ex.test_data = split[1]
     end
     
-    {:orig => ex.orig_data ,:train => ex.train_data, :test=> ex.test_data}.each do |k,v|
-      puts k.to_s+": "+v
-      OpenTox::Dataset.find(v).compounds.each do |c|
-            puts "XX "+c.to_s if c.to_s =~ /C6H12/
-      end
-    end
+    #{:orig => ex.orig_data ,:train => ex.train_data, :test=> ex.test_data}.each do |k,v|
+    #  puts k.to_s+": "+v
+    #  OpenTox::Dataset.find(v).compounds.each do |c|
+    #        puts "XX "+c.to_s if c.to_s =~ /C6H12/
+    #  end
+    #end
     ex.model = "http://ot.model.de/9"
     # example model
     #ex.model = "http://opentox.ntua.gr:3000/model/29"
@@ -154,10 +154,10 @@ class ValidationTest < Test::Unit::TestCase
     ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
     
     # example model
-    ex.model = "http://opentox.ntua.gr:3000/model/36"
+    ex.model = "http://opentox.ntua.gr:3003/model/124"
     #ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264783"
     # example prediction data
-    ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/656"
+    #ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/656"
     # validation
     #ex.val = "http://ot.validation.de/21"
     return ex
