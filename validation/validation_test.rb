@@ -19,14 +19,14 @@ class ValidationTest < Test::Unit::TestCase
   
   def test_it
     
-      #Nightly.build_nightly
+      Nightly.build_nightly
       #get "/build_nightly" 
       #get "/nightly"  
       #get '1',nil,'HTTP_ACCEPT' => "application/rdf+xml"     
       #puts last_response.body
       
       #prepare_examples
-      do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
+      #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
       
       #ex = ex_ntua
       #ex = ex_ntua2
@@ -441,7 +441,7 @@ class ValidationTest < Test::Unit::TestCase
 #      post '/training_test_split', { :dataset_uri => data_uri, :algorithm_uri => WS_CLASS_ALG, :prediction_feature => FEATURE_URI,
 #        :algorithm_params => "feature_generation_uri="+WS_FEATURE_ALG, :split_ratio=>0.75, :random_seed=>6}
       post '/training_test_split', { :dataset_uri => ex.orig_data, :algorithm_uri => ex.alg, :prediction_feature => ex.act_feat,
-        :algorithm_params => ex.alg_params, :split_ratio=>0.75, :random_seed=>6}
+        :algorithm_params => ex.alg_params, :split_ratio=>0.75, :random_seed=>6 }
 
       puts last_response.body
       

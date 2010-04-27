@@ -16,12 +16,12 @@ class Nightly
   end
   
   def self.build_nightly
-    OpenTox::Task.as_task do
+    OpenTox::Task.as_task() do
       LOGGER.info("Building nightly report")
       
       benchmarks = [ HamsterTrainingTestBenchmark.new, 
                      MiniRegressionBenchmark.new,
-                     FatheadRegressionBenchmark.new,
+                     #FatheadRegressionBenchmark.new,
                      ]
       
       running = []

@@ -6,12 +6,6 @@ end
 require 'validation/validation_service.rb'
 require 'lib/merge.rb'
 
-# hack: store self in $sinatra to make url_for method accessible in validation_service
-# (before is executed in every rest call, problem is that the request object is not set, until the first rest-call )
-before {$sinatra = self unless $sinatra}
-
-
-
 get '/crossvalidation/?' do
   LOGGER.info "list all crossvalidations"
   
