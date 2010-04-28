@@ -72,7 +72,7 @@ end
 
 post '/crossvalidation/?' do
   content_type "text/uri-list"
-  OpenTox::Task.as_task do
+  task_uri = OpenTox::Task.as_task do
     LOGGER.info "creating crossvalidation "+params.inspect
     halt 400, "dataset_uri missing" unless params[:dataset_uri]
     halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
@@ -87,6 +87,7 @@ post '/crossvalidation/?' do
     content_type "text/uri-list"
     cv.uri
   end
+  halt 202,task_uri
 end
 
 get '/training_test_split' do
@@ -118,7 +119,7 @@ end
 
 post '/?' do
   content_type "text/uri-list"
-  OpenTox::Task.as_task do |task|
+  task_uri = OpenTox::Task.as_task do |task|
     LOGGER.info "creating validation "+params.inspect
     if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri]
       v = Validation::Validation.new :model_uri => params[:model_uri], 
@@ -142,11 +143,12 @@ post '/?' do
     content_type "text/uri-list"
     v.uri
   end
+  halt 202,task_uri
 end
 
 post '/training_test_split' do
   content_type "text/uri-list"
-  OpenTox::Task.as_task do
+  task_uri = OpenTox::Task.as_task do
     LOGGER.info "creating training test split "+params.inspect
     halt 400, "dataset_uri missing" unless params[:dataset_uri]
     halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
@@ -162,6 +164,7 @@ post '/training_test_split' do
     content_type "text/uri-list"
     v.uri
   end
+  halt 202,task_uri
 end
 
 
@@ -176,7 +179,7 @@ end
 
 post '/create_validation' do
   content_type "text/uri-list"
-  OpenTox::Task.as_task do
+  task_uri = OpenTox::Task.as_task do
     LOGGER.info "creating validation "+params.inspect
     halt 400, "test_dataset_uri missing" unless params[:test_dataset_uri]
     halt 400, "prediction_datset_uri missing" unless params[:prediction_dataset_uri]
@@ -187,6 +190,7 @@ post '/create_validation' do
     content_type "text/uri-list"
     v.uri
   end
+  halt 202,task_uri
 end
 
 

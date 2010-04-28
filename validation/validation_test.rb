@@ -28,6 +28,7 @@ class ValidationTest < Test::Unit::TestCase
       #prepare_examples
       #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
       
+      #ex = ex_maj_class
       #ex = ex_ntua
       #ex = ex_ntua2
       #ex = ex_tum
@@ -49,15 +50,19 @@ class ValidationTest < Test::Unit::TestCase
     Sinatra::Application
   end
   
-  def ex_local
+  def ex_maj_class
     ex = Example.new
-    ex.classification = false
+    ex.classification = true
     
-    ex.alg = File.join(@@config[:services]["opentox-algorithm"],"lazar")
+    ex.alg = File.join(@@config[:services]["opentox-majority"],"class/algorithm")
     ex.alg_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
     
+    get_hamster(ex)
+    return ex
+  end
+  
+  def get_hamster(ex)
     dataset = @@config[:services]["opentox-dataset"]
-    
     ex.orig_data = File.join(dataset,"1")
     begin
       orig = OpenTox::Dataset.find(ex.orig_data)
@@ -67,9 +72,7 @@ class ValidationTest < Test::Unit::TestCase
       upload_uri = upload_data(dataset, File.new("data/hamster_carcinogenicity.yaml","r"))
       ex.orig_data = upload_uri
     end
-    
     ex.act_feat = "http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
-    
     ex.train_data = File.join(dataset,"2")
     ex.test_data = File.join(dataset,"3")
     begin
@@ -84,6 +87,16 @@ class ValidationTest < Test::Unit::TestCase
       ex.train_data = split[0] 
       ex.test_data = split[1]
     end
+  end
+  
+  def ex_local
+    ex = Example.new
+    ex.classification = true
+    
+    ex.alg = File.join(@@config[:services]["opentox-algorithm"],"lazar")
+    ex.alg_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
+    
+    get_hamster(ex)
     
     #{:orig => ex.orig_data ,:train => ex.train_data, :test=> ex.test_data}.each do |k,v|
     #  puts k.to_s+": "+v

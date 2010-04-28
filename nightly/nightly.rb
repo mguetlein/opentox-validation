@@ -16,7 +16,7 @@ class Nightly
   end
   
   def self.build_nightly
-    OpenTox::Task.as_task() do
+    task_uri = OpenTox::Task.as_task() do
       LOGGER.info("Building nightly report")
       
       benchmarks = [ HamsterTrainingTestBenchmark.new, 
@@ -83,6 +83,11 @@ class Nightly
       
       LOGGER.info("Nightly report completed")
       return "Nightly report completed"
+    end
+    if defined?(halt)
+      halt 202,task_uri
+    else
+      return task_uri
     end
   end
   
