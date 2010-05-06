@@ -139,7 +139,7 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
       if u.to_s =~ /.*\/crossvalidation\/.*/
         uri = u.to_s+"/validations"
         begin
-          vali_uri_list = RestClient.get uri
+          vali_uri_list = RestClientWrapper.get uri
         rescue => ex
           raise Reports::BadRequest.new "cannot get validations for cv at '"+uri.to_s+"', error msg: "+ex.message
         end

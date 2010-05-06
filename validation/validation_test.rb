@@ -19,7 +19,7 @@ class ValidationTest < Test::Unit::TestCase
   
   def test_it
     
-      Nightly.build_nightly
+      #Nightly.build_nightly
       #get "/build_nightly" 
       #get "/nightly"  
       #get '1',nil,'HTTP_ACCEPT' => "application/rdf+xml"     
@@ -29,15 +29,16 @@ class ValidationTest < Test::Unit::TestCase
       #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
       
       #ex = ex_maj_class
+      #ex = ex_maj_regr
       #ex = ex_ntua
       #ex = ex_ntua2
-      #ex = ex_tum
+      ex = ex_tum
       #ex = ex_local
       #ex = ex_ambit
       
       #create_validation(ex)
       #validate_model(ex)
-      #validate_algorithm(ex)
+      validate_algorithm(ex)
       #validate_split(ex)
       #xval(ex)
       
@@ -48,6 +49,20 @@ class ValidationTest < Test::Unit::TestCase
 
   def app
     Sinatra::Application
+  end
+  
+  def ex_maj_regr
+    ex = Example.new
+    ex.classification = true
+    
+    ex.alg = File.join(@@config[:services]["opentox-majority"],"regr/algorithm")
+    #ex.alg_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
+    
+    ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
+    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
+    
+    return ex
   end
   
   def ex_maj_class
@@ -167,7 +182,7 @@ class ValidationTest < Test::Unit::TestCase
     ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
     
     # example model
-    ex.model = "http://opentox.ntua.gr:3003/model/124"
+    ex.model = "http://opentox.ntua.gr:3003/model/201"
     #ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264783"
     # example prediction data
     #ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/656"
@@ -268,12 +283,12 @@ class ValidationTest < Test::Unit::TestCase
       
         get '/crossvalidation/'+crossvalidation_id
         puts last_response.body
-        assert last_response.ok? || last_response.status==202
+        #assert last_response.ok? || last_response.status==202
         
-        get '/crossvalidation/'+crossvalidation_id+'/validations'
-        puts "validations:\n"+last_response.body
-        assert last_response.ok?
-        assert last_response.body.split("\n").size == num_folds, "num-folds:"+num_folds.to_s+" but num lines is "+last_response.body.split("\n").size.to_s
+        #get '/crossvalidation/'+crossvalidation_id+'/validations'
+        #puts "validations:\n"+last_response.body
+        #assert last_response.ok?
+       # assert last_response.body.split("\n").size == num_folds, "num-folds:"+num_folds.to_s+" but num lines is "+last_response.body.split("\n").size.to_s
         
 #        if first_validation
 #          # assert that both cross validaitons use the same datasets

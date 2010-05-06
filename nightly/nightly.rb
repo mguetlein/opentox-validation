@@ -224,9 +224,10 @@ class Nightly
     
     def build()
       @algs = [ "http://opentox.ntua.gr:3003/algorithm/mlr", 
-        "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/kNNregression"
+        "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/kNNregression",
+        File.join(@@config[:services]["opentox-majority"],["/regr/algorithm"])
         ]
-      @alg_params = [nil, nil]
+      @alg_params = [nil, nil, nil]
       @train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
       @test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
       @pred_feature = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
@@ -278,8 +279,8 @@ class Nightly
     end
     
     def build()
-      @algs = [File.join(@@lazar_server,"lazar")]
-      @alg_params = ["feature_generation_uri="+File.join(@@lazar_server,"fminer")]
+      @algs = [File.join(@@lazar_server,"lazar"), File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]) ]
+      @alg_params = ["feature_generation_uri="+File.join(@@lazar_server,"fminer"),nil]
       @pred_feature = "http://localhost/toxmodel/feature%23Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
 
       LOGGER.debug "pepare hamster datasets"

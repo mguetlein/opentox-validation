@@ -33,7 +33,7 @@ module Lib
          
       data = File.read(file.path)
       task_uri = RestClient.post ws, data, :content_type => type 
-      data_uri = task_uri
+      data_uri = task_uri.body
       puts "done: "+data_uri.to_s
       add_resource(data_uri)
       return data_uri
