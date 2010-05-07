@@ -72,8 +72,8 @@ class Reports::ValidationDB < Reports::ValidationAccess
   
     raise Reports::BadRequest.new "not a validation uri: "+uri.to_s unless uri =~ /.*\/[0-9]+/
     validation_id = uri.split("/")[-1]
-    v = Lib::Validation.get(validation_id)
-    raise Reports::BadRequest.new "no validation found with id "+validation_id.to_s unless v
+    v = Lib::Validation.first({:id => validation_id}) #, :uri => uri})
+    raise Reports::BadRequest.new "no validation found with id "+validation_id.to_s unless v #+" and uri "+uri.to_s unless v
     
     (Lib::VAL_PROPS + Lib::VAL_CV_PROPS).each do |p|
       validation.send("#{p.to_s}=".to_sym, v[p])

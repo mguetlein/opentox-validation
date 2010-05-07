@@ -60,6 +60,10 @@ class Nightly
          section_results = report.add_section(section, "Results")
          report.add_table(section_results, b.result_table_title, b.result_table)
          
+         if (b.comparison_report)
+           report.add_table(section_results, b.comparison_report_title, [[b.comparison_report]], false)
+         end
+         
          section_errors = report.add_section(section, "Errors")
          
          if b.errors and b.errors.size>0
@@ -118,6 +122,15 @@ class Nightly
       end
       t
     end
+    
+    def comparison_report_title
+      "algorithm comparison report"
+    end
+    
+    def comparison_report
+      @comparison_report
+    end
+    
   end
   
   class TrainingTestValidationBenchmark < ValidationBenchmark
@@ -170,6 +183,7 @@ class Nightly
       @validations = Array.new(@comparables.size)
       @reports = Array.new(@comparables.size)
       @errors = {}
+      to_compare = []
 #      LOGGER.info "train-data: "+@train_data.to_s
 #      LOGGER.info "test-data: "+@test_data.to_s
 #      LOGGER.info "test-class-data: "+@test_class_data.to_s
@@ -183,6 +197,7 @@ class Nightly
             LOGGER.debug "Validate: "+@algs[i].to_s
             @validations[i] = Util.validate_alg(@train_data, @test_data, @test_class_data,
               @algs[i], URI.decode(@pred_feature), @alg_params[i]).to_s
+            to_compare << @validations[i] if OpenTox::Utils.is_uri?(@validations[i])
               
             begin
               LOGGER.debug "Building validation-report for "+@validations[i].to_s+" ("+@algs[i].to_s+")"
@@ -208,6 +223,13 @@ class Nightly
         wait += 1
         sleep 1
       end
+      
+      if to_compare.size>1
+        LOGGER.debug self.class.to_s.gsub(/Nightly::/, "")+": build algorithm comparison report"
+        @comparison_report = Util.create_alg_comparison_report(to_compare)
+      else
+        LOGGER.debug self.class.to_s.gsub(/Nightly::/, "")+": nothing to compare"
+      end
     end
   end
   
@@ -227,7 +249,7 @@ class Nightly
         "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/kNNregression",
         File.join(@@config[:services]["opentox-majority"],["/regr/algorithm"])
         ]
-      @alg_params = [nil, nil, nil]
+      @alg_params = [nil, "dataset_service=http://ambit.uni-plovdiv.bg:8080/ambit2/dataset", nil]
       @train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
       @test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
       @pred_feature = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
@@ -281,7 +303,7 @@ class Nightly
     def build()
       @algs = [File.join(@@lazar_server,"lazar"), File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]) ]
       @alg_params = ["feature_generation_uri="+File.join(@@lazar_server,"fminer"),nil]
-      @pred_feature = "http://localhost/toxmodel/feature%23Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+      @pred_feature = "http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
 
       LOGGER.debug "pepare hamster datasets"
       @test_class_data = Util.upload_dataset(@@dataset_service, @@file, @@file_type).chomp("\n")
@@ -324,6 +346,13 @@ class Nightly
       #uri = OpenTox::Task.find(uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(uri)
       return uri
     end
+    
+    def self.create_alg_comparison_report(validations)
+      uri = OpenTox::RestClientWrapper.post File.join(@@validation_service,"report/algorithm_comparison"), { :validation_uris => validations.join("\n") }
+      #uri = OpenTox::Task.find(uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(uri)
+      return uri
+    end
+    
   end
   
 end

@@ -109,7 +109,7 @@ module Reports::ReportFactory
     #validation_set.to_array([:test_dataset_uri, :model_uri, :algorithm_uri], false).each{|a| puts a.inspect}
     raise Reports::BadRequest.new("num validations is not >1") unless validation_set.size>1
     raise Reports::BadRequest.new("validations must be either all regression, "+
-      +"or all classification validations") unless validation_set.all_classification? or validation_set.all_regression?
+      "or all classification validations") unless validation_set.all_classification? or validation_set.all_regression?
     raise Reports::BadRequest.new("number of different algorithms <2: "+
       validation_set.get_values(:algorithm_uri).inspect) if validation_set.num_different_values(:algorithm_uri)<2
       

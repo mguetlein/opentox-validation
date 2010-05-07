@@ -19,7 +19,7 @@ class ValidationTest < Test::Unit::TestCase
   
   def test_it
     
-      #Nightly.build_nightly
+      Nightly.build_nightly
       #get "/build_nightly" 
       #get "/nightly"  
       #get '1',nil,'HTTP_ACCEPT' => "application/rdf+xml"     
@@ -32,13 +32,14 @@ class ValidationTest < Test::Unit::TestCase
       #ex = ex_maj_regr
       #ex = ex_ntua
       #ex = ex_ntua2
-      ex = ex_tum
+      #ex = ex_tum
       #ex = ex_local
+      #ex = ex_lazar_extern
       #ex = ex_ambit
       
       #create_validation(ex)
       #validate_model(ex)
-      validate_algorithm(ex)
+      #validate_algorithm(ex)
       #validate_split(ex)
       #xval(ex)
       
@@ -88,6 +89,8 @@ class ValidationTest < Test::Unit::TestCase
       ex.orig_data = upload_uri
     end
     ex.act_feat = "http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
+    #ex.act_feat = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+    
     ex.train_data = File.join(dataset,"2")
     ex.test_data = File.join(dataset,"3")
     begin
@@ -125,6 +128,25 @@ class ValidationTest < Test::Unit::TestCase
     #ex.pred_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/261687"
     # example prediction data
     #ex.pred_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/625"
+    return ex
+  end
+  
+  def ex_lazar_extern
+    ex = Example.new
+    ex.classification = true
+    ex.alg = "http://188.40.32.88/algorithm/lazar"
+    ex.train_data = "http://188.40.32.88/dataset/51"
+    ex.test_data = ex.train_data
+    ex.orig_data = ex.train_data    
+    #ex.test_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/55" #53
+    
+    ex.alg_params = "feature_generation_uri=http://188.40.32.88/algorithm/fminer"
+    
+    ex.act_feat = "http://188.40.32.88/toxcreate/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+    #ex.act_feat = "http://188.40.32.88/toxcreate/feature#feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
+    
+    #ex.test_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/55" #53
+    #ex.model = "http://apps.ideaconsult.net:8080/ambit2/model/20"
     return ex
   end
   

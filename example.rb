@@ -6,7 +6,8 @@ class Example
   @@file=File.new("data/hamster_carcinogenicity.yaml","r")
   @@file_type="text/x-yaml"
   @@model=File.join @@config[:services]["opentox-model"],"1"
-  @@feature="http://localhost/toxmodel/feature%23Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+  #@@feature="http://localhost/toxmodel/feature%23Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+  @@feature= "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
   @@alg = File.join @@config[:services]["opentox-algorithm"],"lazar"
   @@alg_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
   @@data=File.join @@config[:services]["opentox-dataset"],"1"
@@ -75,7 +76,7 @@ class Example
     log "crossvalidation"
     Lib::Crossvalidation.auto_migrate!
     cv = Validation::Crossvalidation.new({ :dataset_uri => data_uri, :algorithm_uri => @@alg, :num_folds => 5, :stratified => false })
-    cv.create_cv_datasets( URI.decode(@@feature) )
+    cv.create_cv_datasets(  URI.decode(@@feature) )
     cv.perform_cv( @@alg_params )
     
     log "create validation report"

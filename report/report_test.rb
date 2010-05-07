@@ -31,18 +31,21 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     #get '/report/validation/1',nil,'HTTP_ACCEPT' => "text/html"     
     #post '/report/validation/1/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
     
-    post 'http://ot.validation.de/report/validation',:validation_uris=>"http://ot.validation.de/validation/90"
+    post 'http://ot.validation.de/report/validation',:validation_uris=>"http://ot.validation.de/1"
     puts last_response.body.to_s
 
     #post 'http://ot.validation.de/report/crossvalidation',:validation_uris=>"http://ot.validation.de/crossvalidation/1"
     #uri = last_response.body.to_s
     
-#    post 'http://ot.validation.de/report/algorithm_comparison',:validation_uris=>"http://ot.validation.de/validation/15\n"+
-#      "http://ot.validation.de/validation/16\n"+
-#      "http://ot.validation.de/validation/18\n"
-#    uri = last_response.body.to_s
-#    puts uri
-#    
+    #val_uris = ["http://ot.validation.de/29","http://ot.validation.de/30" ]
+    
+    #post 'http://ot.validation.de/report/algorithm_comparison',:validation_uris=>val_uris.join("\n")
+    #uri = last_response.body.to_s
+    #puts uri
+    
+    #rep = Reports::ReportService.new("http://some.location")
+    #rep.create_report("algorithm_comparison", val_uris)
+    
 #    post uri.to_s+'/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
 #    puts last_response.body.to_s.gsub(/\n.*/,"")
     

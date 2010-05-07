@@ -64,8 +64,6 @@ module Validation
     def validate_algorithm( algorithm_params=nil )
       
       $sinatra.halt 404, "no algorithm uri: '"+algorithm_uri.to_s+"'" if @algorithm_uri==nil or @algorithm_uri.to_s.size<1
-      $sinatra.halt 404, "prediction_feature is already encoded: "+@prediction_feature if @prediction_feature=~/%20/
-      update :prediction_feature => URI.encode(@prediction_feature)
       
       params = { :dataset_uri => @training_dataset_uri, :prediction_feature => @prediction_feature }
       if (algorithm_params!=nil)
@@ -293,10 +291,10 @@ module Validation
         $sinatra.halt 500,"internal error, num test compounds not correct" unless (shuffled_compounds.size/@num_folds - test_compounds.size).abs <= 1 
         $sinatra.halt 500,"internal error, num train compounds not correct" unless shuffled_compounds.size - test_compounds.size == train_compounds.size
         
-        LOGGER.debug "training set: "+datasetname+"_train"
+        LOGGER.debug "training set: "+datasetname+"_train, compounds: "+train_compounds.size.to_s
         train_dataset_uri = orig_dataset.create_new_dataset( train_compounds, orig_dataset.features, datasetname + '_train', source ) 
         
-        LOGGER.debug "test set:     "+datasetname+"_test"
+        LOGGER.debug "test set:     "+datasetname+"_test, compounds: "+test_compounds.size.to_s
         test_dataset_uri = orig_dataset.create_new_dataset( test_compounds, test_features, datasetname + '_test', source )
       
         validation = Validation.new :training_dataset_uri => train_dataset_uri, 
@@ -324,10 +322,9 @@ module Validation
       $sinatra.halt 400, "Split ratio invalid: "+split_ratio.to_s unless split_ratio and split_ratio=split_ratio.to_f
       $sinatra.halt 400, "Split ratio not >0 and <1 :"+split_ratio.to_s unless split_ratio>0 && split_ratio<1
       if prediction_feature
-        $sinatra.halt 404, "prediction_feature is already encoded: "+prediction_feature.to_s if prediction_feature=~/%20/
-        prediction_feature = URI.encode(prediction_feature)
-        $sinatra.halt 400, "Prediction feature not found in dataset features: "+prediction_feature.to_s+
-          ", features are: \n"+orig_dataset.features.inspect unless orig_dataset.features.include?(prediction_feature)
+        $sinatra.halt 400, "Prediction feature '"+prediction_feature.to_s+
+          "' not found in dataset, features are: \n"+
+          orig_dataset.features.inspect unless orig_dataset.features.include?(prediction_feature)
       else
         LOGGER.warn "no prediciton feature given, all features included in test dataset"
       end

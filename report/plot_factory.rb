@@ -188,6 +188,24 @@ module Reports
       a = roc_values[:actual_values]
       raise "no prediction values for roc-plot" if p.size==0
       
+      # hack for painting perfect/worst roc curve, otherwhise fp/tp-rate will always be 100%
+      # determine if perfect/worst roc curve
+      fp_found = false
+      tp_found = false
+      (0..p.size-1).each do |i|
+        if a[i]!=p[i]
+          fp_found |= true
+        else
+          tp_found |=true
+        end
+        break if tp_found and fp_found
+      end
+      unless fp_found and tp_found #if perfect/worst add wrong/right instance with lowest confidence
+        a << (tp_found ? 0 : 1)
+        p << 1
+        c << -Float::MAX
+      end
+      
       (0..p.size-2).each do |i|
         ((i+1)..p.size-1).each do |j|
           if c[i]<c[j]
