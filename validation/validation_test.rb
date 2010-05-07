@@ -88,8 +88,8 @@ class ValidationTest < Test::Unit::TestCase
       upload_uri = upload_data(dataset, File.new("data/hamster_carcinogenicity.yaml","r"))
       ex.orig_data = upload_uri
     end
-    ex.act_feat = "http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
-    #ex.act_feat = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+    #ex.act_feat = "http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
+    ex.act_feat = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
     
     ex.train_data = File.join(dataset,"2")
     ex.test_data = File.join(dataset,"3")

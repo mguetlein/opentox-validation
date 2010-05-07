@@ -31,6 +31,8 @@ class Nightly
         Thread.new do
           begin
             b.build
+          rescue => ex
+            LOGGER.error "uncaught nightly build error: "+ex.message
           ensure
             running.delete(b.class.to_s.gsub(/Nightly::/, "")+b.object_id.to_s)
           end
@@ -42,6 +44,7 @@ class Nightly
         wait += 1
         sleep 1
       end
+      LOGGER.debug "Nighlty report, all benchmarks done "+running.inspect
       
       section_about = report.add_section(report.get_root_element, "About this report")
       report.add_paragraph(section_about,
@@ -196,7 +199,7 @@ class Nightly
           begin
             LOGGER.debug "Validate: "+@algs[i].to_s
             @validations[i] = Util.validate_alg(@train_data, @test_data, @test_class_data,
-              @algs[i], URI.decode(@pred_feature), @alg_params[i]).to_s
+              @algs[i], @pred_feature, @alg_params[i]).to_s
             to_compare << @validations[i] if OpenTox::Utils.is_uri?(@validations[i])
               
             begin
@@ -245,11 +248,12 @@ class Nightly
     end
     
     def build()
-      @algs = [ "http://opentox.ntua.gr:3003/algorithm/mlr", 
+      @algs = [ 
+        "http://opentox.ntua.gr:3003/algorithm/mlr",
         "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/kNNregression",
         File.join(@@config[:services]["opentox-majority"],["/regr/algorithm"])
         ]
-      @alg_params = [nil, "dataset_service=http://ambit.uni-plovdiv.bg:8080/ambit2/dataset", nil]
+      @alg_params = [ nil, "dataset_service=http://ambit.uni-plovdiv.bg:8080/ambit2/dataset", nil]
       @train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
       @test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
       @pred_feature = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
@@ -303,13 +307,14 @@ class Nightly
     def build()
       @algs = [File.join(@@lazar_server,"lazar"), File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]) ]
       @alg_params = ["feature_generation_uri="+File.join(@@lazar_server,"fminer"),nil]
-      @pred_feature = "http://localhost/toxmodel/feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
+      @pred_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
 
-      LOGGER.debug "pepare hamster datasets"
+      LOGGER.debug "prepare hamster datasets"
       @test_class_data = Util.upload_dataset(@@dataset_service, @@file, @@file_type).chomp("\n")
-      split = Util.split_dataset(@test_class_data, URI.decode(@pred_feature), 0.9, 1)
+      split = Util.split_dataset(@test_class_data, @pred_feature, 0.9, 1)
       @train_data = split[0].to_s
       @test_data = split[1].to_s
+      raise "could not split "+@train_data.to_s+" "+@test_data.to_s unless OpenTox::Utils.is_uri?(@train_data) and OpenTox::Utils.is_uri?(@test_data) 
       super
     end
   end

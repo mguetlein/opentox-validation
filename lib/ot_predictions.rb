@@ -82,7 +82,7 @@ module Lib
         
         prediction_dataset = OpenTox::Dataset.find prediction_dataset_uri
         raise "prediction dataset not found: '"+prediction_dataset_uri.to_s+"'" unless prediction_dataset
-        raise "prediction dataset feature not found: '"+predicted_variable+"', available features: "+prediction_dataset.features.inspect if prediction_dataset.features.index(predicted_variable)==nil
+        raise "prediction-feature not found: '"+predicted_variable+"' in prediction-dataset: "+prediction_dataset_uri.to_s+", available features: "+prediction_dataset.features.inspect if prediction_dataset.features.index(predicted_variable)==nil
         
         raise "more predicted than test compounds test:"+@compounds.size.to_s+" < prediction:"+
           prediction_dataset.compounds.size.to_s if @compounds.size < prediction_dataset.compounds.size

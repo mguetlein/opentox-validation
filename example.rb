@@ -6,8 +6,7 @@ class Example
   @@file=File.new("data/hamster_carcinogenicity.yaml","r")
   @@file_type="text/x-yaml"
   @@model=File.join @@config[:services]["opentox-model"],"1"
-  #@@feature="http://localhost/toxmodel/feature%23Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
-  @@feature= "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+  @@feature= URI.encode("http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)")
   @@alg = File.join @@config[:services]["opentox-algorithm"],"lazar"
   @@alg_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
   @@data=File.join @@config[:services]["opentox-dataset"],"1"
