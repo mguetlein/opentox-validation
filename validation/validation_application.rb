@@ -77,6 +77,8 @@ post '/crossvalidation/?' do
     halt 400, "dataset_uri missing" unless params[:dataset_uri]
     halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
     halt 400, "prediction_feature missing" unless params[:prediction_feature]
+    halt 400, "illegal param-value num_folds: '"+params[:num_folds].to_s+"', must be integer >1" unless params[:num_folds]==nil or 
+      params[:num_folds].to_i>1
     
     cv_params = { :dataset_uri => params[:dataset_uri],  
                   :algorithm_uri => params[:algorithm_uri] }

@@ -19,7 +19,8 @@ class Nightly
     task_uri = OpenTox::Task.as_task() do
       LOGGER.info("Building nightly report")
       
-      benchmarks = [ HamsterTrainingTestBenchmark.new, 
+      benchmarks = [ HamsterTrainingTestBenchmark.new,
+                     HamsterCrossvalidationBenchmark.new, 
                      MiniRegressionBenchmark.new,
                      #FatheadRegressionBenchmark.new,
                      ]
@@ -136,22 +137,8 @@ class Nightly
     
   end
   
-  class TrainingTestValidationBenchmark < ValidationBenchmark
-    
-    def info
-      [ training_test_info ]
-    end
-    
-    def training_test_info
-      "This is a training test set validation. It builds a model with an algorithm and the training dataset. "+
-      "The model is used to predict the test dataset. Evaluation is done by comparing the model predictions "+
-      "to the actual test values (in the test target dataset)."
-    end
-    
-    def info_table_title
-      "Validation params"
-    end
-    
+  class AlgorihtmValidationBenchmark < ValidationBenchmark
+
     def comparable_nice_name
       return "algorithm"
     end
@@ -159,10 +146,9 @@ class Nightly
     def info_table
       t = []
       t << ["param", "uri"]
-      t << ["training_dataset_uri", @train_data]
-      t << ["test_dataset_uri", @test_data]
-      t << ["test_target_dataset_uri", @test_class_data] if @test_class_data
-      t << ["prediction_feature", @pred_feature]
+      params.each do |k,v|
+        t << [k.to_s, v.to_s]
+      end
       count = 1
       @algs.each do |alg|
         t << ["algorithm_uri"+" ["+count.to_s+"]", alg]
@@ -175,12 +161,20 @@ class Nightly
       @errors
     end
     
+    def params
+      raise "return uri-value hash"
+    end
+    
+    def validate(index)
+      raise "validate, return uri"
+    end
+    
+    def build_report(index)
+      raise "build report, return uri"
+    end
     
     def build()
       raise "no algs" unless @algs
-      raise "no train data" unless @train_data
-      raise "no test data" unless @test_data
-      raise "no pred feature" unless @pred_feature
       
       @comparables = @algs
       @validations = Array.new(@comparables.size)
@@ -198,13 +192,12 @@ class Nightly
           running << @comparables[i]+i.to_s
           begin
             LOGGER.debug "Validate: "+@algs[i].to_s
-            @validations[i] = Util.validate_alg(@train_data, @test_data, @test_class_data,
-              @algs[i], @pred_feature, @alg_params[i]).to_s
+            @validations[i] = validate(i)
             to_compare << @validations[i] if OpenTox::Utils.is_uri?(@validations[i])
               
             begin
               LOGGER.debug "Building validation-report for "+@validations[i].to_s+" ("+@algs[i].to_s+")"
-              @reports[i] = Util.create_report(@validations[i])
+              @reports[i] = build_report(i)
             rescue => ex
               LOGGER.error "validation-report error: "+ex.message
               @reports[i] = "error"
@@ -235,6 +228,165 @@ class Nightly
       end
     end
   end
+  
+  
+  class TrainingTestValidationBenchmark < AlgorihtmValidationBenchmark
+    
+    def info
+      [ training_test_info ]
+    end
+    
+    def training_test_info
+      "This is a training test set validation. It builds a model with an algorithm and the training dataset. "+
+      "The model is used to predict the test dataset. Evaluation is done by comparing the model predictions "+
+      "to the actual test values (in the test target dataset)."
+    end
+    
+    def info_table_title
+      "Validation params"
+    end
+    
+    def params
+      p = { "training_dataset_uri" => @train_data, "test_dataset_uri" => @test_data,
+                "prediction_feature" => @pred_feature }
+      p["test_target_dataset_uri"] = @test_class_data if @test_class_data
+      return p
+    end
+    
+    def validate(index)
+      Util.validate_alg(@train_data, @test_data, @test_class_data,
+              @algs[index], @pred_feature, @alg_params[index]).to_s
+    end
+    
+    def build_report(index)
+      Util.create_report(@validations[index])
+    end
+      
+    def build()
+      raise "no train data" unless @train_data
+      raise "no test data" unless @test_data
+      raise "no pred feature" unless @pred_feature
+      super
+    end
+  end
+  
+  class CrossValidationBenchmark < AlgorihtmValidationBenchmark
+    
+    def info
+      [ training_test_info ]
+    end
+    
+    def training_test_info
+      "This is a cross-validation."
+    end
+    
+    def info_table_title
+      "Cross-validation params"
+    end
+    
+    def params
+      p = { "dataset_uri" => @data, "prediction_feature" => @pred_feature,
+            "num_folds" => @num_folds, "random_seed" => @random_seed, "stratified" => @stratified}
+      return p
+    end
+    
+    def validate(index)
+      Util.cross_validate_alg(@data, @algs[index], @pred_feature, 
+              @num_folds, @random_seed, @stratified, @alg_params[index]).to_s
+    end
+    
+    def build_report(index)
+      Util.create_report(@validations[index], "crossvalidation")
+    end
+    
+    def build()
+      raise "no data" unless @data
+      raise "no pred feature" unless @pred_feature
+      @num_folds = 10 unless @num_folds
+      @random_seed = 1 unless @random_seed
+      @stratified = false unless @stratified
+      super
+    end
+  end
+  
+  class HamsterCrossvalidationBenchmark < CrossValidationBenchmark
+    
+    @@dataset_service = @@config[:services]["opentox-dataset"]
+    @@file=File.new("data/hamster_carcinogenicity.yaml","r")
+    @@file_type="text/x-yaml"
+    @@lazar_server = @@config[:services]["opentox-algorithm"]
+    
+    def title()
+      "Training test set validation, binary classification"
+    end
+    
+    def info
+      res = [ "A crossvalidation using the hamster carcinogenicity dataset." ] + super
+      return res
+    end
+    
+    def build()
+      @algs = [
+        File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
+        File.join(@@lazar_server,"lazar"),
+        "http://188.40.32.88/algorithm/lazar",
+        ]
+      @alg_params = [
+        nil,
+        "feature_generation_uri="+File.join(@@lazar_server,"fminer"),
+        "feature_generation_uri=http://188.40.32.88/algorithm/fminer",
+        ]
+      @pred_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+
+      LOGGER.debug "upload hamster datasets"
+      @data = Util.upload_dataset(@@dataset_service, @@file, @@file_type).chomp("\n")
+      super
+    end
+  end
+  
+  class HamsterTrainingTestBenchmark < TrainingTestValidationBenchmark
+    
+    @@dataset_service = @@config[:services]["opentox-dataset"]
+    @@file=File.new("data/hamster_carcinogenicity.yaml","r")
+    @@file_type="text/x-yaml"
+    @@lazar_server = @@config[:services]["opentox-algorithm"]
+    
+    def title()
+      "Training test set validation, binary classification"
+    end
+    
+    def info
+      res = [ "A simple binary classification task using the hamster carcinogenicity dataset." ] + super
+      return res
+    end
+    
+    def build()
+      @algs = [
+        File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
+        File.join(@@lazar_server,"lazar"),
+        "http://188.40.32.88/algorithm/lazar",
+        ]
+      @alg_params = [
+        nil,
+        "feature_generation_uri="+File.join(@@lazar_server,"fminer"),
+        "feature_generation_uri=http://188.40.32.88/algorithm/fminer",
+        ]
+      @pred_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+
+      LOGGER.debug "prepare hamster datasets"
+      
+      #@test_class_data = Util.upload_dataset(@@dataset_service, @@file, @@file_type).chomp("\n")
+      @pred_feature = "http://188.40.32.88/toxcreate/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+      @test_class_data = "http://188.40.32.88/dataset/57"
+      
+      split = Util.split_dataset(@test_class_data, @pred_feature, 0.9, 1)
+      @train_data = split[0].to_s
+      @test_data = split[1].to_s
+      raise "could not split "+@train_data.to_s+" "+@test_data.to_s unless OpenTox::Utils.is_uri?(@train_data) and OpenTox::Utils.is_uri?(@test_data) 
+      super
+    end
+  end
+  
   
   class MiniRegressionBenchmark < TrainingTestValidationBenchmark
     
@@ -288,36 +440,7 @@ class Nightly
     end
   end
  
-  class HamsterTrainingTestBenchmark < TrainingTestValidationBenchmark
-    
-    @@dataset_service = @@config[:services]["opentox-dataset"]
-    @@file=File.new("data/hamster_carcinogenicity.yaml","r")
-    @@file_type="text/x-yaml"
-    @@lazar_server = @@config[:services]["opentox-algorithm"]
-    
-    def title()
-      "Training test set validation, binary classification"
-    end
-    
-    def info
-      res = [ "A simple binary classification task using the hamster carcinogenicity dataset." ] + super
-      return res
-    end
-    
-    def build()
-      @algs = [File.join(@@lazar_server,"lazar"), File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]) ]
-      @alg_params = ["feature_generation_uri="+File.join(@@lazar_server,"fminer"),nil]
-      @pred_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
-
-      LOGGER.debug "prepare hamster datasets"
-      @test_class_data = Util.upload_dataset(@@dataset_service, @@file, @@file_type).chomp("\n")
-      split = Util.split_dataset(@test_class_data, @pred_feature, 0.9, 1)
-      @train_data = split[0].to_s
-      @test_data = split[1].to_s
-      raise "could not split "+@train_data.to_s+" "+@test_data.to_s unless OpenTox::Utils.is_uri?(@train_data) and OpenTox::Utils.is_uri?(@test_data) 
-      super
-    end
-  end
+  
 
 
   class Util
@@ -346,8 +469,18 @@ class Nightly
       return uri
     end
     
-    def self.create_report(validation)
-      uri = OpenTox::RestClientWrapper.post File.join(@@validation_service,"report/validation"), { :validation_uris => validation }
+    def self.cross_validate_alg(data, alg, feature, folds, seed, stratified, alg_params)
+      uri = OpenTox::RestClientWrapper.post File.join(@@validation_service,"crossvalidation"), { :dataset_uri => data, 
+        :algorithm_uri => alg, :prediction_feature => feature, :algorithm_params => alg_params, :num_folds => folds, 
+        :random_seed => seed, :stratified => stratified }
+      #LOGGER.info "waiting for validation "+uri.to_s
+      #uri = OpenTox::Task.find(uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(uri)
+      #LOGGER.info "validaiton done "+uri.to_s
+      return uri
+    end
+    
+    def self.create_report(validation, type="validation")
+      uri = OpenTox::RestClientWrapper.post File.join(@@validation_service,"report/"+type.to_s), { :validation_uris => validation }
       #uri = OpenTox::Task.find(uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(uri)
       return uri
     end
