@@ -21,7 +21,7 @@ class Nightly
       
       benchmarks = [ HamsterTrainingTestBenchmark.new,
                      HamsterCrossvalidationBenchmark.new, 
-                     #MiniRegressionBenchmark.new,
+                     MiniRegressionBenchmark.new,
                      #FatheadRegressionBenchmark.new,
                      ]
       
@@ -334,7 +334,7 @@ class Nightly
       @alg_params = [
         nil,
         "feature_generation_uri="+File.join(@@lazar_server,"fminer"),
-        #"feature_generation_uri=http://188.40.32.88/algorithm/fminer",
+        "feature_generation_uri=http://188.40.32.88/algorithm/fminer",
         ]
       @pred_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
 
@@ -364,12 +364,12 @@ class Nightly
       @algs = [
         File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
         File.join(@@lazar_server,"lazar"),
-        #"http://188.40.32.88/algorithm/lazar",
+        "http://188.40.32.88/algorithm/lazar",
         ]
       @alg_params = [
         nil,
         "feature_generation_uri="+File.join(@@lazar_server,"fminer"),
-        #"feature_generation_uri=http://188.40.32.88/algorithm/fminer",
+        "feature_generation_uri=http://188.40.32.88/algorithm/fminer",
         ]
       @pred_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
 
