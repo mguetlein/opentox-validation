@@ -36,11 +36,6 @@ module Validation
       
     # constructs a validation object, Rsets id und uri
     def initialize( params={} )
-      params_backup = {}
-      params.each do |k,v|
-        params_backup[k] = v
-      end
-      params = {}
       $sinatra.halt 500,"do not set id manually" if params[:id]
       $sinatra.halt 500,"do not set uri manually" if params[:uri]
       super params
@@ -49,8 +44,6 @@ module Validation
         raise "error saving validation "+errors.inspect
       end
       $sinatra.halt 500,"internal error, validation-id not set "+to_yaml unless @id
-      update params_backup
-      LOGGER.warn to_yaml
       update :uri => $sinatra.url_for("/"+@id.to_s, :full)
     end
     

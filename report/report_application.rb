@@ -10,8 +10,10 @@ def perform
     halt 400, ex.message
   rescue Exception => ex
     #LOGGER.error(ex.message)
-    #raise ex # sinatra returns 501
-    halt 500, ex.message 
+    LOGGER.error "report error: "+ex.message
+    LOGGER.error ": "+ex.backtrace.join("\n")
+    raise ex # sinatra returns 501
+    #halt 500, ex.message 
   end
 end
 
