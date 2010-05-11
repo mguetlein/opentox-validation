@@ -40,7 +40,9 @@ module Validation
       $sinatra.halt 500,"do not set uri manually" if params[:uri]
       super params
       # hack to overcome datamapper bug: save to set id
-      save unless attribute_dirty?("id")
+      unless save
+        raise "error saving validation "+errors.inspect
+      end
       $sinatra.halt 500,"internal error, id not set "+to_yaml unless @id
       update :uri => $sinatra.url_for("/"+@id.to_s, :full)
     end
@@ -155,7 +157,9 @@ module Validation
       $sinatra.halt 500,"do not set uri manually" if params[:uri]
       super params
       # hack to overcome datamapper bug: save to set id
-      save unless attribute_dirty?("id")
+      unless save
+        raise "error saving crossvalidation "+errors.inspect
+      end
       $sinatra.halt 500,"internal error, id not set" unless @id
       update :uri => $sinatra.url_for("/crossvalidation/"+@id.to_s, :full)
     end
