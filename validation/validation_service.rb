@@ -43,7 +43,10 @@ module Validation
       unless save
         raise "error saving validation "+errors.inspect
       end
-      $sinatra.halt 500,"internal error, id not set "+to_yaml unless @id
+      unless @id
+        LOGGER.warn "no id yet, try saving a second time "+save.to_s
+      end
+      $sinatra.halt 500,"internal error, validation-id not set "+to_yaml unless @id
       update :uri => $sinatra.url_for("/"+@id.to_s, :full)
     end
     
@@ -160,7 +163,7 @@ module Validation
       unless save
         raise "error saving crossvalidation "+errors.inspect
       end
-      $sinatra.halt 500,"internal error, id not set" unless @id
+      $sinatra.halt 500,"internal error, crossvalidation-id not set" unless @id
       update :uri => $sinatra.url_for("/crossvalidation/"+@id.to_s, :full)
     end
     
