@@ -10,7 +10,7 @@ get '/crossvalidation/?' do
   LOGGER.info "list all crossvalidations"
   
   content_type "text/uri-list"
-  Validation::Crossvalidation.all.collect{ |d| url_for("/crossvalidation/", :full) + d.id.to_s }.join("\n")
+  Validation::Crossvalidation.all(params).collect{ |d| url_for("/crossvalidation/", :full) + d.id.to_s }.join("\n")
 end
 
 post '/crossvalidation/loo/?' do
@@ -99,7 +99,7 @@ end
 get '/?' do
   LOGGER.info "list all validations"
   content_type "text/uri-list"
-  Validation::Validation.all.collect{ |d| url_for("/", :full) + d.id.to_s }.join("\n")
+  Validation::Validation.all(params).collect{ |d| url_for("/", :full) + d.id.to_s }.join("\n")
 end
 
 get '/:id' do
