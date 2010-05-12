@@ -22,6 +22,7 @@ class Nightly
       benchmarks = [ HamsterTrainingTestBenchmark.new,
                      HamsterCrossvalidationBenchmark.new, 
                      MiniRegressionBenchmark.new,
+                     CacoModelsRegressionBenchmark.new,
                      #FatheadRegressionBenchmark.new,
                      ]
       
@@ -99,7 +100,7 @@ class Nightly
     end
   end
   
-  class ValidationBenchmark
+  class AbstractBenchmark
     
     def info_table_title
       return title
@@ -137,12 +138,8 @@ class Nightly
     
   end
   
-  class AlgorihtmValidationBenchmark < ValidationBenchmark
+  class ValidationBenchmark < AbstractBenchmark
 
-    def comparable_nice_name
-      return "algorithm"
-    end
-    
     def info_table
       t = []
       t << ["param", "uri"]
@@ -150,8 +147,8 @@ class Nightly
         t << [k.to_s, v.to_s]
       end
       count = 1
-      @algs.each do |alg|
-        t << ["algorithm_uri"+" ["+count.to_s+"]", alg]
+      @comparables.each do |alg|
+        t << [comparable_nice_name+" ["+count.to_s+"]", alg]
         count += 1
       end
       t
@@ -173,10 +170,13 @@ class Nightly
       raise "build report, return uri"
     end
     
+    def build_compare_report(comparables)
+      raise "build compare report, return uri"
+    end
+    
     def build()
-      raise "no algs" unless @algs
+      raise "no comparables" unless @comparables
       
-      @comparables = @algs
       @validations = Array.new(@comparables.size)
       @reports = Array.new(@comparables.size)
       @errors = {}
@@ -191,12 +191,12 @@ class Nightly
         Thread.new do 
           running << @comparables[i]+i.to_s
           begin
-            LOGGER.debug "Validate: "+@algs[i].to_s
+            LOGGER.debug "Validate: "+@comparables[i].to_s
             @validations[i] = validate(i)
             to_compare << @validations[i] if OpenTox::Utils.is_uri?(@validations[i])
               
             begin
-              LOGGER.debug "Building validation-report for "+@validations[i].to_s+" ("+@algs[i].to_s+")"
+              LOGGER.debug "Building validation-report for "+@validations[i].to_s+" ("+@comparables[i].to_s+")"
               @reports[i] = build_report(i)
             rescue => ex
               LOGGER.error "validation-report error: "+ex.message
@@ -221,16 +221,85 @@ class Nightly
       end
       
       if to_compare.size>1
-        LOGGER.debug self.class.to_s.gsub(/Nightly::/, "")+": build algorithm comparison report"
-        @comparison_report = Util.create_alg_comparison_report(to_compare)
+        LOGGER.debug self.class.to_s.gsub(/Nightly::/, "")+": build comparison report"
+        @comparison_report = build_compare_report(to_compare)
       else
         LOGGER.debug self.class.to_s.gsub(/Nightly::/, "")+": nothing to compare"
       end
     end
   end
   
+  class AlgorithmValidationBenchmark < ValidationBenchmark
+
+    def comparable_nice_name
+      return "algorithm"
+    end
+    
+    def build()
+      raise "no algs" unless @algs
+      @comparables = @algs
+      super
+    end  
+    
+    def build_compare_report(comparables)
+      Util.create_alg_comparison_report(comparables)
+    end
+  end
   
-  class TrainingTestValidationBenchmark < AlgorihtmValidationBenchmark
+  class ModelValidationBenchmark < ValidationBenchmark
+
+    def comparable_nice_name
+      return "model"
+    end
+    
+    def build()
+      raise "no models" unless @models
+      @comparables = @models
+      super
+    end
+    
+    def build_compare_report(comparables)
+      "model comparsion report not available yet" #Util.create_model_comparison_report(comparables)
+    end
+  end
+  
+  class TestModelValidationBenchmark < ModelValidationBenchmark
+    
+    def info
+      [ training_test_info ]
+    end
+    
+    def training_test_info
+      "This is a test set validation of existing models. "+
+      "The model is used to predict the test dataset. Evaluation is done by comparing the model predictions "+
+      "to the actual test values (in the test (target) dataset)."
+    end
+    
+    def info_table_title
+      "Validation params"
+    end
+    
+    def params
+      p = { "test_dataset_uri" => @test_data }
+      p["test_target_dataset_uri"] = @test_class_data if @test_class_data
+      return p
+    end
+    
+    def validate(index)
+      Util.validate_model(@test_data, @test_class_data, @models[index]).to_s
+    end
+    
+    def build_report(index)
+      Util.create_report(@validations[index])
+    end
+      
+    def build()
+      raise "no test data" unless @test_data
+      super
+    end
+  end
+  
+  class TrainingTestValidationBenchmark < AlgorithmValidationBenchmark
     
     def info
       [ training_test_info ]
@@ -270,7 +339,7 @@ class Nightly
     end
   end
   
-  class CrossValidationBenchmark < AlgorihtmValidationBenchmark
+  class CrossValidationBenchmark < AlgorithmValidationBenchmark
     
     def info
       [ training_test_info ]
@@ -413,6 +482,27 @@ class Nightly
     end
   end
   
+  class CacoModelsRegressionBenchmark < TestModelValidationBenchmark
+    
+    def title
+      "Regression model test set validation, caco dataset"
+    end
+    
+    def info
+      res = [ "Valdation of two identical(?) mlr models on caco-2 dataset." ] + super
+      return res
+    end
+    
+    def build()
+      @models = [ 
+        "http://ambit.uni-plovdiv.bg:8080/ambit2/model/259260",
+        "http://opentox.ntua.gr:3003/model/195",
+        ]
+      @test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/R7798"
+      super
+    end
+  end
+  
   class FatheadRegressionBenchmark < TrainingTestValidationBenchmark
     
     def title
@@ -468,6 +558,12 @@ class Nightly
       #LOGGER.info "validaiton done "+uri.to_s
       return uri
     end
+    
+    def self.validate_model(test_data, test_class_data, model)
+      uri = OpenTox::RestClientWrapper.post @@validation_service, { :test_dataset_uri => test_data, 
+        :test_target_dataset_uri => test_class_data, :model_uri => model }
+      return uri
+    end    
     
     def self.cross_validate_alg(data, alg, feature, folds, seed, stratified, alg_params)
       uri = OpenTox::RestClientWrapper.post File.join(@@validation_service,"crossvalidation"), { :dataset_uri => data, 

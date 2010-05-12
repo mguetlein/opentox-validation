@@ -33,6 +33,7 @@ class ValidationTest < Test::Unit::TestCase
       #ex = ex_ntua
       #ex = ex_ntua2
       #ex = ex_tum
+      #ex = ex_tum2
       #ex = ex_local
       #ex = ex_lazar_extern
       #ex = ex_ambit
@@ -158,8 +159,10 @@ class ValidationTest < Test::Unit::TestCase
     #ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
     #ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/103141"
     
-    #ex.test_data = "http://194.141.0.136:8080/compound/1"
-    #ex.model = "http://194.141.0.136:8080/model/414" 
+    
+    ex.model = "http://ambit.uni-plovdiv.bg:8080/ambit2/model/259260" 
+    ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/R7798"
+    #ex. http://ambit.uni-plovdiv.bg:8080/ambit2/feature/255510
     
     #ex.alg = "http://ambit.uni-plovdiv.bg:8080/ambit2/algorithm/pka"
     #ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/342"
@@ -167,9 +170,9 @@ class ValidationTest < Test::Unit::TestCase
     
     #ex.alg = "http://apps.ideaconsult.net:8080/ambit2/algorithm/pka"
     #ex.train_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/54" #53
-    ex.test_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/55" #53
+    #ex.test_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/55" #53
     #ex.act_feat = "http://apps.ideaconsult.net:8080/ambit2/feature/22200" #22190"
-    ex.model = "http://apps.ideaconsult.net:8080/ambit2/model/20"
+    #ex.model = "http://apps.ideaconsult.net:8080/ambit2/model/20"
     
     return ex
   end
@@ -248,7 +251,15 @@ class ValidationTest < Test::Unit::TestCase
     return ex
   end
 
-
+def ex_tum2
+    ex = Example.new
+    ex.classification = false
+    ex.alg = "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/J48"
+    ex.train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/1027"
+    ex.test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/1027"
+    ex.act_feat = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/357709"
+    return ex
+  end
 
 #  def test_all_validations
 #    get '/'
