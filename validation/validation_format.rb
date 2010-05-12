@@ -83,7 +83,9 @@ module Validation
                    :f_measure, :num_false_positives, :num_false_negatives, 
                    :num_true_positives, :num_true_negatives, :precision, 
                    :recall, :true_negative_rate, :true_positive_rate,
-                   :confusion_matrix_value, :weighted_area_under_roc ]
+                   :confusion_matrix_value, :weighted_area_under_roc, 
+                   :target_variance_actual, :root_mean_squared_error,
+                   :target_variance_predicted, :mean_absolute_error, :r_square ]
     # created at -> date
     #      owl.set_literal(OT['numInstances'],validation.num_instances)
     #      owl.set_literal(OT['numWithoutClass'],validation.num_without_class)
@@ -95,13 +97,13 @@ module Validation
     @@object_properties = { :model_uri => OT['validationModel'], :training_dataset_uri => OT['validationTrainingDataset'], :algorithm_uri => OT['validationAlgorithm'],
                      :prediction_feature => OT['predictedFeature'], :test_dataset_uri => OT['validationTestDataset'], :test_target_dataset_uri => OT['validationTestClassDataset'],
                      :prediction_dataset_uri => OT['validationPredictionDataset'], :crossvalidation_info => OT['hasValidationInfo'],
-                     :classification_statistics => OT['hasValidationInfo'],
+                     :classification_statistics => OT['hasValidationInfo'], :regression_statistics => OT['hasValidationInfo'],
                      :class_value_statistics => OT['classValueStatistics'], :confusion_matrix => OT['confusionMatrix'],
                      :confusion_matrix_cell => OT['confusionMatrixCell'], :class_value => OT['classValue'], 
                      :confusion_matrix_actual => OT['confusionMatrixActual'], :confusion_matrix_predicted => OT['confusionMatrixPredicted'] } 
                      
     @@classes = { :crossvalidation_info => OT['CrossvalidationInfo'], :classification_statistics => OT['ClassificationStatistics'],
-                 :class_value_statistics => OT['ClassValueStatistics'],
+                  :regression_statistics => OT['RegresssionStatistics'], :class_value_statistics => OT['ClassValueStatistics'],
                  :confusion_matrix => OT['ConfusionMatrix'], :confusion_matrix_cell => OT['ConfusionMatrixCell']}  
     
     def literal?( prop )

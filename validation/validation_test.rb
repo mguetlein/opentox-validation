@@ -22,7 +22,7 @@ class ValidationTest < Test::Unit::TestCase
       Nightly.build_nightly
       #get "/build_nightly" 
       #get "/nightly"  
-      #get '1',nil,'HTTP_ACCEPT' => "application/rdf+xml"     
+      #get '16',nil,'HTTP_ACCEPT' => "application/rdf+xml"     
       #puts last_response.body
       
       #prepare_examples

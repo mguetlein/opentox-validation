@@ -19,7 +19,7 @@ module Reports::PredictionUtil
           a = []
           validation_attributes.each{ |att| a.push(v.send(att).to_s) }
           
-          a.push(v.get_predictions.identifier(i)[0,65]) #.gsub(/[-(),=]/, '')[0,10])
+          a.push(v.get_predictions.identifier(i)) #.gsub(/[-(),=]/, '')[0,10])
           #a.push(OpenTox::Compound.new(:uri=>v.get_predictions.compound(i)).smiles[0,65]) #.gsub(/[-(),=]/, '')[0,10])
           
           a.push(v.get_predictions.actual_value(i).to_nice_s) 

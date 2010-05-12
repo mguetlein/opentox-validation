@@ -23,6 +23,7 @@ class Nightly
                      HamsterCrossvalidationBenchmark.new, 
                      MiniRegressionBenchmark.new,
                      CacoModelsRegressionBenchmark.new,
+                     CacoAlgsRegressionBenchmark.new,
                      #FatheadRegressionBenchmark.new,
                      ]
       
@@ -141,6 +142,7 @@ class Nightly
   class ValidationBenchmark < AbstractBenchmark
 
     def info_table
+      raise "no comparables" unless @comparables
       t = []
       t << ["param", "uri"]
       params.each do |k,v|
@@ -286,7 +288,7 @@ class Nightly
     end
     
     def validate(index)
-      Util.validate_model(@test_data, @test_class_data, @models[index]).to_s
+      Util.validate_model(@test_data, @test_class_data, @models[index])
     end
     
     def build_report(index)
@@ -324,7 +326,7 @@ class Nightly
     
     def validate(index)
       Util.validate_alg(@train_data, @test_data, @test_class_data,
-              @algs[index], @pred_feature, @alg_params[index]).to_s
+              @algs[index], @pred_feature, @alg_params[index])
     end
     
     def build_report(index)
@@ -361,7 +363,7 @@ class Nightly
     
     def validate(index)
       Util.cross_validate_alg(@data, @algs[index], @pred_feature, 
-              @num_folds, @random_seed, @stratified, @alg_params[index]).to_s
+              @num_folds, @random_seed, @stratified, @alg_params[index])
     end
     
     def build_report(index)
@@ -398,12 +400,16 @@ class Nightly
       @algs = [
         File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
         File.join(@@lazar_server,"lazar"),
-        #"http://188.40.32.88/algorithm/lazar",
+        "http://188.40.32.88/algorithm/lazar",
+        #File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
+        #File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
         ]
       @alg_params = [
         nil,
         "feature_generation_uri="+File.join(@@lazar_server,"fminer"),
-        "feature_generation_uri=http://188.40.32.88/algorithm/fminer",
+        #"feature_generation_uri=http://188.40.32.88/algorithm/fminer",
+        nil,
+        nil
         ]
       @pred_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
 
@@ -440,13 +446,13 @@ class Nightly
         "feature_generation_uri="+File.join(@@lazar_server,"fminer"),
         "feature_generation_uri=http://188.40.32.88/algorithm/fminer",
         ]
-      @pred_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
-
+      
       LOGGER.debug "prepare hamster datasets"
       
-      #@test_class_data = Util.upload_dataset(@@dataset_service, @@file, @@file_type).chomp("\n")
-      @pred_feature = "http://188.40.32.88/toxcreate/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
-      @test_class_data = "http://188.40.32.88/dataset/57"
+      @pred_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+      @test_class_data = Util.upload_dataset(@@dataset_service, @@file, @@file_type).chomp("\n")
+      #@pred_feature = "http://188.40.32.88/toxcreate/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+      #@test_class_data = "http://188.40.32.88/dataset/57"
       
       split = Util.split_dataset(@test_class_data, @pred_feature, 0.9, 1)
       @train_data = split[0].to_s
@@ -482,6 +488,31 @@ class Nightly
     end
   end
   
+  class CacoAlgsRegressionBenchmark < TrainingTestValidationBenchmark
+    
+    def title
+      "Training test set validation, regression, caco dataset"
+    end
+    
+    def info
+      res = [ "Training test set validation on caco2 dataset." ] + super
+      return res
+    end
+    
+    def build()
+      @algs = [ 
+        "http://opentox.ntua.gr:3003/algorithm/mlr",
+        "http://ambit.uni-plovdiv.bg:8080/ambit2/algorithm/LR",
+        ]
+      @alg_params = [ nil, nil]
+      @train_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/R7798"
+      @test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/R8353"
+      @pred_feature = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/255510"
+      super
+    end
+  end
+
+  
   class CacoModelsRegressionBenchmark < TestModelValidationBenchmark
     
     def title
@@ -498,7 +529,8 @@ class Nightly
         "http://ambit.uni-plovdiv.bg:8080/ambit2/model/259260",
         "http://opentox.ntua.gr:3003/model/195",
         ]
-      @test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/R7798"
+      #@test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/R7798"
+      @test_data = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/R8353"
       super
     end
   end
@@ -541,7 +573,7 @@ class Nightly
       data = File.read(file.path)
       data_uri = OpenTox::RestClientWrapper.post dataset_service, {:content_type => file_type}, data
       #data_uri = OpenTox::Task.find(data_uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(data_uri)
-      return data_uri
+      return data_uri.to_s
     end
     
     def self.split_dataset(data_uri, feature, split_ratio, random_seed)
@@ -556,13 +588,13 @@ class Nightly
       #LOGGER.info "waiting for validation "+uri.to_s
       #uri = OpenTox::Task.find(uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(uri)
       #LOGGER.info "validaiton done "+uri.to_s
-      return uri
+      return uri.to_s
     end
     
     def self.validate_model(test_data, test_class_data, model)
       uri = OpenTox::RestClientWrapper.post @@validation_service, { :test_dataset_uri => test_data, 
         :test_target_dataset_uri => test_class_data, :model_uri => model }
-      return uri
+      return uri.to_s
     end    
     
     def self.cross_validate_alg(data, alg, feature, folds, seed, stratified, alg_params)
@@ -572,19 +604,19 @@ class Nightly
       #LOGGER.info "waiting for validation "+uri.to_s
       #uri = OpenTox::Task.find(uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(uri)
       #LOGGER.info "validaiton done "+uri.to_s
-      return uri
+      return uri.to_s
     end
     
     def self.create_report(validation, type="validation")
       uri = OpenTox::RestClientWrapper.post File.join(@@validation_service,"report/"+type.to_s), { :validation_uris => validation }
       #uri = OpenTox::Task.find(uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(uri)
-      return uri
+      return uri.to_s
     end
     
     def self.create_alg_comparison_report(validations)
       uri = OpenTox::RestClientWrapper.post File.join(@@validation_service,"report/algorithm_comparison"), { :validation_uris => validations.join("\n") }
       #uri = OpenTox::Task.find(uri).wait_for_resource.to_s if OpenTox::Utils.task_uri?(uri)
-      return uri
+      return uri.to_s
     end
     
   end

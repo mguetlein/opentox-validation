@@ -59,7 +59,7 @@ module Lib
   
     def add_content( rdf_provider ) 
       @rdf_provider = rdf_provider
-      recursiv_add_content( @rdf_provider.get_content_as_hash, @model.subject(RDF['type'],rdf_provider.rdf_title) )
+      recursiv_add_content( @rdf_provider.get_content_as_hash, @owl.root_node )
     end
     
     def rdf
@@ -74,7 +74,10 @@ module Lib
     
     def recursiv_add_content( output, node )
       output.each do |k,v|
-        raise "null value: "+k.to_s if v==nil
+        if v==nil
+          LOGGER.warn "skipping nil value: "+k.to_s
+          next
+        end
         if v.is_a?(Hash)
           new_node = add_class( k, node )
           recursiv_add_content( v, new_node )
@@ -113,7 +116,7 @@ module Lib
         @model.delete node, @rdf_provider.literal_name(property), l
       rescue
       end
-      @model.add node, @rdf_provider.literal_name(property), value.to_s
+      @model.add node, @rdf_provider.literal_name(property), Redland::Literal.create(value)
     end
     
     def add_object_property(property, value, node )
