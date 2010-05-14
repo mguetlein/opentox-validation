@@ -86,8 +86,6 @@ class Reports::ValidationDB < Reports::ValidationAccess
       subset = v[subset_name]
       subset_props.each{ |prop| validation.send("#{prop.to_s}=".to_sym, subset[prop]) } if subset
     end
-    
-    LOGGER.debug "loaded validation: "+validation.to_yaml
   end
     
   def init_cv(validation)
