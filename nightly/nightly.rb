@@ -23,6 +23,7 @@ class Nightly
                      HamsterCrossvalidationBenchmark.new, 
                      MiniRegressionBenchmark.new,
                      CacoModelsRegressionBenchmark.new,
+                     CacoModelsRegressionBenchmark2.new,
                      CacoAlgsRegressionBenchmark.new,
                      #FatheadRegressionBenchmark.new,
                      ]
@@ -388,7 +389,7 @@ class Nightly
     @@lazar_server = @@config[:services]["opentox-algorithm"]
     
     def title()
-      "Crossvalidation, binary classification"
+      "Classification, Crossvalidation, Hamster carcinogenicity"
     end
     
     def info
@@ -427,7 +428,7 @@ class Nightly
     @@lazar_server = @@config[:services]["opentox-algorithm"]
     
     def title()
-      "Training test set validation, binary classification"
+      "Classification, Algorithm training test validation, Hamster carcinogenicity"
     end
     
     def info
@@ -466,7 +467,7 @@ class Nightly
   class MiniRegressionBenchmark < TrainingTestValidationBenchmark
     
     def title
-      "Training test set validation, small regression dataset"
+      "Regression, Algorithm training test validation, tiny test dataset"
     end
     
     def info
@@ -492,7 +493,7 @@ class Nightly
   class CacoAlgsRegressionBenchmark < TrainingTestValidationBenchmark
     
     def title
-      "Training test set validation, regression, caco dataset"
+      "Regression, Algorithm training test validation, Caco-2 dataset"
     end
     
     def info
@@ -518,7 +519,7 @@ class Nightly
   class CacoModelsRegressionBenchmark < TestModelValidationBenchmark
     
     def title
-      "Regression model test set validation, caco dataset"
+      "Regression, Model test set validation, Caco-2 dataset (ambit.uni-plovdiv)"
     end
     
     def info
@@ -536,6 +537,30 @@ class Nightly
       super
     end
   end
+  
+    
+  class CacoModelsRegressionBenchmark2 < TestModelValidationBenchmark
+    
+    def title
+      "Regression, Model test set validation, Caco-2 dataset (apps.ideaconsult)"
+    end
+    
+    def info
+      res = [ "One more caco2 dataset at another location" ] + super
+      return res
+    end
+    
+    def build()
+      @models = [ 
+        "http://apps.ideaconsult.net:8080/ambit2/model/33",
+        ]
+      @test_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/R545"
+      #prediction_feature=http://apps.ideaconsult.net:8080/ambit2/feature/22200
+      super
+    end
+  end
+  
+  
   
   class FatheadRegressionBenchmark < TrainingTestValidationBenchmark
     
