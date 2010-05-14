@@ -109,6 +109,7 @@ module Validation
         $sinatra.halt 400, "error validating model: model.dependent_variable != validation.prediciton_feature ("+
           model.dependentVariables+" != "+@prediction_feature+")" if @prediction_feature!=model.dependentVariables
       else
+        $sinatra.halt 400, "model has no dependentVariables specified, please give prediction feature for model validation" unless model.dependentVariables
         update :prediction_feature => model.dependentVariables
       end
       

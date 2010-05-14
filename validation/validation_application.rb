@@ -126,8 +126,8 @@ post '/?' do
     if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri]
       v = Validation::Validation.new :model_uri => params[:model_uri], 
                        :test_dataset_uri => params[:test_dataset_uri],
-                       :test_target_dataset_uri => params[:test_target_dataset_uri]
-                       #:prediction_feature => params[:prediction_feature]
+                       :test_target_dataset_uri => params[:test_target_dataset_uri],
+                       :prediction_feature => params[:prediction_feature]
       v.validate_model
     elsif params[:algorithm_uri] and params[:training_dataset_uri] and params[:test_dataset_uri] and params[:prediction_feature] and !params[:model_uri]
      v = Validation::Validation.new :algorithm_uri => params[:algorithm_uri],

@@ -1,7 +1,8 @@
 require "nightly/nightly.rb"
 
 get '/build_nightly/?' do
-  Nightly.build_nightly()
+  dry_run = params[:dry_run]!=nil and params[:dry_run]
+  Nightly.build_nightly(dry_run)
 end
 
 get '/css_style_sheet/?' do

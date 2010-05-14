@@ -101,7 +101,7 @@ module Lib
     def add_class( property, node )
       raise "no object prop: "+property.to_s unless @rdf_provider.object_property?(property)
       raise "no class name: "+property.to_s unless @rdf_provider.class_name(property) 
-      res = @model.create_resource
+      res = Redland::Resource.new( File.join(node.uri.to_s,property.to_s) )
       @model.add res, RDF['type'], @rdf_provider.class_name(property)
       @model.add res, DC['title'], @rdf_provider.class_name(property)
       @model.add node, @rdf_provider.object_property_name(property), res

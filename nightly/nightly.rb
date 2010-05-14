@@ -15,16 +15,16 @@ class Nightly
     end
   end
   
-  def self.build_nightly
+  def self.build_nightly(dry_run=false)
     task_uri = OpenTox::Task.as_task() do
       LOGGER.info("Building nightly report")
       
       benchmarks = [ HamsterTrainingTestBenchmark.new,
                      HamsterCrossvalidationBenchmark.new, 
-                     MiniRegressionBenchmark.new,
-                     CacoModelsRegressionBenchmark.new,
-                     CacoModelsRegressionBenchmark2.new,
-                     CacoAlgsRegressionBenchmark.new,
+                     #MiniRegressionBenchmark.new,
+                     #CacoModelsRegressionBenchmark.new,
+                     #CacoModelsRegressionBenchmark2.new,
+                     #CacoAlgsRegressionBenchmark.new,
                      #FatheadRegressionBenchmark.new,
                      ]
       
@@ -44,11 +44,11 @@ class Nightly
       end
       wait = 0
       while running.size>0
-        LOGGER.debug "Nighlty report waiting for "+running.inspect if wait%60==0
+        LOGGER.debug "Nightly report waiting for "+running.inspect if wait%60==0
         wait += 1
         sleep 1
       end
-      LOGGER.debug "Nighlty report, all benchmarks done "+running.inspect
+      LOGGER.debug "Nightly report, all benchmarks done "+running.inspect
       
       section_about = report.add_section(report.get_root_element, "About this report")
       report.add_paragraph(section_about,
@@ -84,15 +84,18 @@ class Nightly
        
       end
       
-      report.write_to(File.new(File.join(NIGHTLY_REP_DIR,NIGHTLY_REPORT_XML), "w"))
-      Reports::ReportFormat.format_report_to_html(NIGHTLY_REP_DIR,
-        NIGHTLY_REPORT_XML, 
-        NIGHTLY_REPORT_HTML, 
-        nil)
-        #"http://www.opentox.org/portal_css/Opentox%20Theme/base-cachekey7442.css")
-        #"http://apps.ideaconsult.net:8080/ToxPredict/style/global.css")
-      
-      LOGGER.info("Nightly report completed")
+      unless dry_run
+        report.write_to(File.new(File.join(NIGHTLY_REP_DIR,NIGHTLY_REPORT_XML), "w"))
+        Reports::ReportFormat.format_report_to_html(NIGHTLY_REP_DIR,
+          NIGHTLY_REPORT_XML, 
+          NIGHTLY_REPORT_HTML, 
+          nil)
+          #"http://www.opentox.org/portal_css/Opentox%20Theme/base-cachekey7442.css")
+          #"http://apps.ideaconsult.net:8080/ToxPredict/style/global.css")
+        LOGGER.info("Nightly report completed")
+      else
+        LOGGER.info("Nightly report completed - DRY RUN, no report creation")
+      end
       return "Nightly report completed"
     end
     if defined?(halt)
@@ -401,7 +404,7 @@ class Nightly
       @algs = [
         File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
         File.join(@@lazar_server,"lazar"),
-        "http://188.40.32.88/algorithm/lazar",
+        #"http://188.40.32.88/algorithm/lazar",
         #File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
         #File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
         ]
@@ -440,12 +443,12 @@ class Nightly
       @algs = [
         File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
         File.join(@@lazar_server,"lazar"),
-        "http://188.40.32.88/algorithm/lazar",
+        #"http://188.40.32.88/algorithm/lazar",
         ]
       @alg_params = [
         nil,
         "feature_generation_uri="+File.join(@@lazar_server,"fminer"),
-        "feature_generation_uri=http://188.40.32.88/algorithm/fminer",
+        #"feature_generation_uri=http://188.40.32.88/algorithm/fminer",
         ]
       
       LOGGER.debug "prepare hamster datasets"
