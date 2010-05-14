@@ -70,7 +70,8 @@ module Reports::ReportFactory
   def self.create_report_crossvalidation(validation_set)
     
     raise Reports::BadRequest.new("num validations is not >1") unless validation_set.size>1
-    raise Reports::BadRequest.new("crossvalidation-id not unique and != nil") if validation_set.unique_value(:crossvalidation_id)==nil
+    raise Reports::BadRequest.new("crossvalidation-id not unique and != nil: "+
+      validation_set.get_values(:crossvalidation_id,false).inspect) if validation_set.unique_value(:crossvalidation_id)==nil
     validation_set.load_cv_attributes
     raise Reports::BadRequest.new("num validations ("+validation_set.size.to_s+") is not equal to num folds ("+
       validation_set.unique_value(:num_folds).to_s+")") unless validation_set.unique_value(:num_folds)==validation_set.size
