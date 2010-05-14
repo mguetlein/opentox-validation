@@ -477,6 +477,7 @@ class Nightly
     def build()
       @algs = [ 
         "http://opentox.ntua.gr:3003/algorithm/mlr",
+        "http://opentox.ntua.gr:3004/algorithm/mlr",
         "http://opentox.informatik.tu-muenchen.de:8080/OpenTox-dev/algorithm/kNNregression",
         File.join(@@config[:services]["opentox-majority"],["/regr/algorithm"])
         ]
@@ -502,6 +503,7 @@ class Nightly
     def build()
       @algs = [ 
         "http://opentox.ntua.gr:3003/algorithm/mlr",
+        "http://opentox.ntua.gr:3004/algorithm/mlr",
         "http://ambit.uni-plovdiv.bg:8080/ambit2/algorithm/LR",
         ]
       @alg_params = [ nil, nil]
