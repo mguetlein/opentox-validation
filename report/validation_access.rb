@@ -74,7 +74,21 @@ class Reports::ValidationDB < Reports::ValidationAccess
     validation_id = uri.split("/")[-1]
     raise Reports::BadRequest.new "invalid validation id "+validation_id.to_s unless validation_id!=nil and 
       (validation_id.to_i > 0 || validation_id.to_s=="0" )
-    v = Lib::Validation.get(validation_id) # {:id => validation_id}) #, :uri => uri})
+    v = nil
+    count = 0
+    while(v==nil)
+      begin
+        v = Lib::Validation.get(validation_id)
+      rescue => ex
+        if count<5
+          count += 1
+          LOGGER.warn "cannot load validation, retry in 1 second : "+ex.message
+          sleep 1
+        else
+          raise "could not access validation with id "+validation_id.to_s+", error-msg: "+ex.message
+        end
+      end
+    end
     raise Reports::BadRequest.new "no validation found with id "+validation_id.to_s unless v #+" and uri "+uri.to_s unless v
     
     (Lib::VAL_PROPS + Lib::VAL_CV_PROPS).each do |p|
