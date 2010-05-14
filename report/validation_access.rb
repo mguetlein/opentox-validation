@@ -75,18 +75,11 @@ class Reports::ValidationDB < Reports::ValidationAccess
     raise Reports::BadRequest.new "invalid validation id "+validation_id.to_s unless validation_id!=nil and 
       (validation_id.to_i > 0 || validation_id.to_s=="0" )
     v = nil
-    count = 0
-    while(v==nil)
+    OpenTox.Utils.try_again do
       begin
         v = Lib::Validation.get(validation_id)
-      rescue => ex
-        if count<5
-          count += 1
-          LOGGER.warn "cannot load validation, retry in 1 second : "+ex.message
-          sleep 1
-        else
-          raise "could not access validation with id "+validation_id.to_s+", error-msg: "+ex.message
-        end
+      rescue
+        raise "could not access validation with id "+validation_id.to_s+", error-msg: "+ex.message
       end
     end
     raise Reports::BadRequest.new "no validation found with id "+validation_id.to_s unless v #+" and uri "+uri.to_s unless v
