@@ -40,7 +40,7 @@ module Validation
       $sinatra.halt 500,"do not set uri manually" if params[:uri]
       super params
       # hack to overcome datamapper bug: save to set id
-      OpenTox.Utils.try_again do
+      OpenTox::Utils.try_again do
         unless save
           raise "error saving validation "+errors.inspect
         end
