@@ -19,7 +19,7 @@ class Nightly
     task_uri = OpenTox::Task.as_task() do
       LOGGER.info("Building nightly report")
       
-      benchmarks = [ HamsterTrainingTestBenchmark.new,
+      benchmarks = [ #HamsterTrainingTestBenchmark.new,
                      HamsterCrossvalidationBenchmark.new, 
                      #MiniRegressionBenchmark.new,
                      #CacoModelsRegressionBenchmark.new,
@@ -402,23 +402,24 @@ class Nightly
     
     def build()
       @algs = [
-        File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
-        File.join(@@lazar_server,"lazar"),
-        #"http://188.40.32.88/algorithm/lazar",
+        #File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
+        #File.join(@@lazar_server,"lazar"),
+        "http://ot-test.in-silico.ch/algorithm/lazar",
         #File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
         #File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
         ]
       @alg_params = [
-        nil,
-        "feature_generation_uri="+File.join(@@lazar_server,"fminer"),
-        #"feature_generation_uri=http://188.40.32.88/algorithm/fminer",
+        #nil,
+        #"feature_generation_uri="+File.join(@@lazar_server,"fminer"),
+        "feature_generation_uri=http://ot-test.in-silico.ch/algorithm/fminer",
         nil,
         nil
         ]
-      @pred_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
-
-      LOGGER.debug "upload hamster datasets"
-      @data = Util.upload_dataset(@@dataset_service, @@file, @@file_type).chomp("\n")
+      #@pred_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+      @pred_feature = "http://ot-test.in-silico.ch/toxcreate/feature#Hamster%20Carcinogenicity%20(CPDB/DSSTOX)"
+      @data = "http://ot-test.in-silico.ch/dataset/1"
+      #LOGGER.debug "upload hamster datasets"
+      #@data = Util.upload_dataset(@@dataset_service, @@file, @@file_type).chomp("\n")
       super
     end
   end
