@@ -22,8 +22,8 @@ class ValidationTest < Test::Unit::TestCase
       #Nightly.build_nightly
       #get "/build_nightly" 
       #get "/nightly"  
-      get '20',nil,'HTTP_ACCEPT' => "application/rdf+xml"     
-      puts last_response.body
+      #get '20',nil,'HTTP_ACCEPT' => "application/rdf+xml"     
+      #puts last_response.body
       
       #prepare_examples
       #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
@@ -35,12 +35,12 @@ class ValidationTest < Test::Unit::TestCase
       #ex = ex_tum
       #ex = ex_tum2
       #ex = ex_local
-      #ex = ex_lazar_extern
+      ex = ex_lazar_extern
       #ex = ex_ambit
       
       #create_validation(ex)
       #validate_model(ex)
-      #validate_algorithm(ex)
+      validate_algorithm(ex)
       #validate_split(ex)
       #xval(ex)
       
@@ -146,7 +146,9 @@ class ValidationTest < Test::Unit::TestCase
     
     ex.alg_params = "feature_generation_uri="+server+"algorithm/fminer"
     
-    ex.act_feat = server+"toxcreate/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+    ex.act_feat = server+"toxcreate/feature#Hamster%20Carcinogenicity%20(CPDB/DSSTOX)"
+    
+    
     #ex.act_feat = server+"toxcreate/feature#feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
     
     #ex.test_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/55" #53
