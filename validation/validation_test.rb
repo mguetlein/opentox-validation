@@ -19,11 +19,11 @@ class ValidationTest < Test::Unit::TestCase
   
   def test_it
     
-      Nightly.build_nightly
+      #Nightly.build_nightly
       #get "/build_nightly" 
       #get "/nightly"  
-      #get '16',nil,'HTTP_ACCEPT' => "application/rdf+xml"     
-      #puts last_response.body
+      get '20',nil,'HTTP_ACCEPT' => "application/rdf+xml"     
+      puts last_response.body
       
       #prepare_examples
       #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
@@ -133,18 +133,21 @@ class ValidationTest < Test::Unit::TestCase
   end
   
   def ex_lazar_extern
+    #server = "http://188.40.32.88/"
+    server = "http://ot-test.in-silico.ch/"
+    
     ex = Example.new
     ex.classification = true
-    ex.alg = "http://188.40.32.88/algorithm/lazar"
-    ex.train_data = "http://188.40.32.88/dataset/51"
+    ex.alg = server+"algorithm/lazar"
+    ex.train_data = server+"dataset/1" #51
     ex.test_data = ex.train_data
     ex.orig_data = ex.train_data    
     #ex.test_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/55" #53
     
-    ex.alg_params = "feature_generation_uri=http://188.40.32.88/algorithm/fminer"
+    ex.alg_params = "feature_generation_uri="+server+"algorithm/fminer"
     
-    ex.act_feat = "http://188.40.32.88/toxcreate/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
-    #ex.act_feat = "http://188.40.32.88/toxcreate/feature#feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
+    ex.act_feat = server+"toxcreate/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+    #ex.act_feat = server+"toxcreate/feature#feature#Hamster Carcinogenicity (DSSTOX/CPDB)"
     
     #ex.test_data = "http://apps.ideaconsult.net:8080/ambit2/dataset/55" #53
     #ex.model = "http://apps.ideaconsult.net:8080/ambit2/model/20"

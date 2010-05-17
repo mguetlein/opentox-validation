@@ -1,6 +1,15 @@
 
 require "lib/rdf_provider.rb"
 
+class String
+  def convert_underscore
+    gsub(/_./) do |m|
+      m.gsub!(/^_/,"")
+      m.upcase
+    end
+  end
+end
+
 module Validation
   
   
@@ -21,6 +30,8 @@ module Validation
         Lib::VAL_CV_PROPS.each do |p|
           cv[p] = self.send(p)
         end
+        # replace crossvalidation id with uri
+        cv[:crossvalidation_uri] = $sinatra.url_for("/crossvalidation/"+cv[:crossvalidation_id].to_s,:full) if cv[:crossvalidation_id]
         h[:crossvalidation_info] = cv
       end
       if classification_statistics 
@@ -77,7 +88,7 @@ module Validation
     
     @@literals = [ :created_at, :real_runtime, :num_instances, :num_without_class,
                    :percent_without_class, :num_unpredicted, :percent_unpredicted, 
-                   :crossvalidation_fold, :crossvalidation_id, 
+                   :crossvalidation_fold, #:crossvalidation_id, 
                    :num_correct, :num_incorrect, :percent_correct, :percent_incorrect,
                    :area_under_roc, :false_negative_rate, :false_positive_rate,
                    :f_measure, :num_false_positives, :num_false_negatives, 
@@ -85,22 +96,20 @@ module Validation
                    :recall, :true_negative_rate, :true_positive_rate,
                    :confusion_matrix_value, :weighted_area_under_roc, 
                    :target_variance_actual, :root_mean_squared_error,
-                   :target_variance_predicted, :mean_absolute_error, :r_square ]
-    # created at -> date
-    #      owl.set_literal(OT['numInstances'],validation.num_instances)
-    #      owl.set_literal(OT['numWithoutClass'],validation.num_without_class)
-    #      owl.set_literal(OT['percentWithoutClass'],validation.percent_without_class)
-    #      owl.set_literal(OT['numUnpredicted'],validation.num_unpredicted)
-    #      owl.set_literal(OT['percentUnpredicted'],validation.percent_unpredicted)
-                 
+                   :target_variance_predicted, :mean_absolute_error, :r_square, :class_value,
+                   :confusion_matrix_actual, :confusion_matrix_predicted ]
+                   
+    @@literal_names = {:created_at => OT["date"] }
                  
     @@object_properties = { :model_uri => OT['validationModel'], :training_dataset_uri => OT['validationTrainingDataset'], :algorithm_uri => OT['validationAlgorithm'],
-                     :prediction_feature => OT['predictedFeature'], :test_dataset_uri => OT['validationTestDataset'], :test_target_dataset_uri => OT['validationTestClassDataset'],
+                     :prediction_feature => OT['predictedFeature'], :test_dataset_uri => OT['validationTestDataset'], :test_target_dataset_uri => OT['validationTestTargetDataset'],
                      :prediction_dataset_uri => OT['validationPredictionDataset'], :crossvalidation_info => OT['hasValidationInfo'],
+                     :crossvalidation_uri =>  OT['validationCrossvalidation'],
                      :classification_statistics => OT['hasValidationInfo'], :regression_statistics => OT['hasValidationInfo'],
                      :class_value_statistics => OT['classValueStatistics'], :confusion_matrix => OT['confusionMatrix'],
-                     :confusion_matrix_cell => OT['confusionMatrixCell'], :class_value => OT['classValue'], 
-                     :confusion_matrix_actual => OT['confusionMatrixActual'], :confusion_matrix_predicted => OT['confusionMatrixPredicted'] } 
+                     :confusion_matrix_cell => OT['confusionMatrixCell'], #:class_value => OT['classValue'], 
+                     #:confusion_matrix_actual => OT['confusionMatrixActual'], :confusion_matrix_predicted => OT['confusionMatrixPredicted']
+                      } 
                      
     @@classes = { :crossvalidation_info => OT['CrossvalidationInfo'], :classification_statistics => OT['ClassificationStatistics'],
                   :regression_statistics => OT['RegresssionStatistics'], :class_value_statistics => OT['ClassValueStatistics'],
@@ -111,8 +120,11 @@ module Validation
     end
     
     def literal_name( prop )
-      #PENDING
-      return OT[prop.to_s]
+      if @@literal_names.has_key?(prop)
+        @@literal_names[prop]
+      else
+        OT[prop.to_s.convert_underscore]
+      end
     end
     
     def object_property?( prop )
@@ -123,6 +135,10 @@ module Validation
       return @@object_properties[ prop ]
     end
   
+    def class?(prop)
+      @@classes.has_key?( prop )
+    end
+    
     def class_name( prop )
       return @@classes[ prop ]
     end
@@ -138,7 +154,7 @@ module Validation
       
       v = []
       Validation.all(:crossvalidation_id => self.id).each do |val|
-        v.push({ :validation_uri => val.uri.to_s })
+        v.push( val.uri.to_s )
       end
       h[:validations] = v
       h
@@ -156,18 +172,24 @@ module Validation
       @uri
     end
     
-    @@literals = [ :stratified, :num_folds, :random_seed ]
+    @@literals = [ :created_at, :stratified, :num_folds, :random_seed ]
+    
+    @@literal_names = {:created_at => OT["date"] }
+    
     @@object_properties = { :dataset_uri => OT['crossvalidationDataset'], :algorithm_uri => OT['crossvalidationAlgorithm'],
-                           :validation_uri => OT['crossvalidationValidation'], :validations => OT['crossvalidationValidations'] } 
-    @@classes = { :validations => OT['CrossvalidationValidations'] }
+                           :validations => OT['crossvalidationValidation'] } 
+    @@classes = {}
     
     def literal?( prop )
       @@literals.index( prop ) != nil
     end
     
     def literal_name( prop )
-      #PENDING
-      return OT[prop.to_s]
+      if @@literal_names.has_key?(prop)
+        @@literal_names[prop]
+      else
+        OT[prop.to_s.convert_underscore]
+      end
     end
     
     def object_property?( prop )
@@ -178,6 +200,10 @@ module Validation
       return @@object_properties[ prop ]
     end
   
+    def class?(prop)
+      @@classes.has_key?( prop )
+    end
+    
     def class_name( prop )
       return @@classes[ prop ]
     end

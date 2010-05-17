@@ -41,6 +41,10 @@ module Lib
       raise "not yet implemented"
     end
   
+    def class?( property )
+      raise "not yet implemented"
+    end
+  
     def class_name( property )
       raise "not yet implemented"
     end
@@ -83,8 +87,12 @@ module Lib
           recursiv_add_content( v, new_node )
         elsif v.is_a?(Array)
           v.each do |value|
-            new_node = add_class( k, node )
-            recursiv_add_content( value, new_node )
+            if @rdf_provider.class?(k)
+              new_node = add_class( k, node )
+              recursiv_add_content( value, new_node )
+            else
+              add_object_property( k, value, node)
+            end
           end
         elsif @rdf_provider.literal?(k)
           set_literal( k, v, node)
@@ -100,8 +108,16 @@ module Lib
   
     def add_class( property, node )
       raise "no object prop: "+property.to_s unless @rdf_provider.object_property?(property)
-      raise "no class name: "+property.to_s unless @rdf_provider.class_name(property) 
-      res = Redland::Resource.new( File.join(node.uri.to_s,property.to_s) )
+      raise "no class name: "+property.to_s unless @rdf_provider.class_name(property)
+      # to avoid anonymous nodes, make up uris for sub-objects
+      # use counter to make sure each uri is unique
+      # for example we will get ../confusion_matrix_cell/1, ../confusion_matrix_cell/2, ...
+      count = 1
+      while (true)
+        res = Redland::Resource.new( File.join(node.uri.to_s,property.to_s+"/"+count.to_s) )  
+        break if @model.subject(@rdf_provider.object_property_name(property), res).nil?
+        count += 1
+      end
       @model.add res, RDF['type'], @rdf_provider.class_name(property)
       @model.add res, DC['title'], @rdf_provider.class_name(property)
       @model.add node, @rdf_provider.object_property_name(property), res
