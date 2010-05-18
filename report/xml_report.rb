@@ -91,7 +91,9 @@ module Reports
       figure << Reports::XMLReportUtil.text_element("title", title)
       media = Element.new("mediaobject")
       image = Element.new("imageobject")
-      imagedata = Reports::XMLReportUtil.attribute_element("imagedata",{"contentwidth" => "100%", "fileref" => path, "format"=>filetype})
+      imagedata = Reports::XMLReportUtil.attribute_element("imagedata",
+        {"fileref" => path, "format"=>filetype, "contentwidth" => "6in",  "contentdepth"=> "4in" 
+        })#"width" => "6in", "height" => "5in"}) #"contentwidth" => "100%"})
       #imagedata = Reports::XMLReportUtil.attribute_element("imagedata",{"width" => "6in", "fileref" => path, "format"=>filetype})
       @resource_path_elements[imagedata] = "fileref"
       image << imagedata
@@ -113,7 +115,7 @@ module Reports
       
       values = transpose ? table_values.transpose : table_values
       
-      table = Reports::XMLReportUtil.attribute_element("table",{"frame" => "top", "colsep" => 0, "rowsep" => 0})
+      table = Reports::XMLReportUtil.attribute_element("table",{"frame" => "none", "colsep" => 1, "rowsep" => 1 })
       
       table << Reports::XMLReportUtil.text_element("title", title)
       

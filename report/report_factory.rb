@@ -10,6 +10,7 @@ VAL_ATTR_REGR = [ :root_mean_squared_error, :mean_absolute_error, :r_square ]
 VAL_ATTR_BAR_PLOT_CLASS = [ :accuracy, :weighted_area_under_roc, :area_under_roc, :f_measure, :true_positive_rate, :true_negative_rate ]
 VAL_ATTR_BAR_PLOT_REGR = [ :root_mean_squared_error, :mean_absolute_error, :r_square ]
 
+
 # = Reports::ReportFactory 
 #
 # creates various reports (Reports::ReportContent) 
@@ -88,8 +89,8 @@ module Reports::ReportFactory
     if (validation_set.all_classification?)
       report.add_section_result(merged, VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold],"Mean Results","Mean Results")
       
-      report.add_section_roc_plot(validation_set, nil, nil, "roc-plot.svg", nil, nil, "Roc plot")
-      report.add_section_roc_plot(validation_set, nil, :crossvalidation_fold, "roc-plot-folds.svg", nil, nil, "Roc plots for folds")
+      report.add_section_roc_plot(validation_set, nil, nil, "roc-plot.svg", "Roc Plot", nil, "Roc plot")
+      report.add_section_roc_plot(validation_set, nil, :crossvalidation_fold, "roc-plot-folds.svg", "Roc Plot", nil, "Roc plots for folds")
       #validation_set.first.get_prediction_feature_values.each do |class_value|
         #report.add_section_roc_plot(validation_set, class_value, nil, "roc-plot-"+class_value+".svg")
       #end
@@ -283,7 +284,7 @@ class Reports::ReportContent
                             section_text=nil,
                             image_title=nil,
                             image_caption=nil)
-    
+                            
     if class_value
       section_text = "This section contains the roc plot for class '"+class_value+"'." unless section_text
       image_title = "Roc Plot for class-value '"+class_value+"'" unless image_title

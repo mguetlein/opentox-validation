@@ -35,7 +35,7 @@ module Reports
         tp_rates = []
         attribute_values.each do |value|
           data = transform_predictions(validation_set.filter({split_set_attribute => value}), class_value, false)
-          names << value
+          names << value.to_s
           fp_rates << data[:fp_rate][0]
           tp_rates << data[:tp_rate][0]
         end
@@ -169,7 +169,7 @@ module Reports
           end
         end
         tp_fp_rates = get_tp_fp_rates(sum_roc_values)
-        names << "all"
+        names << nil # "all"
         fp_rate << tp_fp_rates[:fp_rate]
         tp_rate << tp_fp_rates[:tp_rate]
         faint << false

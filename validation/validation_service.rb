@@ -44,6 +44,7 @@ module Validation
         unless save
           raise "error saving validation "+errors.inspect
         end
+        reload
         raise "internal error, validation-id not set "+to_yaml if @id==nil
       end
       update :uri => $sinatra.url_for("/"+@id.to_s, :full)

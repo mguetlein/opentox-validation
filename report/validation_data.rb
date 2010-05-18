@@ -3,6 +3,17 @@
 VAL_ATTR_VARIANCE = [ :area_under_roc, :percent_correct, :root_mean_squared_error, :mean_absolute_error, :r_square, :accuracy  ]
 VAL_ATTR_RANKING = [ :area_under_roc, :percent_correct, :true_positive_rate, :true_negative_rate, :accuracy ]
 
+ATTR_NICE_NAME = {}
+
+class String
+  def nice_attr()
+    if ATTR_NICE_NAME.has_key?(self)
+      return ATTR_NICE_NAME[self]
+    else
+      return self.to_s.gsub(/_id$/, "").gsub(/_/, " ").capitalize
+    end
+  end
+end
 
 
 class Object
@@ -238,7 +249,7 @@ module Reports
     # 
     def to_array(attributes, remove_nil_attributes=true, true_class_value=nil)
       array = Array.new
-      array.push(attributes)
+      array.push(attributes.collect{|a| a.to_s.nice_attr})
       attribute_not_nil = Array.new(attributes.size)
       @validations.each do |v|
         index = 0
