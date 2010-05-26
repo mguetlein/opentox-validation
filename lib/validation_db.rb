@@ -1,5 +1,5 @@
 
-[ 'rubygems', 'dm-core', 'datamapper' ].each do |lib|
+[ 'rubygems', 'datamapper' ].each do |lib|
   require lib
 end
 
