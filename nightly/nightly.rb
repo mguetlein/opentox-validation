@@ -20,10 +20,10 @@ class Nightly
       LOGGER.info("Building nightly report")
       
       benchmarks = [ HamsterTrainingTestBenchmark.new,
-                     HamsterCrossvalidationBenchmark.new, 
-                     MiniRegressionBenchmark.new,
-                     CacoModelsRegressionBenchmark.new,
-                     CacoModelsRegressionBenchmark2.new,
+                     #HamsterCrossvalidationBenchmark.new, 
+                     #MiniRegressionBenchmark.new,
+                     #CacoModelsRegressionBenchmark.new,
+                     #CacoModelsRegressionBenchmark2.new,
                      #CacoAlgsRegressionBenchmark.new,
                      #FatheadRegressionBenchmark.new,
                      ]
@@ -443,12 +443,12 @@ class Nightly
     def build()
       @algs = [
         File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
-        File.join(@@lazar_server,"lazar"),
+        #File.join(@@lazar_server,"lazar"),
         #"http://188.40.32.88/algorithm/lazar",
         ]
       @alg_params = [
         nil,
-        "feature_generation_uri="+File.join(@@lazar_server,"fminer"),
+        #"feature_generation_uri="+File.join(@@lazar_server,"fminer"),
         #"feature_generation_uri=http://188.40.32.88/algorithm/fminer",
         ]
       
