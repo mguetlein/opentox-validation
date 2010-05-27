@@ -402,16 +402,16 @@ class Nightly
     
     def build()
       @algs = [
-        File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
+        #File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
         #File.join(@@lazar_server,"lazar"),
-        #"http://ot-test.in-silico.ch/algorithm/lazar",
+        "http://ot-test.in-silico.ch/algorithm/lazar",
         #File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
         #File.join(@@config[:services]["opentox-majority"],["/class/algorithm"]),
         ]
       @alg_params = [
-        nil,
-        "feature_generation_uri="+File.join(@@lazar_server,"fminer"),
-        #"feature_generation_uri=http://ot-test.in-silico.ch/algorithm/fminer",
+        #nil,
+        #"feature_generation_uri="+File.join(@@lazar_server,"fminer"),
+        "feature_generation_uri=http://ot-test.in-silico.ch/algorithm/fminer",
         nil,
         nil
         ]
