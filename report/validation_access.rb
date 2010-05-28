@@ -75,12 +75,10 @@ class Reports::ValidationDB < Reports::ValidationAccess
     raise Reports::BadRequest.new "invalid validation id "+validation_id.to_s unless validation_id!=nil and 
       (validation_id.to_i > 0 || validation_id.to_s=="0" )
     v = nil
-    OpenTox::Utils.try_again do
-      begin
-        v = Lib::Validation.get(validation_id)
-      rescue
-        raise "could not access validation with id "+validation_id.to_s+", error-msg: "+ex.message
-      end
+    begin
+      v = Lib::Validation.get(validation_id)
+    rescue
+      raise "could not access validation with id "+validation_id.to_s+", error-msg: "+ex.message
     end
     raise Reports::BadRequest.new "no validation found with id "+validation_id.to_s unless v #+" and uri "+uri.to_s unless v
     

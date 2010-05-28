@@ -1,5 +1,5 @@
 
-[ 'rubygems', 'sinatra', 'sinatra/url_for', 'sinatra/respond_to', 'opentox-ruby-api-wrapper', 'logger' ].each do |lib|
+[ 'rubygems', 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper', 'logger' ].each do |lib|
   require lib
 end
 
