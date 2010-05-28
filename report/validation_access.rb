@@ -77,7 +77,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
     v = nil
     begin
       v = Lib::Validation.get(validation_id)
-    rescue
+    rescue => ex
       raise "could not access validation with id "+validation_id.to_s+", error-msg: "+ex.message
     end
     raise Reports::BadRequest.new "no validation found with id "+validation_id.to_s unless v #+" and uri "+uri.to_s unless v
