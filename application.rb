@@ -1,5 +1,6 @@
-
-[ 'rubygems', 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper', 'logger' ].each do |lib|
+require 'rubygems'
+gem 'opentox-ruby-api-wrapper', '= 1.4.4.4'
+[ 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper', 'logger' ].each do |lib|
   require lib
 end
 

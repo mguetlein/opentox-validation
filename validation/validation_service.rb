@@ -40,13 +40,11 @@ module Validation
       $sinatra.halt 500,"do not set uri manually" if params[:uri]
       super params
       # hack to overcome datamapper bug: save to set id
-      OpenTox::Utils.try_again do
-        unless save
-          raise "error saving validation "+errors.inspect
-        end
-        reload
-        raise "internal error, validation-id not set "+to_yaml if @id==nil
+      unless save
+        raise "error saving validation "+errors.inspect
       end
+      reload
+      raise "internal error, validation-id not set "+to_yaml if @id==nil
       update :uri => $sinatra.url_for("/"+@id.to_s, :full)
     end
     
@@ -161,13 +159,11 @@ module Validation
       $sinatra.halt 500,"do not set uri manually" if params[:uri]
       super params
       
-      OpenTox::Utils.try_again do
-        unless save
-          raise "error saving crossvalidation "+errors.inspect
-        end
-        reload
-        raise "internal error, crossvalidation-id not set" if @id==nil
+      unless save
+        raise "error saving crossvalidation "+errors.inspect
       end
+      reload
+      raise "internal error, crossvalidation-id not set" if @id==nil
       update :uri => $sinatra.url_for("/crossvalidation/"+@id.to_s, :full)
     end
     
