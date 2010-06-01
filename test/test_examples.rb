@@ -194,7 +194,7 @@ module ValidationExamples
     }
   
   def self.list
-    @@list.sort.collect{|k,v| k+":\t"+v.collect{|vv| vv.humanize}.join("\n\t")+"\n"} #.join("\n")
+    @@list.sort.collect{|k,v| k+":\t"+v.collect{|vv| vv.humanize}.join("\n\t")+"\n"}.to_s #.join("\n")
   end
   
   def self.select(csv_keys)
