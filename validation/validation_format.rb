@@ -23,6 +23,8 @@ module Validation
     # the right properties, classes for to_rdf
     def get_content_as_hash
       
+      LOGGER.debug self.validation_uri
+      
       h = {}
       Lib::VAL_PROPS.each{|p| h[p] = self.send(p)}
       if crossvalidation_id!=nil
@@ -35,14 +37,15 @@ module Validation
         h[:crossvalidation_info] = cv
       end
       if classification_statistics 
+        class_stats = YAML.load(classification_statistics.to_s)
         clazz = {}
-        Lib::VAL_CLASS_PROPS_SINGLE.each{ |p| clazz[p] = classification_statistics[p] }
+        Lib::VAL_CLASS_PROPS_SINGLE.each{ |p| clazz[p] = class_stats[p] }
         
         # transpose results per class
         class_values = {}
         Lib::VAL_CLASS_PROPS_PER_CLASS.each do |p|
-          $sinatra.halt 500, "missing classification statitstics: "+p.to_s+" "+classification_statistics.inspect unless classification_statistics[p]
-          classification_statistics[p].each do |class_value, property_value|
+          $sinatra.halt 500, "missing classification statitstics: "+p.to_s+" "+class_stats.inspect unless class_stats[p]
+          class_stats[p].each do |class_value, property_value|
             class_values[class_value] = {:class_value => class_value} unless class_values.has_key?(class_value)
             map = class_values[class_value]
             map[p] = property_value
@@ -52,8 +55,8 @@ module Validation
         
         #converting confusion matrix
         cells = []
-        $sinatra.halt 500,"confusion matrix missing" unless classification_statistics[:confusion_matrix]!=nil
-        classification_statistics[:confusion_matrix].each do |k,v|
+        $sinatra.halt 500,"confusion matrix missing" unless class_stats[:confusion_matrix]!=nil
+        class_stats[:confusion_matrix].each do |k,v|
           cell = {}
           # key in confusion matrix is map with predicted and actual attribute 
           k.each{ |kk,vv| cell[kk] = vv }
@@ -153,7 +156,7 @@ module Validation
       Lib::CROSS_VAL_PROPS_REDUNDANT.each{|p| h[p] = self.send(p)}
       
       v = []
-      Validation.all(:crossvalidation_id => self.id).each do |val|
+      Validation.find( :all, :conditions => { :crossvalidation_id => self.id } ).each do |val|
         v.push( val.uri.to_s )
       end
       h[:validations] = v

@@ -15,16 +15,20 @@ class ValidationTest < Test::Unit::TestCase
   include Lib::TestUtil
   
   def test_it
+    $test_case = self
+
+    #get "/1"
+    #puts last_response.body
     
 #    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
 #    puts last_response.body
     
-    #run_test("6a")
+    run_test("2b")
  
-    #puts Nightly.build_nightly("6")
+    #puts Nightly.build_nightly("1", false)
     
     #prepare_examples
-    do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
+    #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
   end
 
   def app
@@ -32,7 +36,6 @@ class ValidationTest < Test::Unit::TestCase
   end
   
   def run_test(select)
-    $test_case = self
     validationExamples = ValidationExamples.select(select)
     validationExamples.each do |vv|
       vv.each do |v|  

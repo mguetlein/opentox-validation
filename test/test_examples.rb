@@ -11,14 +11,14 @@ module ValidationExamples
   
   ########################################################################################################
   
-  class ABSTRACTHamsterSplit < SplitTestValidation
+  class HamsterSplit < SplitTestValidation
     def initialize
       @dataset_file = File.new("data/hamster_carcinogenicity.yaml","r")
       @prediction_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
     end
   end
   
-  class LazarHamsterSplit < ABSTRACTHamsterSplit
+  class LazarHamsterSplit < HamsterSplit
     def initialize
       @algorithm_uri = File.join(@@config[:services]["opentox-algorithm"],"lazar")
       @algorithm_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
@@ -26,7 +26,7 @@ module ValidationExamples
     end
   end
   
-  class MajorityHamsterSplit < ABSTRACTHamsterSplit
+  class MajorityHamsterSplit < HamsterSplit
     def initialize
       @algorithm_uri = File.join(@@config[:services]["opentox-majority"],"/class/algorithm")
       super
@@ -35,7 +35,7 @@ module ValidationExamples
   
   ########################################################################################################
 
-  class ABSTRACTHamsterTrainingTest < TrainingTestValidation
+  class HamsterTrainingTest < TrainingTestValidation
     def initialize
       @test_target_dataset_file = File.new("data/hamster_carcinogenicity.yaml","r")
       @training_dataset_file = File.new("data/hamster_carcinogenicity.train.yaml","r")
@@ -44,14 +44,14 @@ module ValidationExamples
     end
   end
   
-  class MajorityHamsterTrainingTest < ABSTRACTHamsterTrainingTest
+  class MajorityHamsterTrainingTest < HamsterTrainingTest
     def initialize
       @algorithm_uri = File.join(@@config[:services]["opentox-majority"],"/class/algorithm")
       super
     end
   end
   
-  class LazarHamsterTrainingTest < ABSTRACTHamsterTrainingTest
+  class LazarHamsterTrainingTest < HamsterTrainingTest
     def initialize
       @algorithm_uri = File.join(@@config[:services]["opentox-algorithm"],"lazar")
       @algorithm_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
@@ -61,21 +61,22 @@ module ValidationExamples
   
   ########################################################################################################  
 
-  class ABSTRACTHamsterCrossvalidation < CrossValidation
+  class HamsterCrossvalidation < CrossValidation
     def initialize
       @dataset_file = File.new("data/hamster_carcinogenicity.yaml","r")
       @prediction_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+      @num_folds = 10
     end
   end
   
-  class MajorityHamsterCrossvalidation < ABSTRACTHamsterCrossvalidation
+  class MajorityHamsterCrossvalidation < HamsterCrossvalidation
     def initialize
       @algorithm_uri = File.join(@@config[:services]["opentox-majority"],"/class/algorithm")
       super
     end
   end
 
-  class LazarHamsterCrossvalidation < ABSTRACTHamsterCrossvalidation
+  class LazarHamsterCrossvalidation < HamsterCrossvalidation
     def initialize
       @algorithm_uri = File.join(@@config[:services]["opentox-algorithm"],"lazar")
       @algorithm_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
@@ -85,21 +86,21 @@ module ValidationExamples
   
   ########################################################################################################  
 
-  class ABSTRACT_ISTHamsterCrossvalidationInsilico < CrossValidation
+  class ISTHamsterCrossvalidationInsilico < CrossValidation
     def initialize
       @dataset_uri = "http://webservices.in-silico.ch/dataset/108"
       @prediction_feature = "http://toxcreate.org/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
     end
   end
   
-  class MajorityISTHamsterCrossvalidation < ABSTRACT_ISTHamsterCrossvalidationInsilico
+  class MajorityISTHamsterCrossvalidation < ISTHamsterCrossvalidationInsilico
     def initialize
       @algorithm_uri = File.join(@@config[:services]["opentox-majority"],"/class/algorithm")
       super
     end
   end
   
-  class LazarISTHamsterCrossvalidation < ABSTRACT_ISTHamsterCrossvalidationInsilico
+  class LazarISTHamsterCrossvalidation < ISTHamsterCrossvalidationInsilico
     def initialize
       @algorithm_uri = File.join(@@config[:services]["opentox-algorithm"],"lazar")
       @algorithm_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
@@ -107,7 +108,7 @@ module ValidationExamples
     end
   end
   
-  class ISTLazarISTHamsterCrossvalidation < ABSTRACT_ISTHamsterCrossvalidationInsilico
+  class ISTLazarISTHamsterCrossvalidation < ISTHamsterCrossvalidationInsilico
     def initialize
       @algorithm_uri = "http://webservices.in-silico.ch/algorithm/lazar"
       @algorithm_params = "feature_generation_uri=http://webservices.in-silico.ch/algorithm/fminer"
@@ -128,7 +129,7 @@ module ValidationExamples
   
   ########################################################################################################
 
-  class ABSTRACTCacoTrainingTest < TrainingTestValidation
+  class CacoTrainingTest < TrainingTestValidation
     def initialize
       @training_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/R7798"
       @test_dataset_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/dataset/R8353"
@@ -136,28 +137,28 @@ module ValidationExamples
     end
   end
   
-  class LR_AmbitCacoTrainingTest < ABSTRACTCacoTrainingTest
+  class LR_AmbitCacoTrainingTest < CacoTrainingTest
     def initialize
       @algorithm_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/algorithm/LR"
       super
     end
   end
   
-  class MLR_NTUA_CacoTrainingTest < ABSTRACTCacoTrainingTest
+  class MLR_NTUA_CacoTrainingTest < CacoTrainingTest
     def initialize
       @algorithm_uri = "http://opentox.ntua.gr:3003/algorithm/mlr"
       super
     end
   end
   
-  class MLR_NTUA2_CacoTrainingTest < ABSTRACTCacoTrainingTest
+  class MLR_NTUA2_CacoTrainingTest < CacoTrainingTest
     def initialize
       @algorithm_uri = "http://opentox.ntua.gr:3004/algorithm/mlr"
       super
     end
   end
   
-  class MajorityCacoTrainingTest < ABSTRACTCacoTrainingTest
+  class MajorityCacoTrainingTest < CacoTrainingTest
     def initialize
       @algorithm_uri = File.join(@@config[:services]["opentox-majority"],"/regr/algorithm")
       super

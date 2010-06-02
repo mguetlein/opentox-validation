@@ -47,66 +47,15 @@ module Lib
   VAL_MERGE_SUM = VAL_PROPS_SUM + VAL_CLASS_PROPS_SINGLE_SUM + VAL_CLASS_PROPS_PER_CLASS_SUM
   VAL_MERGE_AVG = VAL_PROPS_AVG + VAL_CLASS_PROPS_SINGLE_AVG + VAL_CLASS_PROPS_PER_CLASS_AVG + VAL_REGR_PROPS
  
-  class Validation
-    include DataMapper::Resource 
-  
-    property :id, Serial
-    property :uri, String, :length => 255
-    property :model_uri, String, :length => 255
-    property :algorithm_uri, String, :length => 255
-    property :training_dataset_uri, String, :length => 255
-    property :test_target_dataset_uri, String, :length => 255
-    property :test_dataset_uri, String, :length => 255
-    property :prediction_dataset_uri, String, :length => 255
-    property :prediction_feature, String, :length => 255
-    property :created_at, DateTime
-    property :real_runtime, Float
-    
-    property :num_instances, Integer
-    property :num_without_class, Integer
-    property :percent_without_class, Float
-    property :num_unpredicted, Integer
-    property :percent_unpredicted, Float
-        
-    property :classification_statistics, Object #Hash
-    property :regression_statistics, Object
-    
-    property :crossvalidation_id, Integer
-    property :crossvalidation_fold, Integer
+  class Validation < ActiveRecord::Base
+    def uri
+      self.validation_uri
+    end
   end
   
-  class Crossvalidation
-    include DataMapper::Resource
-    property :id, Serial
-    property :uri, String, :length => 255
-    property :algorithm_uri, String, :length => 255
-    property :dataset_uri, String, :length => 255
-    property :num_folds, Integer, :default => 10
-    property :stratified, Boolean, :default => false
-    property :random_seed, Integer, :default => 1
+  class Crossvalidation < ActiveRecord::Base
+    def uri
+      self.crossvalidation_uri
+    end
   end
-end
-
-# sqlite is used for storing validations and crossvalidations
-#sqlite = "#{File.expand_path(File.dirname(__FILE__))}/#{Sinatra::Base.environment}.sqlite3"
-#DataMapper.setup(:default, "sqlite3:///#{sqlite}")
-#unless FileTest.exists?("#{sqlite}")
-#  [Lib::Validation, Lib::Crossvalidation].each do |model|
-#    model.auto_migrate!
-#  end
-#end
-
-#raise "':database:' configuration missing in config file" unless @@config.has_key?(:database)
-#[ "adapter","database","username","password","host" ].each do |field|
-  #raise "field '"+field+":' missing in database configuration" unless @@config[:database].has_key?(field)
-#end
-#DataMapper.setup(:default, { 
-    #:adapter  => @@config[:database]["adapter"],
-    #:database => @@config[:database]["database"],
-    #:username => @@config[:database]["username"],
-   # :password => @@config[:database]["password"],
-#    :host     => @@config[:database]["host"]
-  #})
-[Lib::Validation, Lib::Crossvalidation].each do |resource|
-    resource.auto_migrate! unless resource.storage_exists?
 end

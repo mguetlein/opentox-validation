@@ -59,7 +59,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
     validation_uris.each do |u|
       if u.to_s =~ /.*\/crossvalidation\/[0-9]+/
         cv_id = u.split("/")[-1].to_i
-        res += Lib::Validation.all(:crossvalidation_id => cv_id).collect{|v| v.uri.to_s}
+        res += Lib::Validation.find( :all, :conditions => { :crossvalidation_id => cv_id } ).collect{|v| v.uri.to_s}
       else
         res += [u.to_s]
       end
@@ -76,7 +76,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
       (validation_id.to_i > 0 || validation_id.to_s=="0" )
     v = nil
     begin
-      v = Lib::Validation.get(validation_id)
+      v = Lib::Validation.find(validation_id)
     rescue => ex
       raise "could not access validation with id "+validation_id.to_s+", error-msg: "+ex.message
     end
@@ -88,14 +88,14 @@ class Reports::ValidationDB < Reports::ValidationAccess
     
     {:classification_statistics => Lib::VAL_CLASS_PROPS, 
      :regression_statistics => Lib::VAL_REGR_PROPS}.each do |subset_name,subset_props|
-      subset = v[subset_name]
+      subset = YAML.load(v[subset_name].to_s)
       subset_props.each{ |prop| validation.send("#{prop.to_s}=".to_sym, subset[prop]) } if subset
     end
   end
     
   def init_cv(validation)
     
-    cv = Lib::Crossvalidation.get(validation.crossvalidation_id)
+    cv = Lib::Crossvalidation.find(validation.crossvalidation_id)
     raise Reports::BadRequest.new "no crossvalidation found with id "+validation.crossvalidation_id.to_s unless cv
     
     Lib::CROSS_VAL_PROPS.each do |p|

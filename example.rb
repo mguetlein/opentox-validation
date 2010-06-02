@@ -51,6 +51,12 @@ class Example
   def self.prepare_example_resources
     
     @@summary = ""
+    #delete validations
+    log "delete validations"
+    ActiveRecord::Base.logger = Logger.new("/dev/null")
+    ActiveRecord::Migrator.migrate('db/migrate', 0 )
+    ActiveRecord::Migrator.migrate('db/migrate', 1 )
+    
     #delete_all(@@config[:services]["opentox-dataset"])
     log OpenTox::RestClientWrapper.delete @@config[:services]["opentox-dataset"]
     
@@ -60,7 +66,6 @@ class Example
     data_uri = OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],{:content_type => @@file_type},data).chomp("\n")
     
     log "train-test-validation"
-    Lib::Validation.auto_migrate!
     #delete_all(@@config[:services]["opentox-model"])
     OpenTox::RestClientWrapper.delete @@config[:services]["opentox-model"]
     
@@ -73,7 +78,6 @@ class Example
     v.validate_algorithm( @@alg_params ) 
     
     log "crossvalidation"
-    Lib::Crossvalidation.auto_migrate!
     cv = Validation::Crossvalidation.new({ :dataset_uri => data_uri, :algorithm_uri => @@alg, :num_folds => 5, :stratified => false })
     cv.create_cv_datasets(  URI.decode(@@feature) )
     cv.perform_cv( @@alg_params )

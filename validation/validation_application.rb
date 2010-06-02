@@ -23,7 +23,7 @@ end
 
 get '/crossvalidation/:id' do
   LOGGER.info "get crossvalidation with id "+params[:id].to_s
-  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.get(params[:id])
+  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.find(params[:id])
   
   case request.env['HTTP_ACCEPT'].to_s
   when "application/rdf+xml"
@@ -41,13 +41,13 @@ end
 delete '/crossvalidation/:id/?' do
   LOGGER.info "delete crossvalidation with id "+params[:id].to_s
   content_type "text/plain"
-  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.get(params[:id])
+  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.find(params[:id])
   crossvalidation.delete
 end
 
 get '/crossvalidation/:id/validations' do
   LOGGER.info "get all validations for crossvalidation with id "+params[:id].to_s
-  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.get(params[:id])
+  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.find(params[:id])
   content_type "text/uri-list"
   Validation::Validation.all(:crossvalidation_id => params[:id]).collect{ |v| v.uri.to_s }.join("\n")+"\n"
 end
@@ -55,7 +55,7 @@ end
 
 get '/crossvalidation/:id/statistics' do
   LOGGER.info "get merged validation-result for crossvalidation with id "+params[:id].to_s
-  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.get(params[:id])
+  halt 404, "Crossvalidation #{params[:id]} not found." unless crossvalidation = Validation::Crossvalidation.find(params[:id])
   
   Lib::MergeObjects.register_merge_attributes( Validation::Validation,
     Lib::VAL_MERGE_AVG,Lib::VAL_MERGE_SUM,Lib::VAL_MERGE_GENERAL) unless 
@@ -104,7 +104,7 @@ end
 
 get '/:id' do
   LOGGER.info "get validation with id "+params[:id].to_s+" '"+request.env['HTTP_ACCEPT'].to_s+"'"
-  halt 404, "Validation '#{params[:id]}' not found." unless validation = Validation::Validation.get(params[:id])
+  halt 404, "Validation '#{params[:id]}' not found." unless validation = Validation::Validation.find(params[:id])
   
   case request.env['HTTP_ACCEPT'].to_s
   when "application/rdf+xml"
@@ -143,7 +143,7 @@ post '/?' do
         "params given: "+params.inspect
     end
     content_type "text/uri-list"
-    v.uri
+    v.validation_uri
   end
   halt 202,task_uri
 end
@@ -198,7 +198,7 @@ end
 
 get '/:id/:attribute' do
   LOGGER.info "access validation attribute "+params.inspect
-  halt 404, "Validation #{params[:id]} not found." unless validation = Validation::Validation.get(params[:id])
+  halt 404, "Validation #{params[:id]} not found." unless validation = Validation::Validation.find(params[:id])
   begin
     raise unless validation.attribute_loaded?(params[:attribute])
   rescue
@@ -210,7 +210,7 @@ end
 
 delete '/:id' do
   LOGGER.info "delete validation with id "+params[:id].to_s
-  halt 404, "Validation #{params[:id]} not found." unless validation = Validation::Validation.get(params[:id])
+  halt 404, "Validation #{params[:id]} not found." unless validation = Validation::Validation.find(params[:id])
   content_type "text/plain"
   validation.delete
 end

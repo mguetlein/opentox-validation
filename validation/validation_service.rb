@@ -39,20 +39,21 @@ module Validation
       $sinatra.halt 500,"do not set id manually" if params[:id]
       $sinatra.halt 500,"do not set uri manually" if params[:uri]
       super params
-      # hack to overcome datamapper bug: save to set id
-      unless save
-        raise "error saving validation "+errors.inspect
-      end
-      reload
-      raise "internal error, validation-id not set "+to_yaml if @id==nil
-      update :uri => $sinatra.url_for("/"+@id.to_s, :full)
+      self.save
+      raise "internal error, validation-id not set "+to_yaml if self.id==nil
+      self.attributes = { :validation_uri => $sinatra.url_for("/"+self.id.to_s, :full).to_s }
+      self.save
+    end
+    
+    def uri
+      self.validation_uri
     end
     
     # deletes a validation
     # PENDING: model and referenced datasets are deleted as well, keep it that way?
     def delete
     
-      model = OpenTox::Model::PredictionModel.find(@model_uri) if @model_uri
+      model = OpenTox::Model::PredictionModel.find(self.model_uri) if self.model_uri
       model.destroy if model
       
       #[@test_dataset_uri, @training_dataset_uri, @prediction_dataset_uri].each do  |d|
@@ -60,19 +61,18 @@ module Validation
         #dataset.delete if dataset
       #end
       destroy
-      "Successfully deleted validation "+@id.to_s+"."
+      "Successfully deleted validation "+self.id.to_s+"."
     end
     
     # validates an algorithm by building a model and validating this model
     def validate_algorithm( algorithm_params=nil )
       
-      $sinatra.halt 404, "no algorithm uri: '"+algorithm_uri.to_s+"'" if @algorithm_uri==nil or @algorithm_uri.to_s.size<1
+      $sinatra.halt 404, "no algorithm uri: '"+self.algorithm_uri.to_s+"'" if self.algorithm_uri==nil or self.algorithm_uri.to_s.size<1
       
-      params = { :dataset_uri => @training_dataset_uri, :prediction_feature => @prediction_feature }
+      params = { :dataset_uri => self.training_dataset_uri, :prediction_feature => self.prediction_feature }
       if (algorithm_params!=nil)
         algorithm_params.split(";").each do |alg_params|
           alg_param = alg_params.split("=")
-          #puts "param "+alg_param.to_s
           $sinatra.halt 404, "invalid algorithm param: '"+alg_params.to_s+"'" unless alg_param.size==2 or alg_param[0].to_s.size<1 or alg_param[1].to_s.size<1
           LOGGER.warn "algorihtm param contains empty space, encode? "+alg_param[1].to_s if alg_param[1] =~ /\s/
           params[alg_param[0].to_sym] = alg_param[1]
@@ -82,10 +82,11 @@ module Validation
       
       model = OpenTox::Model::PredictionModel.build(algorithm_uri, params)
       $sinatra.halt 500,"model building failed" unless model
-      update :model_uri => model.uri
+      self.attributes = { :model_uri => model.uri }
+      self.save
       
       $sinatra.halt 500,"error after building model: model.dependent_variable != validation.prediciton_feature ("+
-        model.dependentVariables.to_s+" != "+@prediction_feature+")" if @prediction_feature!=model.dependentVariables
+        model.dependentVariables.to_s+" != "+self.prediction_feature+")" if self.prediction_feature!=model.dependentVariables
           
       validate_model
     end
@@ -94,59 +95,61 @@ module Validation
     # PENDING: a new dataset is created to store the predictions, this should be optional: delete predictions afterwards yes/no
     def validate_model
       
-      LOGGER.debug "validating model '"+@model_uri+"'"
+      LOGGER.debug "validating model '"+self.model_uri+"'"
       
-      #test_dataset = OpenTox::Dataset.find @test_dataset_uri
-      #$sinatra.halt 400, "test dataset no found: "+@test_dataset_uri.to_s unless test_dataset
+      model = OpenTox::Model::PredictionModel.find(self.model_uri)
+      $sinatra.halt 400, "model not found: "+self.model_uri.to_s unless model
       
-      model = OpenTox::Model::PredictionModel.find(@model_uri)
-      $sinatra.halt 400, "model not found: "+@model_uri.to_s unless model
-      
-      unless @algorithm_uri
-        update :algorithm_uri => model.algorithm
+      unless self.algorithm_uri
+        self.attributes = { :algorithm_uri => model.algorithm }
+        self.save
       end
       
-      if @prediction_feature
+      if self.prediction_feature
         $sinatra.halt 400, "error validating model: model.dependent_variable != validation.prediciton_feature ("+
-          model.dependentVariables+" != "+@prediction_feature+")" if @prediction_feature!=model.dependentVariables
+          model.dependentVariables+" != "+self.prediction_feature+")" if self.prediction_feature!=model.dependentVariables
       else
         $sinatra.halt 400, "model has no dependentVariables specified, please give prediction feature for model validation" unless model.dependentVariables
-        update :prediction_feature => model.dependentVariables
+        self.attributes = { :prediction_feature => model.dependentVariables }
+        self.save
       end
       
       prediction_dataset_uri = ""
       benchmark = Benchmark.measure do 
-        prediction_dataset_uri = model.predict_dataset(@test_dataset_uri)
+        prediction_dataset_uri = model.predict_dataset(self.test_dataset_uri)
       end
-      update :prediction_dataset_uri => prediction_dataset_uri,
-             :real_runtime => benchmark.real
+      self.attributes = { :prediction_dataset_uri => prediction_dataset_uri,
+             :real_runtime => benchmark.real }
+      self.save
       
       compute_validation_stats(model)
     end
     
     def compute_validation_stats(model = nil)
       
-      model = OpenTox::Model::PredictionModel.find(@model_uri) unless model
-      $sinatra.halt 400, "model not found: "+@model_uri.to_s unless model
+      model = OpenTox::Model::PredictionModel.find(self.model_uri) unless model
+      $sinatra.halt 400, "model not found: "+self.model_uri.to_s unless model
       
-      update :prediction_feature => model.dependentVariables unless @prediction_feature
-      update :algorithm_uri => model.algorithm unless @algorithm_uri
+      self.attributes = { :prediction_feature => model.dependentVariables } unless self.prediction_feature 
+      self.attributes = { :algorithm_uri => model.algorithm } unless self.algorithm_uri
+      self.save
       
       LOGGER.debug "computing prediction stats"
       prediction = Lib::OTPredictions.new( model.classification?, 
-        @test_dataset_uri, @test_target_dataset_uri, @prediction_feature, 
-        @prediction_dataset_uri, model.predictedVariables )
+        self.test_dataset_uri, self.test_target_dataset_uri, self.prediction_feature, 
+        self.prediction_dataset_uri, model.predictedVariables )
       if prediction.classification?
-        update :classification_statistics => prediction.compute_stats
+        self.attributes = { :classification_statistics => prediction.compute_stats.to_yaml }
       else
-        update :regression_statistics => prediction.compute_stats
+        self.attributes = { :regression_statistics => prediction.compute_stats.to_yaml }
       end
       
-      update :num_instances => prediction.num_instances,
+      self.attributes = { :num_instances => prediction.num_instances,
              :num_without_class => prediction.num_without_class,
              :percent_without_class => prediction.percent_without_class,
              :num_unpredicted => prediction.num_unpredicted,
-             :percent_unpredicted => prediction.percent_unpredicted
+             :percent_unpredicted => prediction.percent_unpredicted }
+      self.save
     end
   end
   
@@ -157,21 +160,26 @@ module Validation
       
       $sinatra.halt 500,"do not set id manually" if params[:id]
       $sinatra.halt 500,"do not set uri manually" if params[:uri]
-      super params
       
-      unless save
-        raise "error saving crossvalidation "+errors.inspect
-      end
-      reload
-      raise "internal error, crossvalidation-id not set" if @id==nil
-      update :uri => $sinatra.url_for("/crossvalidation/"+@id.to_s, :full)
+      params[:num_folds] = 10 if params[:num_folds]==nil
+      params[:random_seed] = 1 if params[:random_seed]==nil
+      params[:stratified] = false if params[:stratified]==nil
+      super params
+      self.save
+      raise "internal error, crossvalidation-id not set" if self.id==nil
+      self.attributes = { :crossvalidation_uri => $sinatra.url_for("/crossvalidation/"+self.id.to_s, :full) }
+      self.save
+    end
+    
+    def uri
+      self.crossvalidation_uri
     end
     
     # deletes a crossvalidation, all validations are deleted as well
     def delete
-        Validation.all(:crossvalidation_id => @id).each{ |v| v.delete }
+        Validation.all(:crossvalidation_id => self.id).each{ |v| v.delete }
         destroy
-        "Successfully deleted crossvalidation "+@id.to_s+"."
+        "Successfully deleted crossvalidation "+self.id.to_s+"."
     end
     
     # creates the cv folds
@@ -185,7 +193,7 @@ module Validation
     def perform_cv ( algorithm_params=nil )
       
       LOGGER.debug "perform cv validations"
-      Validation.all( :crossvalidation_id => id ).each do |v|
+      Validation.find( :all, :conditions => { :crossvalidation_id => id } ).each do |v|
         v.validate_algorithm( algorithm_params )
         #break
       end
@@ -196,26 +204,26 @@ module Validation
     # returns true if successfull, false otherwise
     def copy_cv_datasets( prediction_feature )
       
-      equal_cvs = Crossvalidation.all( { :dataset_uri => @dataset_uri, :num_folds => @num_folds, 
-                                          :stratified => @stratified, :random_seed => @random_seed } ).reject{ |cv| cv.id == @id }
+      equal_cvs = Crossvalidation.all( { :dataset_uri => self.dataset_uri, :num_folds => self.num_folds, 
+                                          :stratified => self.stratified, :random_seed => self.random_seed } ).reject{ |cv| cv.id == self.id }
       return false if equal_cvs.size == 0 
       cv = equal_cvs[0]
       Validation.all( :crossvalidation_id => cv.id ).each do |v|
         
-        if @stratified and v.prediction_feature != prediction_feature
+        if self.stratified and v.prediction_feature != prediction_feature
           return false;
         end
         unless (OpenTox::Dataset.find(v.training_dataset_uri) and 
               OpenTox::Dataset.find(v.test_dataset_uri))
           LOGGER.debug "dataset uris obsolete, aborting copy of datasets"
-          Validation.all( :crossvalidation_id => @id ).each{ |v| v.delete }
+          Validation.all( :crossvalidation_id => self.id ).each{ |v| v.delete }
           return false
         end
-        validation = Validation.new :crossvalidation_id => @id,
+        validation = Validation.new :crossvalidation_id => self.id,
                                     :crossvalidation_fold => v.crossvalidation_fold,
                                     :training_dataset_uri => v.training_dataset_uri, 
                                     :test_dataset_uri => v.test_dataset_uri,
-                                    :algorithm_uri => @algorithm_uri
+                                    :algorithm_uri => self.algorithm_uri
       end
       LOGGER.debug "copyied dataset uris from cv "+cv.uri.to_s
       return true
@@ -225,14 +233,15 @@ module Validation
     # stores uris in validation objects 
     def create_new_cv_datasets( prediction_feature )
       
+      $sinatra.halt(500,"random seed not set") unless self.random_seed
       LOGGER.debug "creating datasets for crossvalidation"
-      orig_dataset = OpenTox::Dataset.find(@dataset_uri)
-      $sinatra.halt 400, "Dataset not found: "+@dataset_uri.to_s unless orig_dataset
+      orig_dataset = OpenTox::Dataset.find(self.dataset_uri)
+      $sinatra.halt 400, "Dataset not found: "+self.dataset_uri.to_s unless orig_dataset
       
-      shuffled_compounds = orig_dataset.compounds.shuffle( @random_seed )
+      shuffled_compounds = orig_dataset.compounds.shuffle( self.random_seed )
       
-      unless @stratified        
-        split_compounds = shuffled_compounds.chunk( @num_folds )
+      unless self.stratified        
+        split_compounds = shuffled_compounds.chunk( self.num_folds )
       else
         class_compounds = {} # "inactive" => compounds[], "active" => compounds[] .. 
         shuffled_compounds.each do |c|
@@ -247,7 +256,7 @@ module Validation
       
         split_class_compounds = [] # inactive_compounds[fold_i][], active_compounds[fold_i][], ..
         class_compounds.values.each do |compounds|
-          split_class_compounds.push( compounds.chunk( @num_folds ) )
+          split_class_compounds.push( compounds.chunk( self.num_folds ) )
         end
         LOGGER.debug "stratified cv: splits for class values: "+split_class_compounds.collect{ |c| c.collect{ |cc| cc.size }.join("/") }.join(", ")
         
@@ -258,7 +267,7 @@ module Validation
           # step 1: sort current split in ascending order
           split_comp.sort!{|x,y| x.size <=> y.size }
           # step 2: add splits
-          (0..@num_folds-1).each do |i|
+          (0..self.num_folds-1).each do |i|
             unless split_compounds[i]
               split_compounds[i] = split_comp[i]
             else
@@ -273,19 +282,19 @@ module Validation
       
       test_features = orig_dataset.features.dclone - [prediction_feature]
       
-      (1..@num_folds).each do |n|
+      (1..self.num_folds).each do |n|
         
-        datasetname = 'cv'+@id.to_s +
+        datasetname = 'cv'+self.id.to_s +
                #'_d'+orig_dataset.name.to_s +
-               '_f'+n.to_s+'of'+@num_folds.to_s+
-               '_r'+@random_seed.to_s+
-               '_s'+@stratified.to_s 
+               '_f'+n.to_s+'of'+self.num_folds.to_s+
+               '_r'+self.random_seed.to_s+
+               '_s'+self.stratified.to_s 
         source = $sinatra.url_for('/crossvalidation',:full)
         
         test_compounds = []
         train_compounds = []
         
-        (1..@num_folds).each do |nn|
+        (1..self.num_folds).each do |nn|
           compounds = split_compounds.at(nn-1)
           
           if n == nn
@@ -295,7 +304,7 @@ module Validation
           end 
         end
         
-        $sinatra.halt 500,"internal error, num test compounds not correct" unless (shuffled_compounds.size/@num_folds - test_compounds.size).abs <= 1 
+        $sinatra.halt 500,"internal error, num test compounds not correct" unless (shuffled_compounds.size/self.num_folds - test_compounds.size).abs <= 1 
         $sinatra.halt 500,"internal error, num train compounds not correct" unless shuffled_compounds.size - test_compounds.size == train_compounds.size
         
         LOGGER.debug "training set: "+datasetname+"_train, compounds: "+train_compounds.size.to_s
@@ -306,10 +315,10 @@ module Validation
       
         validation = Validation.new :training_dataset_uri => train_dataset_uri, 
                                     :test_dataset_uri => test_dataset_uri,
-                                    :test_target_dataset_uri => @dataset_uri,
-                                    :crossvalidation_id => @id, :crossvalidation_fold => n,
+                                    :test_target_dataset_uri => self.dataset_uri,
+                                    :crossvalidation_id => self.id, :crossvalidation_fold => n,
                                     :prediction_feature => prediction_feature,
-                                    :algorithm_uri => @algorithm_uri
+                                    :algorithm_uri => self.algorithm_uri
       end
     end
   end

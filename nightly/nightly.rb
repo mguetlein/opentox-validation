@@ -28,15 +28,18 @@ class Nightly
       
       running = []
       report = Reports::XMLReport.new("Nightly Validation", Time.now.strftime("Created at %m.%d.%Y - %H:%M"))
+      count = 1
       benchmarks.each do |b|
-        running << b.class.to_s.gsub(/Nightly::/, "")+b.object_id.to_s
+        id = "["+count.to_s+"]-"+b.title
+        count += 1
+        running << id
         Thread.new do
           begin
             b.build
           rescue => ex
             LOGGER.error "uncaught nightly build error: "+ex.message
           ensure
-            running.delete(b.class.to_s.gsub(/Nightly::/, "")+b.object_id.to_s)
+            running.delete id
           end
         end
       end
@@ -126,7 +129,11 @@ class Nightly
     end
     
     def title
-      @validation_examples.collect{|e| e.title}.join(" + ")
+      if @validation_examples.size==0
+        @validation_examples[0].class.humanize
+      else
+        @validation_examples[0].class.superclass.humanize  
+      end
     end
     
     def result_table
@@ -174,7 +181,7 @@ class Nightly
       
       @validation_examples.each do |v|
 
-        id = v.title+count.to_s
+        id = "["+count.to_s+"]-"+v.title
         count += 1
         running << id
         LOGGER.debug "Uploading datasets: "+v.title
@@ -200,7 +207,7 @@ class Nightly
 
       wait = 0
       while running.size>0
-        LOGGER.debug self.class.to_s.gsub(/Nightly::/, "")+" waiting for "+running.inspect if wait%20==0
+        LOGGER.debug self.title+" waiting for "+running.inspect if wait%20==0
         wait += 1
         sleep 1
       end
