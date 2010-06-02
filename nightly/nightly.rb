@@ -96,7 +96,9 @@ class Nightly
       else
         LOGGER.info("Nightly report completed - DRY RUN, no report creation")
       end
-      benchmarks.collect{|b| b.uris}.join(",")
+      
+      #benchmarks.collect{|b| b.uris}.join(",")
+      File.join(@@config[:services]["opentox-validation"],"nightly")
     end
     if defined?(halt)
       halt 202,task_uri

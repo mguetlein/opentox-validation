@@ -20,7 +20,7 @@ class Array
   # shuffles the elements of an array
   def shuffle( seed=nil )
     srand seed.to_i if seed
-    sort_by { rand }
+    sort_by { Kernel.rand }
   end
 
   # shuffels self
