@@ -104,6 +104,16 @@ module Reports
       return figure    
     end
     
+    def add_image( element, url )
+      image = Element.new("imageobject")
+      imagedata = Reports::XMLReportUtil.attribute_element("imagedata",
+        {"fileref" => url, "format"=>"PNG", "contentwidth" => "2in" }) #PENDING: do not hardcode size
+      image << imagedata
+      element << image
+      return image    
+    end
+    
+    
     # adds a table to a REXML:Element, _table_values_ should be a multi-dimensional-array, returns the table as element
     # 
     # call-seq:
@@ -149,7 +159,9 @@ module Reports
         row = Element.new("row")
         r.each do |v|
           entry = Element.new("entry")
-          if auto_link_urls && v.to_s =~ /^http:\/\//
+          if auto_link_urls && v.to_s =~ /depict/ #PENDING
+            add_image(entry, v.to_s)
+          elsif auto_link_urls && v.to_s =~ /^http:\/\//
            add_url(entry, v.to_s, v.to_s)
           else
            entry.text = v.to_s
@@ -224,6 +236,7 @@ module Reports
       rep.add_url(section2,"www.google.de", "link zu google")
       sec3 = rep.add_section(rep.get_root_element,"Third Section")
       rep.add_paragraph(sec3, "some    \n              more text for section 3",true)
+      rep.add_image(sec3, "http://ambit.uni-plovdiv.bg:8080/ambit2/depict/cdk?search=c1ccccc1")
       
       #vals= [["a", "b", "c"],["a2", "b2", "c2"],["1", "2", "http://3"]]
       #rep.add_table(rep.get_root_element, "demo-table", vals)

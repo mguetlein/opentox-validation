@@ -23,7 +23,7 @@ class ValidationTest < Test::Unit::TestCase
 #    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
 #    puts last_response.body
     
-    run_test("3a")
+    run_test("1b")
  
     #puts Nightly.build_nightly("1", false)
     

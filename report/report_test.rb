@@ -38,9 +38,9 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     #post 'http://ot.validation.de/report/crossvalidation',:validation_uris=>"http://ot.validation.de/crossvalidation/1"
     #uri = last_response.body.to_s
     
-    val_uris = ["http://localhost/validation/64","http://localhost/validation/65" ]
+    val_uris = ["http://localhost/validation/64"]#,"http://localhost/validation/65" ]
     
-    post '/report/algorithm_comparison',:validation_uris=>val_uris.join("\n")
+    post '/report/validation',:validation_uris=>val_uris.join("\n")
     uri = wait_for_task(last_response.body.to_s)
     puts uri
     id = uri.squeeze("/").split("/")[-1]

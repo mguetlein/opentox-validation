@@ -19,13 +19,14 @@ module Reports::PredictionUtil
           a = []
           validation_attributes.each{ |att| a.push(v.send(att).to_s) }
           
-          a.push(v.get_predictions.identifier(i)) #.gsub(/[-(),=]/, '')[0,10])
-          #a.push(OpenTox::Compound.new(:uri=>v.get_predictions.compound(i)).smiles[0,65]) #.gsub(/[-(),=]/, '')[0,10])
+          #PENDING!
+          a.push( "http://ambit.uni-plovdiv.bg:8080/ambit2/depict/cdk?search="+URI.encode(OpenTox::Compound.new(:uri=>v.get_predictions.identifier(i)).smiles) )
           
           a.push(v.get_predictions.actual_value(i).to_nice_s) 
           a.push(v.get_predictions.predicted_value(i).to_nice_s)
           a.push(v.get_predictions.classification_miss?(i)?"X":"") if validation_set.all_classification?
           a.push(v.get_predictions.confidence_value(i).to_nice_s) if v.get_predictions.confidence_values_available?
+          a.push(v.get_predictions.identifier(i)) #.gsub(/[-(),=]/, '')[0,10])
           res.push(a)
         end
       end
@@ -34,6 +35,7 @@ module Reports::PredictionUtil
       header = [ "compound", "actual value", "predicted value"]
       header.push "missclassified" if validation_set.all_classification?
       header.push "confidence value" if validation_set.validations[0].get_predictions.confidence_values_available?
+      header << "compound-uri"
       res.insert(0, validation_attributes + header)
       #puts res.collect{|c| c.inspect}.join("\n")
       
