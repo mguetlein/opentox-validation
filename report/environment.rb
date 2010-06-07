@@ -11,6 +11,8 @@ require 'fileutils'
 require 'mime/types'
 require 'ruby-plot'
 
+gem 'ruby-plot', '= 0.0.2'
+
 module Reports
 end
 

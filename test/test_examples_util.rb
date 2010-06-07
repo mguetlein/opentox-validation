@@ -114,6 +114,7 @@ module ValidationExamples
         @validation_uri = Util.validation_post '/'+validation_type, get_params
       rescue => ex
         @validation_error = ex.message
+        LOGGER.error ex.message
       end
     end
     

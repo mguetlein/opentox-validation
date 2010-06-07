@@ -37,7 +37,7 @@ module Validation
         h[:crossvalidation_info] = cv
       end
       if classification_statistics 
-        class_stats = YAML.load(classification_statistics.to_s)
+        class_stats = ((classification_statistics.is_a?(Hash)) ? classification_statistics : YAML.load(classification_statistics.to_s))
         clazz = {}
         Lib::VAL_CLASS_PROPS_SINGLE.each{ |p| clazz[p] = class_stats[p] }
         

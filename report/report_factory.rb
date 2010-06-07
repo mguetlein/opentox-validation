@@ -61,6 +61,7 @@ module Reports::ReportFactory
       report.add_section_confusion_matrix(val)
     else #regression
       report.add_section_result(validation_set, VAL_ATTR_TRAIN_TEST + VAL_ATTR_REGR, "Results", "Results")
+      report.add_section_regression_plot(validation_set)
     end
     
     report.add_section_result(validation_set, Lib::ALL_PROPS, "All Results", "All Results")
@@ -154,6 +155,7 @@ module Reports::ReportFactory
           #regression
           report.add_section_result(validation_set,[:algorithm_uri]+VAL_ATTR_REGR,"Results","Results")
           report.add_section_bar_plot(validation_set,nil,:algorithm_uri,VAL_ATTR_BAR_PLOT_REGR, "bar-plot.svg")
+          report.add_section_regression_plot(validation_set)
           
           #report.add_section_result(merged, VAL_ATTR_CV+VAL_ATTR_REGR-[:crossvalidation_fold],"Mean Results","Mean Results")
           #report.add_section_result(validation_set, VAL_ATTR_CV+VAL_ATTR_REGR-[:num_folds], "Results","Results")
@@ -274,6 +276,39 @@ class Reports::ReportContent
     @xml_report.add_paragraph(section_confusion, section_text) if section_text
     @xml_report.add_table(section_confusion, table_title, 
       Reports::XMLReportUtil::create_confusion_matrix( validation.confusion_matrix ), false)
+  end
+  
+  def add_section_regression_plot( validation_set,
+                            split_set_attribute = nil,
+                            plot_file_name="regression-plot.svg", 
+                            section_title="Regression Plot",
+                            section_text=nil,
+                            image_title=nil,
+                            image_caption=nil)
+                            
+    section_text = "This section contains the regression plot." unless section_text
+    image_title = "Regression plot" unless image_title
+    
+    section_regr = @xml_report.add_section(@xml_report.get_root_element, section_title)
+    prediction_set = validation_set.collect{ |v| v.get_predictions }
+        
+    if prediction_set.size>0
+      
+      section_text += "\nWARNING: regression plot information not available for all validation results" if prediction_set.size!=validation_set.size
+      @xml_report.add_paragraph(section_regr, section_text) if section_text
+      begin
+        plot_file_path = add_tmp_file(plot_file_name)
+        Reports::PlotFactory.create_regression_plot( plot_file_path, prediction_set )
+        @xml_report.add_imagefigure(section_regr, image_title, plot_file_name, "SVG", image_caption)
+      rescue RuntimeError => ex
+        LOGGER.error("Could not create regression plot: "+ex.message)
+        rm_tmp_file(plot_file_name)
+        @xml_report.add_paragraph(section_regr, "could not create regression plot: "+ex.message)
+      end  
+    else
+      @xml_report.add_paragraph(section_regr, "No prediction info for regression available.")
+    end
+    
   end
 
   def add_section_roc_plot( validation_set,

@@ -5,6 +5,15 @@ end
 
 require "lib/merge.rb"
 
+require 'active_record'
+ActiveRecord::Base.establish_connection(  
+   :adapter => @@config[:database][:adapter],
+   :host => @@config[:database][:host],
+   :database => @@config[:database][:database],
+   :username => @@config[:database][:username],
+   :password => @@config[:database][:password]
+) 
+
 module Lib
 
   VAL_PROPS_GENERAL = [ :id, :uri, :model_uri, :algorithm_uri, :training_dataset_uri, :prediction_feature,
@@ -39,7 +48,7 @@ module Lib
   VAL_REGR_PROPS = [ :root_mean_squared_error, :mean_absolute_error, :r_square, :target_variance_actual, :target_variance_predicted ]
   
   CROSS_VAL_PROPS = [:dataset_uri, :num_folds, :stratified, :random_seed]
-  CROSS_VAL_PROPS_REDUNDANT = [:algorithm_uri] + CROSS_VAL_PROPS 
+  CROSS_VAL_PROPS_REDUNDANT = [:algorithm_uri, :created_at] + CROSS_VAL_PROPS 
   
   ALL_PROPS = VAL_PROPS + VAL_CV_PROPS + VAL_CLASS_PROPS_EXTENDED + VAL_REGR_PROPS + CROSS_VAL_PROPS
 

@@ -17,13 +17,13 @@ class ValidationTest < Test::Unit::TestCase
   def test_it
     $test_case = self
 
-    #get "/1"
-    #puts last_response.body
+   # get "/crossvalidation/1/statistics"
+   # puts last_response.body
     
 #    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
 #    puts last_response.body
     
-    run_test("2b")
+    run_test("3a")
  
     #puts Nightly.build_nightly("1", false)
     
@@ -38,11 +38,12 @@ class ValidationTest < Test::Unit::TestCase
   def run_test(select)
     validationExamples = ValidationExamples.select(select)
     validationExamples.each do |vv|
-      vv.each do |v|  
+      vv.each do |v| 
         ex = v.new
         ex.upload_files
         ex.check_requirements
         ex.validate
+        LOGGER.debug "validation done "+ex.validation_uri.to_s
         ex.report
       end
     end

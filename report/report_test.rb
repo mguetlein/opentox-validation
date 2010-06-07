@@ -38,13 +38,13 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     #post 'http://ot.validation.de/report/crossvalidation',:validation_uris=>"http://ot.validation.de/crossvalidation/1"
     #uri = last_response.body.to_s
     
-    val_uris = ["http://ot.validation.de/crossvalidation/32"] #,"http://ot.validation.de/crossvalidation/8" ]
+    val_uris = ["http://localhost/validation/64","http://localhost/validation/65" ]
     
-    post 'http://ot.validation.de/report/crossvalidation',:validation_uris=>val_uris.join("\n")
+    post '/report/algorithm_comparison',:validation_uris=>val_uris.join("\n")
     uri = wait_for_task(last_response.body.to_s)
     puts uri
     id = uri.squeeze("/").split("/")[-1]
-    get '/report/crossvalidation/'+id,nil,'HTTP_ACCEPT' => "text/html" 
+    get '/report/validation/'+id,nil,'HTTP_ACCEPT' => "text/html" 
     puts uri
     
     #rep = Reports::ReportService.new("http://some.location")

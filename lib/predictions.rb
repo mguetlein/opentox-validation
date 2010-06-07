@@ -456,6 +456,10 @@ module Lib
     def num_instances
       return @predicted_values.size
     end
+    
+    def predicted_values
+      @predicted_values
+    end
   
     def predicted_value(instance_index)
       if @is_classification
@@ -463,6 +467,10 @@ module Lib
       else
         @predicted_values[instance_index]
       end
+    end
+    
+    def actual_values
+      @actual_values
     end
     
     def actual_value(instance_index)

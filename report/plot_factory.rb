@@ -13,7 +13,23 @@ end
 
 module Reports
   
-  module PlotFactory 
+  module PlotFactory
+    
+    def self.create_regression_plot( out_file, validation_set )
+      
+      LOGGER.debug "Creating regression plot, out-file:"+out_file.to_s
+      
+      names = []
+      x = []
+      y = []
+      validation_set.validations.each do |v|
+        names << v.algorithm_uri
+        x << v.get_predictions.predicted_values
+        y << v.get_predictions.actual_values
+      end
+      
+      RubyPlot::plot_points(out_file, "Regression plot", "Predicted values", "Actual values", names, x, y )
+    end
     
     # creates a roc plot (result is plotted into out_file)
     # * if (split_set_attributes == nil?)

@@ -4,15 +4,6 @@ gem 'opentox-ruby-api-wrapper', '= 1.4.4.4'
   require lib
 end
 
-require 'active_record'
-ActiveRecord::Base.establish_connection(  
-   :adapter => @@config[:database][:adapter],
-   :host => @@config[:database][:host],
-   :database => @@config[:database][:database],
-   :username => @@config[:database][:username],
-   :password => @@config[:database][:password]
-) 
-       
 #unless(defined? LOGGER)
   #LOGGER = Logger.new(STDOUT)
   #LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
