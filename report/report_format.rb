@@ -10,22 +10,30 @@ ENV['SAXON_JAR'] = "saxonhe9-2-0-3j/saxon9he.jar" unless ENV['SAXON_JAR']
 #
 module Reports::ReportFormat
   
-  RF_XML = "xml"
-  RF_HTML = "html"
-  RF_PDF = "pdf"
-  REPORT_FORMATS = [RF_XML, RF_HTML, RF_PDF]
-  CONTENT_TYPES = {"text/xml"=>RF_XML,"text/html"=>RF_HTML,"application/pdf"=>RF_PDF}
+  CONTENT_TYPES = ["text/x-yaml","text/html","application/rdf+xml", "text/xml","application/pdf"]
   
   # returns report-format, according to header value
   def self.get_format(accept_header_value)
-
     begin
-      content_type =  MIMEParse::best_match(CONTENT_TYPES.keys, accept_header_value)
+      content_type =  MIMEParse::best_match(CONTENT_TYPES, accept_header_value)
       raise RuntimeException.new unless content_type
     rescue
-      raise Reports::BadRequest.new("Accept header '"+accept_header_value.to_s+"' not supported, supported types are "+CONTENT_TYPES.keys.join(", "))
+      raise Reports::BadRequest.new("Accept header '"+accept_header_value.to_s+"' not supported, supported types are "+CONTENT_TYPES.join(", "))
     end
-    return CONTENT_TYPES[content_type]
+    return content_type
+  end
+  
+  def self.get_filename_extension(format)
+    case format
+    when "text/xml"
+      "xml"
+    when "text/html"
+      "html"
+    when "application/pdf"
+      "pdf"
+    else
+      raise "invalid format type for file extensions: "+format.to_s
+    end
   end
   
   # formats a report from xml into __format__
@@ -33,7 +41,7 @@ module Reports::ReportFormat
   # * the new format can be found in __dest_filame__
   def self.format_report(directory, xml_filename, dest_filename, format, overwrite=false, params={})
     
-    raise "cannot format to XML" if format==RF_XML
+    raise "cannot format to XML" if format=="text/xml"
     raise "directory does not exist: "+directory.to_s unless File.directory?directory.to_s
     xml_file = directory.to_s+"/"+xml_filename.to_s
     raise "xml file not found: "+xml_file unless File.exist?xml_file
@@ -41,9 +49,9 @@ module Reports::ReportFormat
     raise "destination file already exists: "+dest_file if (File.exist?(dest_file) && !overwrite)
     
     case format
-    when RF_HTML
+    when "text/html"
       format_report_to_html(directory, xml_filename, dest_filename, params[:css_style_sheet])
-    when RF_PDF
+    when "application/pdf"
       raise "pdf conversion not supported yet"
     else
       raise "unknown format type"

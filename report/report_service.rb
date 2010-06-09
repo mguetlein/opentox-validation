@@ -9,7 +9,7 @@ module Reports
     def initialize(home_uri)
       LOGGER.info "init report service"
       @home_uri = home_uri
-      @persistance = Reports::FileReportPersistance.new
+      @persistance = Reports::ExtendedFileReportPersistance.new
     end
   
     # lists all available report types, returns list of uris
@@ -28,11 +28,11 @@ module Reports
     # call-seq:
     #   get_all_reports(type) => string
     #
-    def get_all_reports(type)
+    def get_all_reports(type, filter_params)
       
       LOGGER.info "get all reports of type '"+type.to_s+"'"
       check_report_type(type)
-      @persistance.list_reports(type).collect{ |id| get_uri(type,id) }.join("\n")
+      @persistance.list_reports(type, filter_params).collect{ |id| get_uri(type,id) }.join("\n")
     end
     
     # creates a report of a certain type, __validation_uris__ must contain be a list of validation or cross-validation-uris
@@ -58,7 +58,7 @@ module Reports
       LOGGER.debug "report created"
       
       #step 3: persist report if creation not failed
-      id = @persistance.new_report(report_content, type)
+      id = @persistance.new_report(report_content, type, create_meta_data(type, validation_set, validation_uris), self)
       LOGGER.debug "report persisted with id: '"+id.to_s+"'"
       
       return get_uri(type, id)
@@ -132,6 +132,28 @@ module Reports
     end
     
     protected
+    def create_meta_data(type, validation_set, validation_uris)
+      # the validtion_set contains the resolved single validations
+      # crossvalidation uris are only added if given as validation_uris - param
+      meta_data = {}
+      { :validation_uri => "validation_uris",  
+          :model_uri => "model_uris",
+          :algorithm_uri => "algorithm_uris" }.each do |key,data|
+        tmp = []
+        validation_set.validations.each do |v|
+          #tmp << v.send(key) if v.public_methods.include?(key.to_s) and v.send(key) and !tmp.include?(v.send(key))
+          tmp << v.send(key) if v.send(key) and !tmp.include?(v.send(key))
+        end
+        meta_data[data.to_sym] = tmp
+      end
+      cvs = []
+      validation_uris.each do |v|
+        cvs << v if v =~ /crossvalidation/ and !cvs.include?(v)
+      end
+      meta_data[:crossvalidation_uris] = cvs
+      meta_data
+    end
+    
     def check_report_type(type)
      raise Reports::NotFound.new("report type not found '"+type.to_s+"'") unless Reports::ReportFactory::REPORT_TYPES.index(type)
     end

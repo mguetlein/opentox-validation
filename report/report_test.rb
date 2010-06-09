@@ -15,12 +15,10 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     Sinatra::Application
   end
   
-  
-  
   def test_nothing
   
-#    get "/match"
-#    puts last_response.body.to_s
+    #get "/" #,nil,'HTTP_ACCEPT' => "text/x-yaml"#"application/rdf+xml"     
+    #puts last_response.body.to_s
     
     #Reports::XMLReport.generate_demo_xml_report.write_to
     #raise "stop"
@@ -38,14 +36,14 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     #post 'http://ot.validation.de/report/crossvalidation',:validation_uris=>"http://ot.validation.de/crossvalidation/1"
     #uri = last_response.body.to_s
     
-    val_uris = ["http://localhost/validation/64"]#,"http://localhost/validation/65" ]
-    
-    post '/report/validation',:validation_uris=>val_uris.join("\n")
-    uri = wait_for_task(last_response.body.to_s)
-    puts uri
-    id = uri.squeeze("/").split("/")[-1]
-    get '/report/validation/'+id,nil,'HTTP_ACCEPT' => "text/html" 
-    puts uri
+#    val_uris = ["http://localhost/validation/64"]#,"http://localhost/validation/65" ]
+#    
+#    post '/report/validation',:validation_uris=>val_uris.join("\n")
+#    uri = wait_for_task(last_response.body.to_s)
+#    puts uri
+#    id = uri.squeeze("/").split("/")[-1]
+#    get '/report/validation/'+id,nil,'HTTP_ACCEPT' => "text/html" 
+#    puts uri
     
     #rep = Reports::ReportService.new("http://some.location")
     #rep.create_report("algorithm_comparison", val_uris)

@@ -44,6 +44,16 @@ module ValidationExamples
       end
     end
     
+    def self.validation_get(uri, accept_header='application/rdf+xml')
+      if $test_case
+        #puts "getting "+uri+","+accept_header
+        $test_case.get uri,nil,'HTTP_ACCEPT' => accept_header 
+        return wait($test_case.last_response.body)
+      else
+        return OpenTox::RestClientWrapper.get(File.join(@@config[:services]["opentox-validation"],uri),{:accept => accept_header})
+      end
+    end
+    
     def self.wait(uri)
       if OpenTox::Utils.task_uri?(uri)
         task = OpenTox::Task.find(uri)
@@ -52,6 +62,85 @@ module ValidationExamples
         uri = task.resultURI
       end
       uri
+    end
+    
+    def self.verify_crossvalidation(val_yaml)
+      
+      val = YAML.load(val_yaml)
+      puts val.inspect
+      
+      assert_integer val["random_seed".to_sym],nil,nil,"random_seed"
+      assert_boolean val["stratified".to_sym],"stratified"
+      assert_integer val["num_folds".to_sym],0,1000,"num_folds"
+      num_folds = val["num_folds".to_sym].to_i
+      
+      validations = val["validations".to_sym]
+      assert_int_equal(num_folds, validations.size, "num_folds != validations.size")
+    end
+    
+    def self.verify_validation(val_yaml)
+    
+      val = YAML.load(val_yaml)
+  
+      puts val.inspect
+      assert_integer val["num_instances".to_sym],0,1000,"num_instances"
+      num_instances = val["num_instances".to_sym].to_i
+      
+      assert_integer val["num_unpredicted".to_sym],0,num_instances,"num_unpredicted"
+      num_unpredicted = val["num_unpredicted".to_sym].to_i
+      assert_float val["percent_unpredicted".to_sym],0,100
+      assert_float_equal(val["percent_unpredicted".to_sym].to_f,100*num_unpredicted/num_instances.to_f,"percent_unpredicted")
+      
+      assert_integer val["num_without_class".to_sym],0,num_instances,"num_without_class"
+      num_without_class = val["num_without_class".to_sym].to_i
+      assert_float val["percent_without_class".to_sym],0,100
+      assert_float_equal(val["percent_without_class".to_sym].to_f,100*num_without_class/num_instances.to_f,"percent_without_class")
+      
+      class_stats = val["classification_statistics".to_sym]
+      if class_stats
+        class_value_stats = class_stats["class_value_statistics".to_sym]
+        class_values = []
+        class_value_stats.each do |cvs|
+          class_values << cvs["class_value".to_sym]
+        end
+        puts class_values.inspect
+        
+        confusion_matrix = class_stats["confusion_matrix".to_sym]
+        confusion_matrix_cells = confusion_matrix["confusion_matrix_cell".to_sym]
+        predictions = 0
+        confusion_matrix_cells.each do |confusion_matrix_cell|
+          predictions += confusion_matrix_cell["confusion_matrix_value".to_sym].to_i
+        end
+        assert_int_equal(predictions, num_instances-num_unpredicted)
+      else
+        regr_stats = val["regression_statistics".to_sym]
+        assert regr_stats!=nil
+      end
+    end
+    
+    private 
+    def self.assert_int_equal(val1,val2,msg_suffix=nil)
+      raise msg_suffix.to_s+" not equal: "+val1.to_s+" != "+val2.to_s unless val1==val2
+    end
+    
+    def self.assert_float_equal(val1,val2,msg_suffix=nil,epsilon=0.0001)
+      raise msg_suffix.to_s+" not equal: "+val1.to_s+" != "+val2.to_s+", diff:"+(val1-val2).abs.to_s unless (val1-val2).abs<epsilon
+    end
+    
+    def self.assert_boolean(bool_val,prop=nil)
+     raise "'"+bool_val.to_s+"' not an boolean "+prop.to_s unless bool_val.to_s=="true" or bool_val.to_s=="false"
+    end
+    
+    def self.assert_integer(string_val, min=nil, max=nil, prop=nil)
+      raise "'"+string_val.to_s+"' not an integer "+prop.to_s unless string_val.to_i.to_s==string_val.to_s
+      raise unless string_val.to_i>=min if min!=nil
+      raise unless string_val.to_i<=max if max!=nil
+    end
+    
+    def self.assert_float(string_val, min=nil, max=nil)
+      raise string_val.to_s+" not a float (!="+string_val.to_f.to_s+")" unless (string_val.to_f.to_s==string_val.to_s || (string_val.to_f.to_s==(string_val.to_s+".0")))
+      raise unless string_val.to_f>=min if min!=nil
+      raise unless string_val.to_f<=max if max!=nil
     end
     
   end
@@ -115,6 +204,16 @@ module ValidationExamples
       rescue => ex
         @validation_error = ex.message
         LOGGER.error ex.message
+      end
+    end
+    
+    def verify_yaml
+      if @validation_uri =~ /crossvalidation/
+        Util.verify_crossvalidation(Util.validation_get("crossvalidation/"+@validation_uri.split("/")[-1],'text/x-yaml'))
+        Util.validation_get("crossvalidation/"+@validation_uri.split("/")[-1]+"/statistics",'text/x-yaml')
+        Util.verify_validation(Util.validation_get("crossvalidation/"+@validation_uri.split("/")[-1]+"/statistics",'text/x-yaml'))
+      else
+        Util.verify_validation(Util.validation_get(@validation_uri.split("/")[-1],'text/x-yaml'))
       end
     end
     

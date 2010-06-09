@@ -32,10 +32,10 @@ get '/report/?' do
   end
 end
 
-get '/report/:type' do
+get '/report/:report_type' do
   perform do |rs|
     content_type "text/uri-list"
-    rs.get_all_reports(params[:type])
+    rs.get_all_reports(params[:report_type], params)
   end
 end
 
@@ -60,8 +60,15 @@ get '/report/:type/:id' do
     end
     #request.env['HTTP_ACCEPT'] = "application/pdf"
     
-    content_type Reports::ReportFormat.get_format(accept_header)
-    result = body(File.new( rs.get_report(params[:type],params[:id],accept_header) ))
+    report = rs.get_report(params[:type],params[:id],accept_header)
+    format = Reports::ReportFormat.get_format(accept_header)
+    content_type format
+    #PENDING: get_report should return file or string, check for result.is_file instead of format
+    if format=="text/x-yaml" or format=="application/rdf+xml"
+      report
+    else
+      result = body(File.new(report))
+    end
   end
 end
 

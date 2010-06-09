@@ -10,11 +10,25 @@ require 'opentox-ruby-api-wrapper'
 require 'fileutils'
 require 'mime/types'
 require 'ruby-plot'
-
 gem 'ruby-plot', '= 0.0.2'
+
+require 'active_record'
+require 'ar-extensions'
+unless ActiveRecord::Base.connected?
+  ActiveRecord::Base.establish_connection(  
+     :adapter => @@config[:database][:adapter],
+     :host => @@config[:database][:host],
+     :database => @@config[:database][:database],
+     :username => @@config[:database][:username],
+     :password => @@config[:database][:password]
+  )
+  ActiveRecord::Base.logger = Logger.new("/dev/null")
+end
 
 module Reports
 end
+
+require "lib/rdf_provider.rb"
 
 require "report/plot_factory.rb"
 require "report/xml_report.rb"

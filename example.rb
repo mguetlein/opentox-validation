@@ -56,6 +56,7 @@ class Example
     ActiveRecord::Base.logger = Logger.new("/dev/null")
     ActiveRecord::Migrator.migrate('db/migrate', 0 )
     ActiveRecord::Migrator.migrate('db/migrate', 1 )
+    ActiveRecord::Migrator.migrate('db/migrate', 2 )
     
     #delete_all(@@config[:services]["opentox-dataset"])
     log OpenTox::RestClientWrapper.delete @@config[:services]["opentox-dataset"]
@@ -85,11 +86,11 @@ class Example
     log "create validation report"
     rep = Reports::ReportService.new(File.join(@@config[:services]["opentox-validation"],"report"))
     rep.delete_all_reports("validation")
-    rep.create_report("validation",v.uri)
+    rep.create_report("validation",v.validation_uri)
     
     log "create crossvalidation report"
     rep.delete_all_reports("crossvalidation")
-    rep.create_report("crossvalidation",cv.uri)
+    rep.create_report("crossvalidation",cv.crossvalidation_uri)
     
     log "done"
     @@summary

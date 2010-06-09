@@ -59,7 +59,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
     validation_uris.each do |u|
       if u.to_s =~ /.*\/crossvalidation\/[0-9]+/
         cv_id = u.split("/")[-1].to_i
-        res += Lib::Validation.find( :all, :conditions => { :crossvalidation_id => cv_id } ).collect{|v| v.uri.to_s}
+        res += Lib::Validation.find( :all, :conditions => { :crossvalidation_id => cv_id } ).collect{|v| v.validation_uri.to_s}
       else
         res += [u.to_s]
       end
@@ -83,12 +83,12 @@ class Reports::ValidationDB < Reports::ValidationAccess
     raise Reports::BadRequest.new "no validation found with id "+validation_id.to_s unless v #+" and uri "+uri.to_s unless v
     
     (Lib::VAL_PROPS + Lib::VAL_CV_PROPS).each do |p|
-      validation.send("#{p.to_s}=".to_sym, v[p])
+      validation.send("#{p.to_s}=".to_sym, v.send(p))
     end
     
     {:classification_statistics => Lib::VAL_CLASS_PROPS, 
      :regression_statistics => Lib::VAL_REGR_PROPS}.each do |subset_name,subset_props|
-      subset = YAML.load(v[subset_name].to_s)
+      subset = v.send(subset_name)
       subset_props.each{ |prop| validation.send("#{prop.to_s}=".to_sym, subset[prop]) } if subset
     end
   end
@@ -184,13 +184,12 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
     
   def init_cv(validation)
     
-    raise "cv-id not set" unless validation.crossvalidation_id
+    raise "cv-uri not set" unless validation.crossvalidation_uri
     
-    cv_uri = validation.uri.split("/")[0..-3].join("/")+"/crossvalidation/"+validation.crossvalidation_id.to_s
     begin
-      data = YAML.load(RestClient.get cv_uri)
+      data = YAML.load(RestClient.get validation.crossvalidation_uri)
     rescue => ex
-      raise Reports::BadRequest.new "cannot get crossvalidation at '"+cv_uri.to_s+"', error msg: "+ex.message
+      raise Reports::BadRequest.new "cannot get crossvalidation at '"+validation.crossvalidation_uri.to_s+"', error msg: "+ex.message
     end
     
     Lib::CROSS_VAL_PROPS.each do |p|

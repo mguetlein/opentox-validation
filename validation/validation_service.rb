@@ -37,16 +37,12 @@ module Validation
     # constructs a validation object, Rsets id und uri
     def initialize( params={} )
       $sinatra.halt 500,"do not set id manually" if params[:id]
-      $sinatra.halt 500,"do not set uri manually" if params[:uri]
+      $sinatra.halt 500,"do not set uri manually" if params[:validation_uri]
       super params
       self.save
       raise "internal error, validation-id not set "+to_yaml if self.id==nil
       self.attributes = { :validation_uri => $sinatra.url_for("/"+self.id.to_s, :full).to_s }
       self.save
-    end
-    
-    def uri
-      self.validation_uri
     end
     
     # deletes a validation
@@ -139,9 +135,9 @@ module Validation
         self.test_dataset_uri, self.test_target_dataset_uri, self.prediction_feature, 
         self.prediction_dataset_uri, model.predictedVariables )
       if prediction.classification?
-        self.attributes = { :classification_statistics => prediction.compute_stats.to_yaml }
+        self.attributes = { :classification_statistics => prediction.compute_stats }
       else
-        self.attributes = { :regression_statistics => prediction.compute_stats.to_yaml }
+        self.attributes = { :regression_statistics => prediction.compute_stats }
       end
       
       self.attributes = { :num_instances => prediction.num_instances,
@@ -159,7 +155,7 @@ module Validation
     def initialize( params={} )
       
       $sinatra.halt 500,"do not set id manually" if params[:id]
-      $sinatra.halt 500,"do not set uri manually" if params[:uri]
+      $sinatra.halt 500,"do not set uri manually" if params[:crossvalidation_uri]
       
       params[:num_folds] = 10 if params[:num_folds]==nil
       params[:random_seed] = 1 if params[:random_seed]==nil
@@ -169,10 +165,6 @@ module Validation
       raise "internal error, crossvalidation-id not set" if self.id==nil
       self.attributes = { :crossvalidation_uri => $sinatra.url_for("/crossvalidation/"+self.id.to_s, :full) }
       self.save
-    end
-    
-    def uri
-      self.crossvalidation_uri
     end
     
     # deletes a crossvalidation, all validations are deleted as well
@@ -225,7 +217,7 @@ module Validation
                                     :test_dataset_uri => v.test_dataset_uri,
                                     :algorithm_uri => self.algorithm_uri
       end
-      LOGGER.debug "copyied dataset uris from cv "+cv.uri.to_s
+      LOGGER.debug "copied dataset uris from cv "+cv.crossvalidation_uri.to_s
       return true
     end
     

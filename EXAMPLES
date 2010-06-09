@@ -31,6 +31,8 @@ search available validations with url-encoded parameters
 
 >>> curl <validation_service>?training_dataset_uri=<training_dataset_uri>&algorithm_uri=<algorithm_uri>
 
+Hint: you can perform a pattern search (instead of an exact match search) by adding a _like to the parameter, i.e. training_dataset_uri_like 
+
 result example (accept-header: application/rdf-xml)			
 <<< not yet supported
 
@@ -200,6 +202,8 @@ get validation report
 Supported formats (accept-headers):
 * "text/xml" content of report in docbook-article format
 * "text/html" report formated with default docbook-article-xsl
+* "text/x-yaml" returns report object with meta-info (without the actual report content)
+* "application/rdf+xml" returns report object with meta-info (without the actual report content)
 
 Hint: Visit <validation_service>/report/validation/<validation_report_id> with a browser to see the report in html format
 
@@ -239,6 +243,8 @@ get crossvalidation report
 Supported formats (accept-headers):
 * "text/xml" content of report in docbook-article format
 * "text/html" report formated with default docbook-article-xsl
+* "text/x-yaml" returns report object with meta-info (without the actual report content)
+* "application/rdf+xml" returns report object with meta-info (without the actual report content)
 
 Hint: Visit <validation_service>/report/crossvalidation/<crossvalidation_report_id> with a browser to see the report in html format
 

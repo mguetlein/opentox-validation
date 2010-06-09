@@ -7,7 +7,7 @@ require 'test/unit'
 require 'rack/test'
 require 'lib/test_util.rb'
 require 'test/test_examples.rb'
-LOGGER = Logger.new(STDOUT)
+LOGGER = MyLogger.new(STDOUT)
 LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 
 class ValidationTest < Test::Unit::TestCase
@@ -17,33 +17,38 @@ class ValidationTest < Test::Unit::TestCase
   def test_it
     $test_case = self
 
-   # get "/crossvalidation/1/statistics"
-   # puts last_response.body
+    #get "?test_dataset_uri_like=92",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
+    #puts last_response.body
     
 #    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
 #    puts last_response.body
     
-    run_test("1b")
+    #run_test("1b") #, "http://localhost/validation/321")
+    #run_test("3b", "http://localhost/validation/crossvalidation/1")
  
     #puts Nightly.build_nightly("1", false)
     
     #prepare_examples
-    #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
+    do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
   end
 
   def app
     Sinatra::Application
   end
   
-  def run_test(select)
+  def run_test(select, validation_uri=nil)
     validationExamples = ValidationExamples.select(select)
     validationExamples.each do |vv|
       vv.each do |v| 
         ex = v.new
-        ex.upload_files
-        ex.check_requirements
-        ex.validate
-        LOGGER.debug "validation done "+ex.validation_uri.to_s
+        ex.validation_uri = validation_uri
+        unless ex.validation_uri
+          ex.upload_files
+          ex.check_requirements
+          ex.validate
+          LOGGER.debug "validation done "+ex.validation_uri.to_s
+        end
+        ex.verify_yaml
         ex.report
       end
     end

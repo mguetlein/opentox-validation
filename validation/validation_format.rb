@@ -1,15 +1,6 @@
 
 require "lib/rdf_provider.rb"
 
-class String
-  def convert_underscore
-    gsub(/_./) do |m|
-      m.gsub!(/^_/,"")
-      m.upcase
-    end
-  end
-end
-
 module Validation
   
   
@@ -33,19 +24,17 @@ module Validation
           cv[p] = self.send(p)
         end
         # replace crossvalidation id with uri
-        cv[:crossvalidation_uri] = $sinatra.url_for("/crossvalidation/"+cv[:crossvalidation_id].to_s,:full) if cv[:crossvalidation_id]
         h[:crossvalidation_info] = cv
       end
       if classification_statistics 
-        class_stats = ((classification_statistics.is_a?(Hash)) ? classification_statistics : YAML.load(classification_statistics.to_s))
         clazz = {}
-        Lib::VAL_CLASS_PROPS_SINGLE.each{ |p| clazz[p] = class_stats[p] }
+        Lib::VAL_CLASS_PROPS_SINGLE.each{ |p| clazz[p] = classification_statistics[p] }
         
         # transpose results per class
         class_values = {}
         Lib::VAL_CLASS_PROPS_PER_CLASS.each do |p|
-          $sinatra.halt 500, "missing classification statitstics: "+p.to_s+" "+class_stats.inspect unless class_stats[p]
-          class_stats[p].each do |class_value, property_value|
+          $sinatra.halt 500, "missing classification statitstics: "+p.to_s+" "+classification_statistics.inspect unless classification_statistics[p]
+          classification_statistics[p].each do |class_value, property_value|
             class_values[class_value] = {:class_value => class_value} unless class_values.has_key?(class_value)
             map = class_values[class_value]
             map[p] = property_value
@@ -55,8 +44,8 @@ module Validation
         
         #converting confusion matrix
         cells = []
-        $sinatra.halt 500,"confusion matrix missing" unless class_stats[:confusion_matrix]!=nil
-        class_stats[:confusion_matrix].each do |k,v|
+        $sinatra.halt 500,"confusion matrix missing" unless classification_statistics[:confusion_matrix]!=nil
+        classification_statistics[:confusion_matrix].each do |k,v|
           cell = {}
           # key in confusion matrix is map with predicted and actual attribute 
           k.each{ |kk,vv| cell[kk] = vv }
@@ -75,21 +64,15 @@ module Validation
       return h  
     end
     
-    # build hash structure and return with to_yaml
-    def to_yaml
-      get_content_as_hash.to_yaml
-      #super.to_yaml
-    end
-    
     def rdf_title
       "Validation"
     end
     
     def uri
-      @uri
+      validation_uri
     end
     
-    @@literals = [ :created_at, :real_runtime, :num_instances, :num_without_class,
+    LITERALS = [ :created_at, :real_runtime, :num_instances, :num_without_class,
                    :percent_without_class, :num_unpredicted, :percent_unpredicted, 
                    :crossvalidation_fold, #:crossvalidation_id, 
                    :num_correct, :num_incorrect, :percent_correct, :percent_incorrect,
@@ -102,9 +85,9 @@ module Validation
                    :target_variance_predicted, :mean_absolute_error, :r_square, :class_value,
                    :confusion_matrix_actual, :confusion_matrix_predicted ]
                    
-    @@literal_names = {:created_at => OT["date"] }
-                 
-    @@object_properties = { :model_uri => OT['validationModel'], :training_dataset_uri => OT['validationTrainingDataset'], :algorithm_uri => OT['validationAlgorithm'],
+    LITERAL_NAMES = {:created_at => OT["date"] }
+                
+    OBJECT_PROPERTIES = { :model_uri => OT['validationModel'], :training_dataset_uri => OT['validationTrainingDataset'], :algorithm_uri => OT['validationAlgorithm'],
                      :prediction_feature => OT['predictedFeature'], :test_dataset_uri => OT['validationTestDataset'], :test_target_dataset_uri => OT['validationTestTargetDataset'],
                      :prediction_dataset_uri => OT['validationPredictionDataset'], :crossvalidation_info => OT['hasValidationInfo'],
                      :crossvalidation_uri =>  OT['validationCrossvalidation'],
@@ -114,37 +97,11 @@ module Validation
                      #:confusion_matrix_actual => OT['confusionMatrixActual'], :confusion_matrix_predicted => OT['confusionMatrixPredicted']
                       } 
                      
-    @@classes = { :crossvalidation_info => OT['CrossvalidationInfo'], :classification_statistics => OT['ClassificationStatistics'],
+    CLASSES = { :crossvalidation_info => OT['CrossvalidationInfo'], :classification_statistics => OT['ClassificationStatistics'],
                   :regression_statistics => OT['RegresssionStatistics'], :class_value_statistics => OT['ClassValueStatistics'],
                  :confusion_matrix => OT['ConfusionMatrix'], :confusion_matrix_cell => OT['ConfusionMatrixCell']}  
     
-    def literal?( prop )
-      @@literals.index( prop ) != nil
-    end
-    
-    def literal_name( prop )
-      if @@literal_names.has_key?(prop)
-        @@literal_names[prop]
-      else
-        OT[prop.to_s.convert_underscore]
-      end
-    end
-    
-    def object_property?( prop )
-      @@object_properties.has_key?( prop )
-    end
-    
-    def object_property_name( prop )
-      return @@object_properties[ prop ]
-    end
-  
-    def class?(prop)
-      @@classes.has_key?( prop )
-    end
-    
-    def class_name( prop )
-      return @@classes[ prop ]
-    end
+    IGNORE = [ :id, :validation_uri, :crossvalidation_id ]
     
   end
     
@@ -157,58 +114,28 @@ module Validation
       
       v = []
       Validation.find( :all, :conditions => { :crossvalidation_id => self.id } ).each do |val|
-        v.push( val.uri.to_s )
+        v.push( val.validation_uri.to_s )
       end
       h[:validations] = v
       h
     end
-    
-    def to_yaml
-      get_content_as_hash.to_yaml
+
+    def uri
+      crossvalidation_uri
     end
     
     def rdf_title
       "Crossvalidation"
     end
     
-    def uri
-      @uri
-    end
+    LITERALS = [ :created_at, :stratified, :num_folds, :random_seed ]
     
-    @@literals = [ :created_at, :stratified, :num_folds, :random_seed ]
+    LITERAL_NAMES = {:created_at => OT["date"] }
     
-    @@literal_names = {:created_at => OT["date"] }
-    
-    @@object_properties = { :dataset_uri => OT['crossvalidationDataset'], :algorithm_uri => OT['crossvalidationAlgorithm'],
+    OBJECT_PROPERTIES = { :dataset_uri => OT['crossvalidationDataset'], :algorithm_uri => OT['crossvalidationAlgorithm'],
                            :validations => OT['crossvalidationValidation'] } 
-    @@classes = {}
+    CLASSES = {}
     
-    def literal?( prop )
-      @@literals.index( prop ) != nil
-    end
-    
-    def literal_name( prop )
-      if @@literal_names.has_key?(prop)
-        @@literal_names[prop]
-      else
-        OT[prop.to_s.convert_underscore]
-      end
-    end
-    
-    def object_property?( prop )
-      @@object_properties.has_key?( prop )
-    end
-    
-    def object_property_name( prop )
-      return @@object_properties[ prop ]
-    end
-  
-    def class?(prop)
-      @@classes.has_key?( prop )
-    end
-    
-    def class_name( prop )
-      return @@classes[ prop ]
-    end
+    IGNORE = [ :id, :crossvalidation_uri ]
   end
 end

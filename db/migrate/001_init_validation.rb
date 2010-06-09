@@ -4,7 +4,7 @@ class InitValidation < ActiveRecord::Migration
 
     create_table :crossvalidations do |t|
       
-      [:crossvalidation_uri, #accesss to :uri somehow does not work, create uri-function in object
+      [:crossvalidation_uri,
        :algorithm_uri, 
        :dataset_uri ].each do |p|
         t.column p, :string, :limit => 255
@@ -27,14 +27,15 @@ class InitValidation < ActiveRecord::Migration
     
     create_table :validations do |t|
       
-      [:validation_uri, #accesss to :uri somehow does not work, create uri-function in obejct
+      [:validation_uri,
        :model_uri,
        :algorithm_uri, 
        :training_dataset_uri, 
        :test_target_dataset_uri, 
        :test_dataset_uri, 
        :prediction_dataset_uri, 
-       :prediction_feature ].each do |p|
+       :prediction_feature,
+       :crossvalidation_uri].each do |p|
         t.column p, :string, :limit => 255
       end
       
@@ -57,8 +58,7 @@ class InitValidation < ActiveRecord::Migration
   end
 
   def self.down
-    drop_table :validations
-    drop_table :crossvalidations
+    drop_table :validations if table_exists? :validations
+    drop_table :crossvalidations if table_exists? :crossvalidations
   end
 end
-

@@ -8,9 +8,9 @@ require 'lib/merge.rb'
 
 get '/crossvalidation/?' do
   LOGGER.info "list all crossvalidations"
-  
   content_type "text/uri-list"
-  Validation::Crossvalidation.all(params).collect{ |d| url_for("/crossvalidation/", :full) + d.id.to_s }.join("\n")
+  params.each{ |k,v| halt 400,"no crossvalidation-attribute: "+k.to_s unless Validation::Crossvalidation.column_names.include?(k.gsub(/_like$/,""))  }
+  Validation::Crossvalidation.find(:all, :conditions => params).collect{ |d| url_for("/crossvalidation/", :full) + d.id.to_s }.join("\n")
 end
 
 post '/crossvalidation/loo/?' do
@@ -61,7 +61,7 @@ get '/crossvalidation/:id/validations' do
     halt 404, "Crossvalidation '#{params[:id]}' not found."
   end
   content_type "text/uri-list"
-  Validation::Validation.find( :all, :conditions => { :crossvalidation_id => params[:id] } ).collect{ |v| v.uri.to_s }.join("\n")+"\n"
+  Validation::Validation.find( :all, :conditions => { :crossvalidation_id => params[:id] } ).collect{ |v| v.validation_uri.to_s }.join("\n")+"\n"
 end
 
 
@@ -74,7 +74,7 @@ get '/crossvalidation/:id/statistics' do
   end
   
   Lib::MergeObjects.register_merge_attributes( Validation::Validation,
-    Lib::VAL_MERGE_AVG,Lib::VAL_MERGE_SUM,Lib::VAL_MERGE_GENERAL-[:uri]) unless 
+    Lib::VAL_MERGE_AVG,Lib::VAL_MERGE_SUM,Lib::VAL_MERGE_GENERAL-[:validation_uri]) unless 
       Lib::MergeObjects.merge_attributes_registered?(Validation::Validation)
   
   v = Lib::MergeObjects.merge_array_objects( Validation::Validation.find( :all, :conditions => { :crossvalidation_id => params[:id] } ) )
@@ -103,7 +103,7 @@ post '/crossvalidation/?' do
     cv.create_cv_datasets( params[:prediction_feature] )
     cv.perform_cv( params[:algorithm_params])
     content_type "text/uri-list"
-    cv.uri
+    cv.crossvalidation_uri
   end
   halt 202,task_uri
 end
@@ -115,7 +115,8 @@ end
 get '/?' do
   LOGGER.info "list all validations"
   content_type "text/uri-list"
-  Validation::Validation.all(params).collect{ |d| url_for("/", :full) + d.id.to_s }.join("\n")
+  params.each{ |k,v| halt 400,"no validation-attribute: "+k.to_s unless Validation::Validation.column_names.include?(k.gsub(/_like$/,""))  }
+  Validation::Validation.find(:all, :conditions => params).collect{ |d| url_for("/", :full) + d.id.to_s }.join("\n")
 end
 
 get '/:id' do
@@ -184,7 +185,7 @@ post '/training_test_split' do
                      :algorithm_uri => params[:algorithm_uri]
     v.validate_algorithm( params[:algorithm_params])
     content_type "text/uri-list"
-    v.uri
+    v.validation_uri
   end
   halt 202,task_uri
 end
@@ -210,7 +211,7 @@ post '/create_validation' do
     v = Validation::Validation.new params
     v.compute_validation_stats()
     content_type "text/uri-list"
-    v.uri
+    v.validation_uri
   end
   halt 202,task_uri
 end

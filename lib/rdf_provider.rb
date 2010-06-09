@@ -1,4 +1,13 @@
 
+class String
+  def convert_underscore
+    gsub(/_./) do |m|
+      m.gsub!(/^_/,"")
+      m.upcase
+    end
+  end
+end
+
 module Lib
   module RDFProvider
     
@@ -25,29 +34,42 @@ module Lib
       raise "not implemented"
     end
     
-    def literal?( property )
-      raise "not yet implemented"
+    def to_yaml
+      get_content_as_hash.to_yaml
     end
     
-    def literal_name( property )
-      raise "not yet implemented"
+    def rdf_ignore?( prop )
+      self.class::IGNORE.index( prop ) != nil
     end
     
-    def object_property?( property )
-      raise "not yet implemented"
+    def literal?( prop )
+      self.class::LITERALS.index( prop ) != nil
     end
     
-    def object_property_name( property )
-      raise "not yet implemented"
+    def literal_name( prop )
+      if self.class::LITERAL_NAMES.has_key?(prop)
+        self.class::LITERAL_NAMES[prop]
+      else
+        OT[prop.to_s.convert_underscore]
+      end
+    end
+    
+    def object_property?( prop )
+      self.class::OBJECT_PROPERTIES.has_key?( prop )
+    end
+    
+    def object_property_name( prop )
+      return self.class::OBJECT_PROPERTIES[ prop ]
     end
   
-    def class?( property )
-      raise "not yet implemented"
+    def class?(prop)
+      self.class::CLASSES.has_key?( prop )
     end
-  
-    def class_name( property )
-      raise "not yet implemented"
+    
+    def class_name( prop )
+      return self.class::CLASSES[ prop ]
     end
+    
   end
   
   class HashToOwl
@@ -82,7 +104,9 @@ module Lib
           LOGGER.warn "skipping nil value: "+k.to_s
           next
         end
-        if v.is_a?(Hash)
+        if @rdf_provider.rdf_ignore?(k)
+          #do nothing
+        elsif v.is_a?(Hash)
           new_node = add_class( k, node )
           recursiv_add_content( v, new_node )
         elsif v.is_a?(Array)
@@ -98,8 +122,6 @@ module Lib
           set_literal( k, v, node)
         elsif @rdf_provider.object_property?(k)
           add_object_property( k, v, node)
-        elsif [ :uri, :id ].index(k)!=nil
-          #skip
         else
           raise "illegal value k:"+k.to_s+" v:"+v.to_s
         end
