@@ -17,19 +17,19 @@ class ValidationTest < Test::Unit::TestCase
   def test_it
     $test_case = self
 
-    #get "?test_dataset_uri_like=92",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
+    #get "/crossvalidation/1",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
     #puts last_response.body
     
 #    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
 #    puts last_response.body
     
-    #run_test("1b") #, "http://localhost/validation/321")
+    run_test("1b") #, "http://localhost/validation/321")
     #run_test("3b", "http://localhost/validation/crossvalidation/1")
  
-    #puts Nightly.build_nightly("1", false)
+    #puts Nightly.build_nightly("1")
     
     #prepare_examples
-    do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
+    #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
   end
 
   def app

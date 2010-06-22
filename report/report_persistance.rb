@@ -207,6 +207,8 @@ module Reports
     LITERAL_NAMES = {:created_at => OT["date"] }
     OBJECT_PROPERTIES = { :crossvalidation_uris => OT['reportCrossvalidation'], :algorithm_uris => OT['reportAlgorithm'],
                            :validation_uris => OT['reportValidation'], :model_uris => OT['reportModel'] }
+    OBJECTS = { :crossvalidation_uris => OT['Crossvalidation'], :algorithm_uris => OT['Algorithm'],
+                           :validation_uris => OT['Validation'], :model_uris => OT['Model'] }
     CLASSES = {}               
     IGNORE = [ :id, :report_uri ]
     

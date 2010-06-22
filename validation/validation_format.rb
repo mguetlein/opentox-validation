@@ -96,6 +96,10 @@ module Validation
                      :confusion_matrix_cell => OT['confusionMatrixCell'], #:class_value => OT['classValue'], 
                      #:confusion_matrix_actual => OT['confusionMatrixActual'], :confusion_matrix_predicted => OT['confusionMatrixPredicted']
                       } 
+
+    OBJECTS = { :model_uri => OT['Model'], :training_dataset_uri => OT['Dataset'], :test_dataset_uri => OT['Dataset'], 
+                :test_target_dataset_uri => OT['Dataset'], :prediction_dataset_uri => OT['Dataset'], :prediction_feature => OT['Feature'],
+                :algorithm_uri => OT['Algorithm'],}
                      
     CLASSES = { :crossvalidation_info => OT['CrossvalidationInfo'], :classification_statistics => OT['ClassificationStatistics'],
                   :regression_statistics => OT['RegresssionStatistics'], :class_value_statistics => OT['ClassValueStatistics'],
@@ -134,6 +138,9 @@ module Validation
     
     OBJECT_PROPERTIES = { :dataset_uri => OT['crossvalidationDataset'], :algorithm_uri => OT['crossvalidationAlgorithm'],
                            :validations => OT['crossvalidationValidation'] } 
+                           
+    OBJECTS = { :dataset_uri => OT['Dataset'], :validations => OT['Validation'], :algorithm_uri => OT['Algorithm']}
+    
     CLASSES = {}
     
     IGNORE = [ :id, :crossvalidation_uri ]

@@ -17,8 +17,8 @@ class Reports::ApplicationTest < Test::Unit::TestCase
   
   def test_nothing
   
-    #get "/" #,nil,'HTTP_ACCEPT' => "text/x-yaml"#"application/rdf+xml"     
-    #puts last_response.body.to_s
+    get "/report/validation/1",nil,'HTTP_ACCEPT' => "application/rdf+xml"#"text/x-yaml"     
+    puts last_response.body.to_s
     
     #Reports::XMLReport.generate_demo_xml_report.write_to
     #raise "stop"

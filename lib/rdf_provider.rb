@@ -61,6 +61,10 @@ module Lib
     def object_property_name( prop )
       return self.class::OBJECT_PROPERTIES[ prop ]
     end
+    
+    def object_type( prop )
+      return self.class::OBJECTS[ prop ]
+    end
   
     def class?(prop)
       self.class::CLASSES.has_key?( prop )
@@ -140,9 +144,15 @@ module Lib
         break if @model.subject(@rdf_provider.object_property_name(property), res).nil?
         count += 1
       end
-      @model.add res, RDF['type'], @rdf_provider.class_name(property)
-      @model.add res, DC['title'], @rdf_provider.class_name(property)
-      @model.add node, @rdf_provider.object_property_name(property), res
+      clazz = Redland::Resource.new(@rdf_provider.class_name(property))
+      @model.add res, RDF['type'], clazz
+      @model.add res, DC['title'], clazz
+      @model.add clazz, RDF['type'], OWL['Class']
+      @model.add DC['title'], RDF['type'],OWL['AnnotationProperty']
+      
+      objectProp = Redland::Resource.new(@rdf_provider.object_property_name(property))
+      @model.add objectProp, RDF['type'], OWL['ObjectProperty']
+      @model.add node, objectProp, res
       return res
     end
     
@@ -154,14 +164,24 @@ module Lib
         @model.delete node, @rdf_provider.literal_name(property), l
       rescue
       end
-      @model.add node, @rdf_provider.literal_name(property), Redland::Literal.create(value)
+      literalProp =  Redland::Resource.new(@rdf_provider.literal_name(property))
+      @model.add literalProp, RDF['type'],OWL['AnnotationProperty']
+      @model.add node, literalProp, Redland::Literal.create(value)
     end
     
     def add_object_property(property, value, node )
       raise "empty object property value "+property.to_s if value==nil || value.to_s.size==0
       raise "no object property name "+propety.to_s unless @rdf_provider.object_property_name(property)
-      @model.add node, @rdf_provider.object_property_name(property), Redland::Uri.new(value) # untyped individual comes from this line, why??
-      #@model.add Redland::Uri.new(value), RDF['type'], type
+      raise "no object type "+property.to_s unless @rdf_provider.object_type(property)
+      
+      objectProp = Redland::Resource.new(@rdf_provider.object_property_name(property))
+      @model.add objectProp, RDF['type'], OWL['ObjectProperty']
+      
+      val = Redland::Resource.new(value)
+      type = Redland::Resource.new(@rdf_provider.object_type(property))
+      @model.add node, objectProp, val
+      @model.add val, RDF['type'], type
+      @model.add type, RDF['type'], OWL['Class']
     end
     
   end
