@@ -10,7 +10,7 @@ ENV['SAXON_JAR'] = "saxonhe9-2-0-3j/saxon9he.jar" unless ENV['SAXON_JAR']
 #
 module Reports::ReportFormat
   
-  CONTENT_TYPES = ["text/x-yaml","text/html","application/rdf+xml", "text/xml","application/pdf"]
+  CONTENT_TYPES = ["application/x-yaml","text/html","application/rdf+xml", "text/xml","application/pdf"]
   
   # returns report-format, according to header value
   def self.get_format(accept_header_value)

@@ -1,5 +1,5 @@
 require 'rubygems'
-gem 'opentox-ruby-api-wrapper', '= 1.4.4.4'
+gem 'opentox-ruby-api-wrapper', '= 1.5.6'
 [ 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper', 'logger' ].each do |lib|
   require lib
 end

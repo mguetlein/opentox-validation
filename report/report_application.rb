@@ -64,7 +64,7 @@ get '/report/:type/:id' do
     format = Reports::ReportFormat.get_format(accept_header)
     content_type format
     #PENDING: get_report should return file or string, check for result.is_file instead of format
-    if format=="text/x-yaml" or format=="application/rdf+xml"
+    if format=="application/x-yaml" or format=="application/rdf+xml"
       report
     else
       result = body(File.new(report))

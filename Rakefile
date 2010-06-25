@@ -1,22 +1,35 @@
 require 'rubygems'
 require 'rake'
 
-@gems = "sinatra emk-sinatra-url-for builder datamapper json_pure do_sqlite3 opentox-ruby-api-wrapper"
+REPORT_GEMS = ['rubygems', 'logger', 'fileutils', 'sinatra', 'sinatra/url_for', 'rest_client', 
+  'yaml', 'opentox-ruby-api-wrapper', 'fileutils', 'mime/types', 'abbrev', 
+  'rexml/document', 'active_record', 'ar-extensions', 'ruby-plot']
+VALIDATION_GEMS = [ 'rubygems', 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper', 'logger', 'active_record', 'ar-extensions' ]
+
+
 
 desc "Install required gems"
-task :install do
-	puts `sudo gem install #{@gems}`
+task :install_gems do
+  (REPORT_GEMS + VALIDATION_GEMS).uniq.each do |g|
+    begin
+      print "> require "+g+" .. "
+      require g
+      puts "ok"
+    rescue LoadError => ex
+      puts "NOT FOUND"
+      cmd = "sudo gem install "+g
+      puts cmd
+      IO.popen(cmd){ |f| puts f.gets }
+    end
+  end
 end
 
-desc "Update required gems"
-task :update do
-	puts `sudo gem update #{@gems}`
+
+desc "Installs gems and inits db"
+task :init => [:install_gems, :migrate] do
+  #do nothing
 end
 
-desc "Run tests"
-task :test do
-	load 'test.rb'
-end
 
 desc "load config"
 task :load_config do
@@ -57,7 +70,7 @@ task :migrate => :load_config do
        :password => @@config[:database][:password]
        )  
   ActiveRecord::Base.logger = Logger.new($stdout)
-  ActiveRecord::Migrator.migrate('db/migrate', ENV["VERSION"] ? ENV["VERSION"].to_i : nil )
+  ActiveRecord::Migrator.migrate('db/migrate', ENV["VERSION"] ? ENV["VERSION"].to_i : 2 )
 end
 
 

@@ -348,23 +348,16 @@ module Validation
                     " (shuffled with seed "+random_seed.to_s+")"
       
       compounds.shuffle!( random_seed )
-      train_compounds = compounds[0..split]
-      test_compounds = compounds[(split+1)..-1]
       
       result = {}
-      {:training_dataset_uri => train_compounds, :test_dataset_uri => test_compounds}.each do |sym, compound_array|
-        
-        if sym == :training_dataset_uri
-          features = orig_dataset.features
-          title = "Training dataset split of "+orig_dataset.title.to_s
-        else
-          features = orig_dataset.features.dclone - [prediction_feature]
-          title = "Test dataset split of "+orig_dataset.title.to_s
-        end
-        source = $sinatra.url_for('/training_test_split',:full)
-        
-        result[sym] = orig_dataset.create_new_dataset( compound_array, features, title, source )
-      end
+      result[:training_dataset_uri] = orig_dataset.create_new_dataset( compounds[0..split],
+        orig_dataset.features, 
+        "Training dataset split of "+orig_dataset.title.to_s, 
+        $sinatra.url_for('/training_test_split',:full) )
+      result[:test_dataset_uri] = orig_dataset.create_new_dataset( compounds[(split+1)..-1],
+        orig_dataset.features.dclone - [prediction_feature], 
+        "Test dataset split of "+orig_dataset.title.to_s, 
+        $sinatra.url_for('/training_test_split',:full) )
       
       $sinatra.halt 400, "Training dataset not found: '"+result[:training_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:training_dataset_uri]
       $sinatra.halt 400, "Test dataset not found: '"+result[:test_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:test_dataset_uri]

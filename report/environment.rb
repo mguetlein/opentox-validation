@@ -1,19 +1,11 @@
 
-require 'rubygems'
-require 'logger'
-require 'fileutils'
-require 'sinatra'
-require 'sinatra/url_for' 
-require 'rest_client'
-require 'yaml'
-require 'opentox-ruby-api-wrapper'
-require 'fileutils'
-require 'mime/types'
-require 'ruby-plot'
+['rubygems', 'logger', 'fileutils', 'sinatra', 'sinatra/url_for', 'rest_client', 
+  'yaml', 'opentox-ruby-api-wrapper', 'fileutils', 'mime/types', 'abbrev', 
+  'rexml/document', 'active_record', 'ar-extensions', 'ruby-plot'].each do |g|
+    require g
+end
 gem 'ruby-plot', '= 0.0.2'
 
-require 'active_record'
-require 'ar-extensions'
 unless ActiveRecord::Base.connected?
   ActiveRecord::Base.establish_connection(  
      :adapter => @@config[:database][:adapter],

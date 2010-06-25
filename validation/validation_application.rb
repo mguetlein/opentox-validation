@@ -1,5 +1,5 @@
 
-[ 'rubygems', 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper', 'logger' ].each do |lib|
+[ 'rubygems', 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper', 'logger', 'active_record', 'ar-extensions' ].each do |lib|
   require lib
 end
 
@@ -33,8 +33,8 @@ get '/crossvalidation/:id' do
   when "application/rdf+xml"
     content_type "application/rdf+xml"
     result = crossvalidation.to_rdf
-  when /text\/x-yaml|\*\/\*|/ # matches 'text/x-yaml', '*/*', ''
-    content_type "text/x-yaml"
+  when /application\/x-yaml|\*\/\*|/ # matches 'text/x-yaml', '*/*', ''
+    content_type "application/x-yaml"
     result = crossvalidation.to_yaml
   else
     halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported."
@@ -81,7 +81,7 @@ get '/crossvalidation/:id/statistics' do
   v.validation_uri = nil
   v.created_at = nil
   v.id = nil
-  content_type "text/x-yaml"
+  content_type "application/x-yaml"
   v.to_yaml
 end
 
@@ -131,11 +131,11 @@ get '/:id' do
   when "application/rdf+xml"
     content_type "application/rdf+xml"
     result = validation.to_rdf
-  when /text\/x-yaml|\*\/\*|^$/ # matches 'text/x-yaml', '*/*', ''
-    content_type "text/x-yaml"
+  when /application\/x-yaml|\*\/\*|^$/ # matches 'application/x-yaml', '*/*', ''
+    content_type "application/x-yaml"
     result = validation.to_yaml
   else
-    halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported, valid Accept-Headers are \"application/rdf+xml\" and \"text/x-yaml\"."
+    halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported, valid Accept-Headers are \"application/rdf+xml\" and \"application/x-yaml\"."
   end
   result
 end

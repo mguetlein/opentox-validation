@@ -1,11 +1,9 @@
 
-[ 'rubygems', 'datamapper' ].each do |lib|
-  require lib
-end
+#[ 'rubygems', 'datamapper' ].each do |lib|
+#  require lib
+#end
 require "lib/merge.rb"
 
-require 'active_record'
-require 'ar-extensions'
 unless ActiveRecord::Base.connected?
   ActiveRecord::Base.establish_connection(  
      :adapter => @@config[:database][:adapter],

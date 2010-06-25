@@ -1,5 +1,4 @@
 
-require 'rexml/document'
 require "report/xml_report_util.rb"
 
 ENV['REPORT_DTD'] = "docbook-xml-4.5/docbookx.dtd" unless ENV['REPORT_DTD']

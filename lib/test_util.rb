@@ -24,7 +24,7 @@ module Lib
         
       case file.path  
       when /yaml$/
-        type = "text/x-yaml"
+        type = "application/x-yaml"
       when /owl$/
         type = "application/rdf+xml"
       else

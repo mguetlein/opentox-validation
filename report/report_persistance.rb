@@ -247,7 +247,7 @@ module Reports
       case format
       when "application/rdf+xml"
         report.to_rdf
-      when "text/x-yaml"
+      when "application/x-yaml"
         report.to_yaml
       else
         super

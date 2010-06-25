@@ -5,7 +5,7 @@ module ValidationExamples
 
     @@dataset_uris = {}
 
-    def self.upload_dataset(file, dataset_service=@@config[:services]["opentox-dataset"], file_type="text/x-yaml")
+    def self.upload_dataset(file, dataset_service=@@config[:services]["opentox-dataset"], file_type="application/x-yaml")
       raise "File not found: "+file.path.to_s unless File.exist?(file.path)
       if @@dataset_uris[file.path.to_s]==nil
         data = File.read(file.path)
@@ -209,11 +209,11 @@ module ValidationExamples
     
     def verify_yaml
       if @validation_uri =~ /crossvalidation/
-        Util.verify_crossvalidation(Util.validation_get("crossvalidation/"+@validation_uri.split("/")[-1],'text/x-yaml'))
-        Util.validation_get("crossvalidation/"+@validation_uri.split("/")[-1]+"/statistics",'text/x-yaml')
-        Util.verify_validation(Util.validation_get("crossvalidation/"+@validation_uri.split("/")[-1]+"/statistics",'text/x-yaml'))
+        Util.verify_crossvalidation(Util.validation_get("crossvalidation/"+@validation_uri.split("/")[-1],'application/x-yaml'))
+        Util.validation_get("crossvalidation/"+@validation_uri.split("/")[-1]+"/statistics",'application/x-yaml')
+        Util.verify_validation(Util.validation_get("crossvalidation/"+@validation_uri.split("/")[-1]+"/statistics",'application/x-yaml'))
       else
-        Util.verify_validation(Util.validation_get(@validation_uri.split("/")[-1],'text/x-yaml'))
+        Util.verify_validation(Util.validation_get(@validation_uri.split("/")[-1],'application/x-yaml'))
       end
     end
     
