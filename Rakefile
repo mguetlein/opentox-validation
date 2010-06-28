@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'rake'
+require 'tasks/opentox'
 
 REPORT_GEMS = ['rubygems', 'logger', 'fileutils', 'sinatra', 'sinatra/url_for', 'rest_client', 
   'yaml', 'opentox-ruby-api-wrapper', 'fileutils', 'mime/types', 'abbrev', 
@@ -17,7 +18,7 @@ task :install_gems do
       puts "ok"
     rescue LoadError => ex
       puts "NOT FOUND"
-      cmd = "sudo gem install "+g
+      cmd = "sudo env PATH=$PATH gem install "+g
       puts cmd
       IO.popen(cmd){ |f| puts f.gets }
     end
@@ -25,7 +26,7 @@ task :install_gems do
 end
 
 
-desc "Installs gems and inits db"
+desc "Installs gems and inits db migration"
 task :init => [:install_gems, :migrate] do
   #do nothing
 end
