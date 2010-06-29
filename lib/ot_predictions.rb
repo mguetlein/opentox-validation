@@ -58,7 +58,7 @@ module Lib
         @compounds = test_dataset.compounds
         LOGGER.debug "test dataset size: "+@compounds.size.to_s
         raise "test dataset is empty" unless @compounds.size>0
-        class_values = OpenTox::Feature.domain(prediction_feature)
+        class_values = is_classification ? OpenTox::Feature.domain(prediction_feature) : nil
         
         actual_values = []
         @compounds.each do |c|
