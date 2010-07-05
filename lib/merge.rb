@@ -119,7 +119,9 @@ module Lib
         elsif value1.is_a?(Array)
           raise "non-numerical arrays not yet supported"
         else
-          if value1.to_s != value2.to_s
+          if value1==nil && value2==nil
+            value = nil
+          elsif value1.to_s != value2.to_s
             value = value1.to_s + "/" + value2.to_s
           else
             value = value2.to_s
@@ -174,14 +176,14 @@ module Lib
   
   class MergeTest
     
-    attr_accessor :string, :integer, :float, :hash_value, :float, :float_array, :float_variance, :float_array_variance 
+    attr_accessor :string, :integer, :float, :hash_value, :float, :float_array, :float_variance, :float_array_variance, :is_nil 
     
     AVG = [:float, :float_array, :int_key ] 
     SUM = [:integer ]
-    ELSE = [:string, :hash_value]
+    ELSE = [:string, :hash_value, :is_nil]
     
     def to_s
-      res = [:string, :integer, :float, :hash_value, :float_array].collect do |var|
+      res = [:is_nil, :string, :integer, :float, :hash_value, :float_array].collect do |var|
          variance = nil
          begin
             variance = "+-"+send((var.to_s+"_variance")).inspect if AVG.index(var)!=nil
