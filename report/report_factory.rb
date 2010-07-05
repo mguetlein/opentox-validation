@@ -17,12 +17,12 @@ VAL_ATTR_BAR_PLOT_REGR = [ :root_mean_squared_error, :mean_absolute_error, :r_sq
 #
 module Reports::ReportFactory
   
-  RT_FASTTOX = "fasttox"
   RT_VALIDATION = "validation"
   RT_CV = "crossvalidation"
   RT_ALG_COMP = "algorithm_comparison"
+  RT_QMRF = "qmrf"
   
-  REPORT_TYPES = [RT_VALIDATION, RT_CV, RT_ALG_COMP ] #,RT_FASTTOX
+  REPORT_TYPES = [RT_VALIDATION, RT_CV, RT_ALG_COMP, RT_QMRF ]
   
   # creates a report of a certain type according to the validation data in validation_set 
   #

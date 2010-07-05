@@ -60,14 +60,21 @@ get '/report/:type/:id' do
     end
     #request.env['HTTP_ACCEPT'] = "application/pdf"
     
-    report = rs.get_report(params[:type],params[:id],accept_header)
-    format = Reports::ReportFormat.get_format(accept_header)
-    content_type format
-    #PENDING: get_report should return file or string, check for result.is_file instead of format
-    if format=="application/x-yaml" or format=="application/rdf+xml"
-      report
+    #QMRF-STUP
+    if params[:type] == Reports::ReportFactory::RT_QMRF
+      raise Reports::BadRequest.new("only 'application/qmrf-xml' provided so far") if accept_header != "application/qmrf-xml"
+      content_type "application/qmrf-xml"
+      result = body(OpenTox::RestClientWrapper.get("http://ecb.jrc.ec.europa.eu/qsar/qsar-tools/qrf/QMRF_v1.2_FishTox.xml"))
     else
-      result = body(File.new(report))
+      report = rs.get_report(params[:type],params[:id],accept_header)
+      format = Reports::ReportFormat.get_format(accept_header)
+      content_type format
+      #PENDING: get_report should return file or string, check for result.is_file instead of format
+      if format=="application/x-yaml" or format=="application/rdf+xml"
+        report
+      else
+        result = body(File.new(report))
+      end
     end
   end
 end
@@ -98,4 +105,18 @@ post '/report/:type' do
     end
   end
   halt 202,task_uri
+end
+
+
+post '/report/:type/:id' do
+  perform do |rs|
+   #QMRF-STUP
+    if params[:type] == Reports::ReportFactory::RT_QMRF
+      raise Reports::BadRequest.new("only 'application/qmrf-xml' provided so far") if request.content_type != "application/qmrf-xml"
+      input = request.env["rack.input"].read
+      "save qmrf would have been successfull, received data with "+input.to_s.size.to_s+" characters, this is just a stup, changes discarded"
+    else
+      "operation not supported yet"
+    end
+  end
 end

@@ -230,6 +230,9 @@ module Reports
     end
     
     def list_reports(type, filter_params=nil)
+      #QMRF-STUP
+      return "1" if type == ReportFactory::RT_QMRF
+      
       filter_params = {} unless filter_params
       filter_params.each{ |k,v| raise Reports::BadRequest.new("no report-attribute: "+k.to_s) unless ReportData.column_names.include?(k.gsub(/_like$/,"")) }
       filter_params[:report_type] = type
