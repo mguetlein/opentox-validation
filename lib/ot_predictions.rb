@@ -107,7 +107,7 @@ module Lib
               predicted_values << class_values.index(value)
               confidence_values << prediction_dataset.get_prediction_confidence(c, predicted_variable)
             else
-              value = prediction_dataset.get_value(c, predicted_variable)
+              value = prediction_dataset.get_predicted_regression(c, predicted_variable)
               begin
                 value = value.to_f unless value==nil or value.is_a?(Numeric)
               rescue
