@@ -1,7 +1,7 @@
 
 ['rubygems', 'logger', 'fileutils', 'sinatra', 'sinatra/url_for', 'rest_client', 
-  'yaml', 'opentox-ruby-api-wrapper', 'fileutils', 'mime/types', 'abbrev', 
-  'rexml/document', 'active_record', 'ar-extensions', 'ruby-plot'].each do |g|
+  'yaml', 'fileutils', 'mime/types', 'abbrev', 
+  'rexml/document',  'ruby-plot', 'active_record', 'ar-extensions', 'opentox-ruby-api-wrapper' ].each do |g|
     require g
 end
 gem 'ruby-plot', '= 0.0.2'

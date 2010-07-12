@@ -133,21 +133,21 @@ module ValidationExamples
   
   ########################################################################################################  
 
-  class ISTHamsterCrossvalidationInsilico < CrossValidation
+  class ISTHamsterCrossvalidation < CrossValidation
     def initialize
       @dataset_uri = "http://webservices.in-silico.ch/dataset/108"
       @prediction_feature = "http://toxcreate.org/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
     end
   end
   
-  class MajorityISTHamsterCrossvalidation < ISTHamsterCrossvalidationInsilico
+  class MajorityISTHamsterCrossvalidation < ISTHamsterCrossvalidation
     def initialize
       @algorithm_uri = File.join(@@config[:services]["opentox-majority"],"/class/algorithm")
       super
     end
   end
   
-  class LazarISTHamsterCrossvalidation < ISTHamsterCrossvalidationInsilico
+  class LazarISTHamsterCrossvalidation < ISTHamsterCrossvalidation
     def initialize
       @algorithm_uri = File.join(@@config[:services]["opentox-algorithm"],"lazar")
       @algorithm_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
@@ -155,14 +155,30 @@ module ValidationExamples
     end
   end
   
-  class ISTLazarISTHamsterCrossvalidation < ISTHamsterCrossvalidationInsilico
+  class ISTLazarISTHamsterCrossvalidation < ISTHamsterCrossvalidation
     def initialize
       @algorithm_uri = "http://webservices.in-silico.ch/algorithm/lazar"
       @algorithm_params = "feature_generation_uri=http://webservices.in-silico.ch/algorithm/fminer"
       super
     end
   end
+  
+  ########################################################################################################  
 
+  class ISTIrisCrossvalidation < CrossValidation
+    def initialize
+      @dataset_uri = "http://ot-dev.in-silico.ch/dataset/39"
+      @prediction_feature = "http://ot-dev.in-silico.ch/toxcreate/feature#IRIS%20unit%20risk"
+    end
+  end
+  
+  class ISTLazarISTIrisCrossvalidation < ISTIrisCrossvalidation
+    def initialize
+      @algorithm_uri = "http://ot-dev.in-silico.ch/algorithm/lazar"
+      @algorithm_params = "feature_generation_uri=http://ot-dev.in-silico.ch/algorithm/fminer"
+      super
+    end
+  end
   
   ########################################################################################################
   
@@ -244,6 +260,8 @@ module ValidationExamples
       "7b" =>  [ MajorityIrisSplit ],
       
       "8b" => [ MajorityIrisCrossvalidation ],
+      
+      "9a" => [ ISTLazarISTIrisCrossvalidation ],
     }
   
   def self.list

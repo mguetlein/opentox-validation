@@ -1,4 +1,3 @@
-require "logger"
 require "uri"
 require "yaml"
 ENV['RACK_ENV'] = 'test'
@@ -7,8 +6,11 @@ require 'test/unit'
 require 'rack/test'
 require 'lib/test_util.rb'
 require 'test/test_examples.rb'
+
 LOGGER = MyLogger.new(STDOUT)
 LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
+LOGGER.formatter = Logger::Formatter.new
+
 
 class ValidationTest < Test::Unit::TestCase
   include Rack::Test::Methods
@@ -17,18 +19,20 @@ class ValidationTest < Test::Unit::TestCase
   def test_it
     $test_case = self
 
-
-    get "/crossvalidation/4/statistics"
+    #get "/crossvalidation/4/statistics"
 #    post "",:model_uri=>"http://localhost/model/1",:test_dataset_uri=>"http://localhost/dataset/3",
 #      :test_target_dataset_uri=>"http://localhost/dataset/1"
 
     #get "/crossvalidation/1",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
-    puts last_response.body
+    #puts last_response.body
     
 #    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
 #    puts last_response.body
     
-    #run_test("8b") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
+    #run_test("9a") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
+    
+    run_test("9a","http://localhost/validation/crossvalidation/10") #, "http://localhost/validation/321")
+    
     #run_test("8b", "http://localhost/validation/crossvalidation/4")
  
     #puts Nightly.build_nightly("1")
