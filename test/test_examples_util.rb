@@ -114,11 +114,15 @@ module ValidationExamples
         assert_int_equal(predictions, num_instances-num_unpredicted)
       else
         regr_stats = val["regression_statistics".to_sym]
-        assert regr_stats!=nil
+        assert_not_nil regr_stats
       end
     end
     
-    private 
+    private
+    def self.assert_not_nil(val,msg_suffix=nil)
+      raise msg_suffix.to_s+" is nil" if val==nil
+    end
+    
     def self.assert_int_equal(val1,val2,msg_suffix=nil)
       raise msg_suffix.to_s+" not equal: "+val1.to_s+" != "+val2.to_s unless val1==val2
     end

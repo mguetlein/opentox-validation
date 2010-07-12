@@ -19,7 +19,13 @@ end
 class Object
   
   def to_nice_s
-    return "%.2f" % self if is_a?(Float)
+    if is_a?(Float)
+      if self>0.01
+        return "%.2f" % self
+      else
+        return self.to_s
+      end
+    end
     return collect{ |i| i.to_nice_s  }.join(", ") if is_a?(Array)
     return collect{ |i,j| i.to_nice_s+": "+j.to_nice_s  }.join(", ") if is_a?(Hash)
     return to_s

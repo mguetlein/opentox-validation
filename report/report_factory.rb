@@ -31,8 +31,6 @@ module Reports::ReportFactory
   #
   def self.create_report(type, validation_set)
     case type
-    when RT_FASTTOX
-      raise "not yet implemented"
     when RT_VALIDATION
       create_report_validation(validation_set)
     when RT_CV
@@ -40,7 +38,7 @@ module Reports::ReportFactory
     when RT_ALG_COMP
       create_report_compare_algorithms(validation_set)
     else
-      raise "unknown report type"
+      raise "unknown report type "+type.to_s
     end
   end
   

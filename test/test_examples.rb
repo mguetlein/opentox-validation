@@ -9,6 +9,53 @@ end
 
 module ValidationExamples
   
+  class IrisCrossvalidation < CrossValidation
+    def initialize
+      @dataset_file = File.new("data/IRIS_unitrisk.yaml","r")
+      @prediction_feature = "http://ot-dev.in-silico.ch/toxcreate/feature#IRIS%20unit%20risk"
+      @num_folds = 10
+    end
+  end
+  
+  class MajorityIrisCrossvalidation < IrisCrossvalidation
+    def initialize
+      @algorithm_uri = File.join(@@config[:services]["opentox-majority"],"/regr/algorithm")
+      super
+    end
+  end
+
+  class LazarIrisCrossvalidation < IrisCrossvalidation
+    def initialize
+      @algorithm_uri = File.join(@@config[:services]["opentox-algorithm"],"lazar")
+      @algorithm_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
+      super
+    end
+  end
+  
+  ########################################################################################################  
+  
+  class IrisSplit < SplitTestValidation
+    def initialize
+      @dataset_file = File.new("data/IRIS_unitrisk.yaml","r")
+      @prediction_feature = "http://ot-dev.in-silico.ch/toxcreate/feature#IRIS%20unit%20risk"
+    end
+  end
+  
+  class LazarIrisSplit < IrisSplit
+    def initialize
+      @algorithm_uri = File.join(@@config[:services]["opentox-algorithm"],"lazar")
+      @algorithm_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
+      super
+    end
+  end
+  
+  class MajorityIrisSplit < IrisSplit
+    def initialize
+      @algorithm_uri = File.join(@@config[:services]["opentox-majority"],"/regr/algorithm")
+      super
+    end
+  end
+  
   ########################################################################################################
   
   class HamsterSplit < SplitTestValidation
@@ -192,6 +239,11 @@ module ValidationExamples
       "6b" => [ MLR_NTUA_CacoTrainingTest ],
       "6c" => [ MLR_NTUA2_CacoTrainingTest ],
       "6d" => [ MajorityCacoTrainingTest ],
+      
+      "7a" =>  [ LazarIrisSplit ],
+      "7b" =>  [ MajorityIrisSplit ],
+      
+      "8b" => [ MajorityIrisCrossvalidation ],
     }
   
   def self.list
