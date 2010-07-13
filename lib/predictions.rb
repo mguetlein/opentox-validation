@@ -97,6 +97,12 @@ module Lib
         
         @variance_predicted = 0
         @variance_actual = 0
+        
+        @sum_actual = 0
+        @sum_predicted = 0
+        @sum_multiply = 0
+        @sum_squares_actual = 0
+        @sum_squares_predicted = 0
       end
     end
     
@@ -134,6 +140,12 @@ module Lib
               @prediction_mean, old_prediction_mean, predicted_value )
             @variance_actual = Util.compute_variance( @variance_actual, @num_predicted, 
               @actual_mean, old_actual_mean, actual_value )
+              
+            @sum_actual += actual_value
+            @sum_predicted += predicted_value
+            @sum_multiply += (actual_value*predicted_value)
+            @sum_squares_actual += actual_value**2
+            @sum_squares_predicted += predicted_value**2
           end
         end
       end
@@ -418,9 +430,23 @@ module Lib
       Math.sqrt(@sum_abs_error / (@num_with_actual_value - @num_unpredicted).to_f)
     end
     
+    def sum_squared_error
+      return @sum_squared_error
+    end
+    
     def r_square
-      return 0 if @variance_actual==0
-      return @variance_predicted / @variance_actual
+      return sample_correlation_coefficient ** 2
+    end
+    
+    def sample_correlation_coefficient
+      # formula see http://en.wikipedia.org/wiki/Correlation_and_dependence#Pearson.27s_product-moment_coefficient
+      return ( @num_predicted * @sum_multiply - @sum_actual * @sum_predicted ) /
+             ( Math.sqrt( @num_predicted * @sum_squares_actual - @sum_actual**2 ) *
+               Math.sqrt( @num_predicted * @sum_squares_predicted - @sum_predicted**2 ) )
+    end
+    
+    def total_sum_of_squares
+      return @variance_actual * ( @num_predicted - 1 )
     end
     
     def target_variance_predicted

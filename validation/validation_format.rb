@@ -74,16 +74,10 @@ module Validation
     
     LITERALS = [ :created_at, :real_runtime, :num_instances, :num_without_class,
                    :percent_without_class, :num_unpredicted, :percent_unpredicted, 
-                   :crossvalidation_fold, #:crossvalidation_id, 
-                   :num_correct, :num_incorrect, :percent_correct, :percent_incorrect,
-                   :area_under_roc, :false_negative_rate, :false_positive_rate,
-                   :f_measure, :num_false_positives, :num_false_negatives, 
-                   :num_true_positives, :num_true_negatives, :precision, 
-                   :recall, :true_negative_rate, :true_positive_rate,
-                   :confusion_matrix_value, :weighted_area_under_roc, 
-                   :target_variance_actual, :root_mean_squared_error,
-                   :target_variance_predicted, :mean_absolute_error, :r_square, :class_value,
-                   :confusion_matrix_actual, :confusion_matrix_predicted ]
+                   :crossvalidation_fold ] + 
+                (Lib::VAL_CLASS_PROPS - [ :confusion_matrix ]) + Lib::VAL_REGR_PROPS +
+                [ :class_value, :confusion_matrix_value,
+                  :confusion_matrix_actual, :confusion_matrix_predicted ]
                    
     LITERAL_NAMES = {:created_at => OT["date"] }
                 

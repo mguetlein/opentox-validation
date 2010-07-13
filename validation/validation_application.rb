@@ -200,16 +200,28 @@ post '/plain_training_test_split' do
     result[:training_dataset_uri]+"\n"+result[:test_dataset_uri]+"\n"
 end
 
-post '/create_validation' do
+post '/validate_datasets' do
   content_type "text/uri-list"
   task_uri = OpenTox::Task.as_task do
-    LOGGER.info "creating validation "+params.inspect
+    LOGGER.info "validating values "+params.inspect
     halt 400, "test_dataset_uri missing" unless params[:test_dataset_uri]
     halt 400, "prediction_datset_uri missing" unless params[:prediction_dataset_uri]
-    halt 400, "model_uri missing" unless params[:model_uri]
     
-    v = Validation::Validation.new params
-    v.compute_validation_stats()
+    if params[:model_uri]
+      v = Validation::Validation.new params
+      v.compute_validation_stats_with_model()
+    else
+      halt 400, "please specify 'model_uri' or 'prediction_feature'" unless params[:prediction_feature]
+      halt 400, "please specify 'model_uri' or 'predicted_feature'" unless params[:predicted_feature]
+      halt 400, "please specify 'model_uri' or set either 'classification' or 'regression' flag" unless 
+            params[:classification] or params[:regression]
+      
+      predicted_feature = params.delete("predicted_feature")
+      clazz = params.delete("classification")!=nil
+      regr = params.delete("regression")!=nil
+      v = Validation::Validation.new params            
+      v.compute_validation_stats((clazz and !regr),predicted_feature)
+    end
     content_type "text/uri-list"
     v.validation_uri
   end

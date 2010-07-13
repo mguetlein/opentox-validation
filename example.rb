@@ -7,11 +7,13 @@ class Example
   @@file_type="text/x-yaml"
   @@model=File.join @@config[:services]["opentox-model"],"1"
   @@feature= URI.encode("http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)")
+  @@predicted_feature= URI.encode("http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)_lazar_classification")
   @@alg = File.join @@config[:services]["opentox-algorithm"],"lazar"
   @@alg_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
   @@data=File.join @@config[:services]["opentox-dataset"],"1"
   @@train_data=File.join @@config[:services]["opentox-dataset"],"2"
   @@test_data=File.join @@config[:services]["opentox-dataset"],"3"
+  @@prediction_data=File.join @@config[:services]["opentox-dataset"],"5"
   @@css_file="http://apps.ideaconsult.net:8080/ToxPredict/style/global.css"
   
   @@summary=""
@@ -39,7 +41,8 @@ class Example
             "validation_report_id" => "1",
             "crossvalidation_report_id" => "1",
             "css_file" => @@css_file,
-            }
+            "prediction_dataset_uri" => @@prediction_data,
+            "predicted_feature" => @@predicted_feature }
     
     sub.each do |k,v|
       res.gsub!(/<#{k}>/,v)

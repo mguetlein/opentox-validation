@@ -29,16 +29,26 @@ class ValidationTest < Test::Unit::TestCase
 #    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
 #    puts last_response.body
     
-    #run_test("9a") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
+#    post "/validate_datasets",{
+#      :test_dataset_uri=>"http://localhost/dataset/204",
+#      :prediction_dataset_uri=>"http://localhost/dataset/206",
+#      :test_target_dataset_uri=>"http://localhost/dataset/202",
+#      :prediction_feature=>"http://ot-dev.in-silico.ch/toxcreate/feature#IRIS%20unit%20risk",
+#      :predicted_feature=>"http://ot-dev.in-silico.ch/toxcreate/feature#IRIS%20unit%20risk_lazar_regression",
+#      :regression=>"true"}
+#      #:classification=>"true"}
+#    puts last_response.body
     
-    run_test("9a","http://localhost/validation/crossvalidation/10") #, "http://localhost/validation/321")
+    #run_test("1b" ) #, "http://localhost/validation/826") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
+    
+    #run_test("7a") #,"http://localhost/validation/crossvalidation/10") #, "http://localhost/validation/321")
     
     #run_test("8b", "http://localhost/validation/crossvalidation/4")
  
     #puts Nightly.build_nightly("1")
     
     #prepare_examples
-    #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
+    do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
   end
 
   def app

@@ -118,22 +118,28 @@ module Validation
              :real_runtime => benchmark.real }
       self.save
       
-      compute_validation_stats(model)
+      compute_validation_stats_with_model( model )
     end
-    
-    def compute_validation_stats(model = nil)
       
-      model = OpenTox::Model::PredictionModel.find(self.model_uri) unless model
+    def compute_validation_stats_with_model( model=nil )
+      
+      model = OpenTox::Model::PredictionModel.find(self.model_uri) if model==nil and self.model_uri
       $sinatra.halt 400, "model not found: "+self.model_uri.to_s unless model
+      prediction_feature = self.prediction_feature ? nil : model.dependentVariables
+      algorithm_uri = self.algorithm_uri ? nil : model.algorithm
+      compute_validation_stats( model.classification?, model.predictedVariables, prediction_feature, algorithm_uri )
+    end
       
-      self.attributes = { :prediction_feature => model.dependentVariables } unless self.prediction_feature 
-      self.attributes = { :algorithm_uri => model.algorithm } unless self.algorithm_uri
+    def compute_validation_stats( classification, predicted_feature, prediction_feature=nil, algorithm_uri=nil)
+      
+      self.attributes = { :prediction_feature => prediction_feature } if self.prediction_feature==nil && prediction_feature
+      self.attributes = { :algorithm_uri => algorithm_uri } if self.algorithm_uri==nil && algorithm_uri
       self.save
       
       LOGGER.debug "computing prediction stats"
-      prediction = Lib::OTPredictions.new( model.classification?, 
+      prediction = Lib::OTPredictions.new( classification, 
         self.test_dataset_uri, self.test_target_dataset_uri, self.prediction_feature, 
-        self.prediction_dataset_uri, model.predictedVariables )
+        self.prediction_dataset_uri, predicted_feature )
       if prediction.classification?
         self.attributes = { :classification_statistics => prediction.compute_stats }
       else
