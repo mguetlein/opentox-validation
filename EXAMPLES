@@ -90,7 +90,7 @@ result example (accept-header: text/uri-list)
 <<< <validation_service>/id_i
 
 
-create a validation by comparing values datasets
+create a validation by comparing feature values
 -----------------------------------------------------
 
 >>> curl -X POST -d test_dataset_uri="<test_dataset_uri>" \
