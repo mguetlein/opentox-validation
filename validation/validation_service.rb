@@ -39,10 +39,10 @@ module Validation
       $sinatra.halt 500,"do not set id manually" if params[:id]
       $sinatra.halt 500,"do not set uri manually" if params[:validation_uri]
       super params
-      self.save
+      self.save!
       raise "internal error, validation-id not set "+to_yaml if self.id==nil
       self.attributes = { :validation_uri => $sinatra.url_for("/"+self.id.to_s, :full).to_s }
-      self.save
+      self.save!
     end
     
     # deletes a validation
@@ -79,7 +79,7 @@ module Validation
       model = OpenTox::Model::PredictionModel.build(algorithm_uri, params)
       $sinatra.halt 500,"model building failed" unless model
       self.attributes = { :model_uri => model.uri }
-      self.save
+      self.save!
       
       $sinatra.halt 500,"error after building model: model.dependent_variable != validation.prediciton_feature ("+
         model.dependentVariables.to_s+" != "+self.prediction_feature+")" if self.prediction_feature!=model.dependentVariables
@@ -98,7 +98,7 @@ module Validation
       
       unless self.algorithm_uri
         self.attributes = { :algorithm_uri => model.algorithm }
-        self.save
+        self.save!
       end
       
       if self.prediction_feature
@@ -107,7 +107,7 @@ module Validation
       else
         $sinatra.halt 400, "model has no dependentVariables specified, please give prediction feature for model validation" unless model.dependentVariables
         self.attributes = { :prediction_feature => model.dependentVariables }
-        self.save
+        self.save!
       end
       
       prediction_dataset_uri = ""
@@ -116,7 +116,7 @@ module Validation
       end
       self.attributes = { :prediction_dataset_uri => prediction_dataset_uri,
              :real_runtime => benchmark.real }
-      self.save
+      self.save!
       
       compute_validation_stats_with_model( model )
     end
@@ -134,7 +134,7 @@ module Validation
       
       self.attributes = { :prediction_feature => prediction_feature } if self.prediction_feature==nil && prediction_feature
       self.attributes = { :algorithm_uri => algorithm_uri } if self.algorithm_uri==nil && algorithm_uri
-      self.save
+      self.save!
       
       LOGGER.debug "computing prediction stats"
       prediction = Lib::OTPredictions.new( classification, 
@@ -151,7 +151,7 @@ module Validation
              :percent_without_class => prediction.percent_without_class,
              :num_unpredicted => prediction.num_unpredicted,
              :percent_unpredicted => prediction.percent_unpredicted }
-      self.save
+      self.save!
     end
   end
   
@@ -167,10 +167,10 @@ module Validation
       params[:random_seed] = 1 if params[:random_seed]==nil
       params[:stratified] = false if params[:stratified]==nil
       super params
-      self.save
+      self.save!
       raise "internal error, crossvalidation-id not set" if self.id==nil
       self.attributes = { :crossvalidation_uri => $sinatra.url_for("/crossvalidation/"+self.id.to_s, :full) }
-      self.save
+      self.save!
     end
     
     # deletes a crossvalidation, all validations are deleted as well
