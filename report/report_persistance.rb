@@ -1,4 +1,6 @@
 
+REPORT_DIR = File.join(Dir.pwd,'/reports')
+
 # = Reports::ReportPersistance
 #
 # service that stores reports (Reports::ReportConent), and provides access in various formats
@@ -68,10 +70,9 @@ class Reports::FileReportPersistance < Reports::ReportPersistance
   
   def initialize()
     raise "pls specify report-directory (:reports -> :report_dir) in config file" unless @@config[:reports] and @@config[:reports][:report_dir]
-    @report_dir = @@config[:reports][:report_dir]
-    FileUtils.mkdir @report_dir.to_s unless File.directory?(@report_dir)
-    raise "report cannot be found nor created" unless File.directory?(@report_dir)
-    LOGGER.debug "reports are stored in "+@report_dir.to_s 
+    FileUtils.mkdir REPORT_DIR unless File.directory?(REPORT_DIR)
+    raise "report cannot be found nor created" unless File.directory?(REPORT_DIR)
+    LOGGER.debug "reports are stored in "+REPORT_DIR 
   end
   
   def list_reports(type, filter_params=nil)
@@ -165,7 +166,7 @@ class Reports::FileReportPersistance < Reports::ReportPersistance
   end
   
   def type_directory(type)
-    dir = @report_dir+"/"+type
+    dir = REPORT_DIR+"/"+type
     FileUtils.mkdir dir.to_s unless (File.directory?(dir))
     return dir
   end
