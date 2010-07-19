@@ -60,9 +60,9 @@ get '/report/:type/:id' do
     end
     #request.env['HTTP_ACCEPT'] = "application/pdf"
     
-    #QMRF-STUP
+    #QMRF-STUB
     if params[:type] == Reports::ReportFactory::RT_QMRF
-      raise Reports::BadRequest.new("only 'application/qmrf-xml' provided so far") if accept_header != "application/qmrf-xml"
+      #raise Reports::BadRequest.new("only 'application/qmrf-xml' provided so far") if accept_header != "application/qmrf-xml"
       content_type "application/qmrf-xml"
       result = body(OpenTox::RestClientWrapper.get("http://ecb.jrc.ec.europa.eu/qsar/qsar-tools/qrf/QMRF_v1.2_FishTox.xml"))
     else
@@ -110,11 +110,11 @@ end
 
 post '/report/:type/:id' do
   perform do |rs|
-   #QMRF-STUP
+   #QMRF-STUB
     if params[:type] == Reports::ReportFactory::RT_QMRF
-      raise Reports::BadRequest.new("only 'application/qmrf-xml' provided so far") if request.content_type != "application/qmrf-xml"
+      #raise Reports::BadRequest.new("only 'application/qmrf-xml' provided so far") if request.content_type != "application/qmrf-xml"
       input = request.env["rack.input"].read
-      "save qmrf would have been successfull, received data with "+input.to_s.size.to_s+" characters, this is just a stup, changes discarded"
+      "save qmrf would have been successfull, received data with "+input.to_s.size.to_s+" characters, this is just a stub, changes discarded"
     else
       "operation not supported yet"
     end
