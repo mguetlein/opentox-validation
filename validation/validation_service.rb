@@ -191,8 +191,9 @@ module Validation
     def perform_cv ( algorithm_params=nil )
       
       LOGGER.debug "perform cv validations"
-      Validation.find( :all, :conditions => { :crossvalidation_id => id } ).each do |v|
-        v.validate_algorithm( algorithm_params )
+      @tmp_validations.each do | val |
+        validation = Validation.new val
+        validation.validate_algorithm( algorithm_params )
         #break
       end
     end
@@ -280,6 +281,8 @@ module Validation
       
       test_features = orig_dataset.features.dclone - [prediction_feature]
       
+      @tmp_validations = []
+      
       (1..self.num_folds).each do |n|
         
         datasetname = 'cv'+self.id.to_s +
@@ -311,12 +314,13 @@ module Validation
         LOGGER.debug "test set:     "+datasetname+"_test, compounds: "+test_compounds.size.to_s
         test_dataset_uri = orig_dataset.create_new_dataset( test_compounds, test_features, datasetname + '_test', source )
       
-        validation = Validation.new :training_dataset_uri => train_dataset_uri, 
-                                    :test_dataset_uri => test_dataset_uri,
-                                    :test_target_dataset_uri => self.dataset_uri,
-                                    :crossvalidation_id => self.id, :crossvalidation_fold => n,
-                                    :prediction_feature => prediction_feature,
-                                    :algorithm_uri => self.algorithm_uri
+        tmp_validation = { :training_dataset_uri => train_dataset_uri, 
+                           :test_dataset_uri => test_dataset_uri,
+                           :test_target_dataset_uri => self.dataset_uri,
+                           :crossvalidation_id => self.id, :crossvalidation_fold => n,
+                           :prediction_feature => prediction_feature,
+                           :algorithm_uri => self.algorithm_uri }
+        @tmp_validations << tmp_validation
       end
     end
   end

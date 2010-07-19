@@ -39,7 +39,7 @@ class ValidationTest < Test::Unit::TestCase
 #      #:classification=>"true"}
 #    puts last_response.body
     
-    #run_test("1b" ) #, "http://localhost/validation/826") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
+    run_test("3b" ) #, "http://localhost/validation/826") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
     
     #run_test("7a") #,"http://localhost/validation/crossvalidation/10") #, "http://localhost/validation/321")
     
@@ -48,7 +48,7 @@ class ValidationTest < Test::Unit::TestCase
     #puts Nightly.build_nightly("1")
     
     #prepare_examples
-    do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
+    #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
   end
 
   def app

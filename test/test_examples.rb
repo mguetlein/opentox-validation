@@ -180,6 +180,23 @@ module ValidationExamples
     end
   end
   
+    ########################################################################################################  
+
+  class ISTEpaCrossvalidation < CrossValidation
+    def initialize
+      @dataset_uri = "http://ot-dev.in-silico.ch/dataset/69"
+      @prediction_feature = "http://ot-dev.in-silico.ch/toxcreate/feature#EPA%20FHM"
+    end
+  end
+  
+  class ISTLazarISTEpaCrossvalidation < ISTEpaCrossvalidation
+    def initialize
+      @algorithm_uri = "http://ot-dev.in-silico.ch/algorithm/lazar"
+      @algorithm_params = "feature_generation_uri=http://ot-dev.in-silico.ch/algorithm/fminer"
+      super
+    end
+  end
+  
   ########################################################################################################
   
   class LR_AmbitCacoModel < ModelValidation
@@ -262,6 +279,8 @@ module ValidationExamples
       "8b" => [ MajorityIrisCrossvalidation ],
       
       "9a" => [ ISTLazarISTIrisCrossvalidation ],
+      
+      "10a" => [ ISTLazarISTEpaCrossvalidation ],
     }
   
   def self.list
