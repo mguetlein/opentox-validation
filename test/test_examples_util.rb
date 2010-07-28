@@ -67,14 +67,14 @@ module ValidationExamples
     def self.verify_crossvalidation(val_yaml)
       
       val = YAML.load(val_yaml)
-      puts val.inspect
+      #puts val.inspect
       
       assert_integer val["random_seed".to_sym],nil,nil,"random_seed"
       assert_boolean val["stratified".to_sym],"stratified"
       assert_integer val["num_folds".to_sym],0,1000,"num_folds"
       num_folds = val["num_folds".to_sym].to_i
       
-      validations = val["validations".to_sym]
+      validations = val["validation_uris".to_sym]
       assert_int_equal(num_folds, validations.size, "num_folds != validations.size")
     end
     
@@ -82,7 +82,7 @@ module ValidationExamples
     
       val = YAML.load(val_yaml)
   
-      puts val.inspect
+      #puts val.inspect
       assert_integer val["num_instances".to_sym],0,1000,"num_instances"
       num_instances = val["num_instances".to_sym].to_i
       
@@ -103,7 +103,7 @@ module ValidationExamples
         class_value_stats.each do |cvs|
           class_values << cvs["class_value".to_sym]
         end
-        puts class_values.inspect
+        #puts class_values.inspect
         
         confusion_matrix = class_stats["confusion_matrix".to_sym]
         confusion_matrix_cells = confusion_matrix["confusion_matrix_cell".to_sym]
@@ -118,12 +118,40 @@ module ValidationExamples
       end
     end
     
+    def self.compare_yaml_and_owl(hash, owl, nested_params=[] )
+      
+      hash.each do |k,v|
+        p = nested_params + [ k.to_s.to_rdf_format ]
+        if (v.is_a?(Hash))
+          compare_yaml_and_owl( v, owl, p )
+        elsif (v.is_a?(Array))
+          v.each do |vv|
+            compare_yaml_and_owl( vv, owl, p )
+          end
+        else
+          owl_value = owl.get_nested( p )
+          if owl_value.size == 0
+            raise "owl_value is nil, yaml value is '"+v.to_s+"'" unless v==nil or v.to_s.size==0
+          elsif owl_value.size == 1
+            assert_equal(v, owl_value[0], p.join(".")+" (yaml != rdf)")
+          else
+            raise p.join(".")+" yaml value '"+v.to_s+"' not included in rdf values '"+
+              owl_value.inspect+"'" unless owl_value.include?(v)
+          end
+        end
+      end
+    end
+    
     private
     def self.assert_not_nil(val,msg_suffix=nil)
       raise msg_suffix.to_s+" is nil" if val==nil
     end
     
     def self.assert_int_equal(val1,val2,msg_suffix=nil)
+      assert_equal(val1, val2, msg_suffix)
+    end
+    
+    def self.assert_equal(val1,val2,msg_suffix=nil)
       raise msg_suffix.to_s+" not equal: "+val1.to_s+" != "+val2.to_s unless val1==val2
     end
     
@@ -211,7 +239,24 @@ module ValidationExamples
       end
     end
     
+    def compare_yaml_vs_rdf
+      if @validation_uri
+        yaml = YAML.load(Util.validation_get(@validation_uri.split("/")[-1],'application/x-yaml'))
+        owl = OpenTox::Owl.from_data(Util.validation_get(@validation_uri.split("/")[-1]),@validation_uri,"Validation")
+        Util.compare_yaml_and_owl(yaml,owl)
+      end
+      if @report_uri
+        yaml = YAML.load(Util.validation_get(@report_uri.split("/")[-3..-1].join("/"),'application/x-yaml'))
+        owl = OpenTox::Owl.from_data(Util.validation_get(@report_uri.split("/")[-3..-1].join("/")),@report_uri,"ValidationReport")
+        Util.compare_yaml_and_owl(yaml,owl)
+      else
+        puts "no report"
+      end
+    end
+    
+    
     def verify_yaml
+      raise "cannot very validation, validation_uri is null" unless @validation_uri
       if @validation_uri =~ /crossvalidation/
         Util.verify_crossvalidation(Util.validation_get("crossvalidation/"+@validation_uri.split("/")[-1],'application/x-yaml'))
         Util.validation_get("crossvalidation/"+@validation_uri.split("/")[-1]+"/statistics",'application/x-yaml')

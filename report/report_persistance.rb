@@ -1,5 +1,6 @@
 
 REPORT_DIR = File.join(Dir.pwd,'/reports')
+require "lib/format_util.rb"
 
 # = Reports::ReportPersistance
 #
@@ -182,41 +183,32 @@ end
 module Reports
   
   class ReportData < ActiveRecord::Base
-    include Lib::RDFProvider
   
-    def get_content_as_hash
-      map = {}
-      map[:created_at] = created_at
-      map[:report_uri] = report_uri
-      map[:report_type] = report_type
-      map[:validation_uris] = validation_uris
-      map[:crossvalidation_uris] = crossvalidation_uris
-      map[:algorithm_uris] = algorithm_uris
-      map[:model_uris] = model_uris
-      map
-    end
-    
-    def rdf_title
-      "ValidationReport"
-    end
-    
-    def uri
-      report_uri
-    end
-    
-    LITERALS = [ :created_at, :report_type ]
-    LITERAL_NAMES = {:created_at => OT["date"] }
-    OBJECT_PROPERTIES = { :crossvalidation_uris => OT['reportCrossvalidation'], :algorithm_uris => OT['reportAlgorithm'],
-                           :validation_uris => OT['reportValidation'], :model_uris => OT['reportModel'] }
-    OBJECTS = { :crossvalidation_uris => OT['Crossvalidation'], :algorithm_uris => OT['Algorithm'],
-                           :validation_uris => OT['Validation'], :model_uris => OT['Model'] }
-    CLASSES = {}               
-    IGNORE = [ :id, :report_uri ]
-    
     serialize :validation_uris
     serialize :crossvalidation_uris
     serialize :algorithm_uris
     serialize :model_uris
+    
+    alias_attribute :date, :created_at
+    
+    def get_content_as_hash
+      map = {}
+      [ :date, :report_type, :validation_uris, :crossvalidation_uris,
+        :algorithm_uris, :model_uris ].each do |p| 
+        map[p] = self.send(p)
+      end
+      map
+    end
+    
+    def to_yaml
+      get_content_as_hash.to_yaml
+    end    
+    
+    def to_rdf
+      owl = OpenTox::Owl.create("ValidationReport",report_uri)
+      owl.set_data(get_content_as_hash.keys_to_rdf_format)
+      owl.rdf
+    end
   end
   
   class ExtendedFileReportPersistance < FileReportPersistance

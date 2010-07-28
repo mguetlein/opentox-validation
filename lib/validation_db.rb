@@ -18,7 +18,7 @@ end
 module Lib
 
   VAL_PROPS_GENERAL = [ :validation_uri, :model_uri, :algorithm_uri, :training_dataset_uri, :prediction_feature,
-                :test_dataset_uri, :test_target_dataset_uri, :prediction_dataset_uri, :created_at ] 
+                :test_dataset_uri, :test_target_dataset_uri, :prediction_dataset_uri, :date ] 
   VAL_PROPS_SUM = [ :num_instances, :num_without_class, :num_unpredicted ]
   VAL_PROPS_AVG = [:real_runtime, :percent_without_class, :percent_unpredicted ]
   VAL_PROPS = VAL_PROPS_GENERAL + VAL_PROPS_SUM + VAL_PROPS_AVG
@@ -50,7 +50,7 @@ module Lib
     :target_variance_actual, :target_variance_predicted, :sum_squared_error, :sample_correlation_coefficient ]
   
   CROSS_VAL_PROPS = [:dataset_uri, :num_folds, :stratified, :random_seed]
-  CROSS_VAL_PROPS_REDUNDANT = [:crossvalidation_uri, :algorithm_uri, :created_at] + CROSS_VAL_PROPS 
+  CROSS_VAL_PROPS_REDUNDANT = [:crossvalidation_uri, :algorithm_uri, :date] + CROSS_VAL_PROPS 
   
   ALL_PROPS = VAL_PROPS + VAL_CV_PROPS + VAL_CLASS_PROPS_EXTENDED + VAL_REGR_PROPS + CROSS_VAL_PROPS
 
@@ -61,8 +61,11 @@ module Lib
   class Validation < ActiveRecord::Base
     serialize :classification_statistics
     serialize :regression_statistics
+    
+    alias_attribute :date, :created_at
   end
   
   class Crossvalidation < ActiveRecord::Base
+    alias_attribute :date, :created_at
   end
 end

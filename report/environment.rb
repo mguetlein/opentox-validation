@@ -20,8 +20,6 @@ end
 module Reports
 end
 
-require "lib/rdf_provider.rb"
-
 require "report/plot_factory.rb"
 require "report/xml_report.rb"
 require "report/xml_report_util.rb"

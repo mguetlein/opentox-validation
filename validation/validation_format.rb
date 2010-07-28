@@ -1,29 +1,26 @@
 
-require "lib/rdf_provider.rb"
+require "lib/format_util.rb"
 
 module Validation
   
-  
   # adding to_yaml and to_rdf functionality to validation
   class Validation < Lib::Validation
-    include Lib::RDFProvider
   
-    # get_content_as_hash is the basis for to_yaml and to_rdf
-    # the idea is that everything is stored in a hash structure
-    # the hash is directly printed in to_yaml, whereas the has_keys can be used to resolve 
-    # the right properties, classes for to_rdf
-    def get_content_as_hash
+    # builds hash for valiation, as the internal presentation differs from the owl-object
+    # the hash is directly printed in to_yaml, or added to the owl-structure
+    def get_content_as_hash()
       
       LOGGER.debug self.validation_uri
       
       h = {}
-      Lib::VAL_PROPS.each{|p| h[p] = self.send(p)}
+      (Lib::VAL_PROPS - [:validation_uri]).each do |p|
+         h[p] = self.send(p)
+      end
       if crossvalidation_id!=nil
         cv = {}
-        Lib::VAL_CV_PROPS.each do |p|
-          cv[p] = self.send(p)
-        end
-        # replace crossvalidation id with uri
+        #skip crossvalidation_id
+        cv[:crossvalidation_fold] = self.crossvalidation_fold
+        cv[:crossvalidation_uri] = self.crossvalidation_uri
         h[:crossvalidation_info] = cv
       end
       if classification_statistics 
@@ -64,79 +61,42 @@ module Validation
       return h  
     end
     
-    def rdf_title
-      "Validation"
+    def to_rdf
+      owl = OpenTox::Owl.create("Validation",validation_uri)
+      owl.set_data(get_content_as_hash.keys_to_rdf_format)
+      owl.rdf
     end
     
-    def uri
-      validation_uri
+    def to_yaml
+      get_content_as_hash.to_yaml
     end
-    
-    LITERALS = [ :created_at, :real_runtime, :num_instances, :num_without_class,
-                   :percent_without_class, :num_unpredicted, :percent_unpredicted, 
-                   :crossvalidation_fold ] + 
-                (Lib::VAL_CLASS_PROPS - [ :confusion_matrix ]) + Lib::VAL_REGR_PROPS +
-                [ :class_value, :confusion_matrix_value,
-                  :confusion_matrix_actual, :confusion_matrix_predicted ]
-                   
-    LITERAL_NAMES = {:created_at => OT["date"] }
-                
-    OBJECT_PROPERTIES = { :model_uri => OT['validationModel'], :training_dataset_uri => OT['validationTrainingDataset'], :algorithm_uri => OT['validationAlgorithm'],
-                     :prediction_feature => OT['predictedFeature'], :test_dataset_uri => OT['validationTestDataset'], :test_target_dataset_uri => OT['validationTestTargetDataset'],
-                     :prediction_dataset_uri => OT['validationPredictionDataset'], :crossvalidation_info => OT['hasValidationInfo'],
-                     :crossvalidation_uri =>  OT['validationCrossvalidation'],
-                     :classification_statistics => OT['hasValidationInfo'], :regression_statistics => OT['hasValidationInfo'],
-                     :class_value_statistics => OT['classValueStatistics'], :confusion_matrix => OT['confusionMatrix'],
-                     :confusion_matrix_cell => OT['confusionMatrixCell'], #:class_value => OT['classValue'], 
-                     #:confusion_matrix_actual => OT['confusionMatrixActual'], :confusion_matrix_predicted => OT['confusionMatrixPredicted']
-                      } 
-
-    OBJECTS = { :model_uri => OT['Model'], :training_dataset_uri => OT['Dataset'], :test_dataset_uri => OT['Dataset'], 
-                :test_target_dataset_uri => OT['Dataset'], :prediction_dataset_uri => OT['Dataset'], :prediction_feature => OT['Feature'],
-                :algorithm_uri => OT['Algorithm'],}
-                     
-    CLASSES = { :crossvalidation_info => OT['CrossvalidationInfo'], :classification_statistics => OT['ClassificationStatistics'],
-                  :regression_statistics => OT['RegresssionStatistics'], :class_value_statistics => OT['ClassValueStatistics'],
-                 :confusion_matrix => OT['ConfusionMatrix'], :confusion_matrix_cell => OT['ConfusionMatrixCell']}  
-    
-    IGNORE = [ :id, :validation_uri, :crossvalidation_id ]
     
   end
     
   class Crossvalidation < Lib::Crossvalidation
-    include Lib::RDFProvider
-    
+  
     def get_content_as_hash
       h = {}
-      Lib::CROSS_VAL_PROPS_REDUNDANT.each{|p| h[p] = self.send(p)}
       
+      (Lib::CROSS_VAL_PROPS_REDUNDANT - [:crossvalidation_uri]).each do |p|
+        h[p] = self.send(p)
+      end
       v = []
       Validation.find( :all, :conditions => { :crossvalidation_id => self.id } ).each do |val|
         v.push( val.validation_uri.to_s )
       end
-      h[:validations] = v
+      h[:validation_uris] = v
       h
     end
 
-    def uri
-      crossvalidation_uri
+    def to_rdf
+      owl = OpenTox::Owl.create("'Crossvalidation",crossvalidation_uri)
+      owl.set_data(get_content_as_hash.keys_to_rdf_format)
+      owl.rdf
     end
     
-    def rdf_title
-      "Crossvalidation"
+    def to_yaml
+      get_content_as_hash.to_yaml
     end
-    
-    LITERALS = [ :created_at, :stratified, :num_folds, :random_seed ]
-    
-    LITERAL_NAMES = {:created_at => OT["date"] }
-    
-    OBJECT_PROPERTIES = { :dataset_uri => OT['crossvalidationDataset'], :algorithm_uri => OT['crossvalidationAlgorithm'],
-                           :validations => OT['crossvalidationValidation'] } 
-                           
-    OBJECTS = { :dataset_uri => OT['Dataset'], :validations => OT['Validation'], :algorithm_uri => OT['Algorithm']}
-    
-    CLASSES = {}
-    
-    IGNORE = [ :id, :crossvalidation_uri ]
   end
 end

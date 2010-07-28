@@ -79,7 +79,7 @@ get '/crossvalidation/:id/statistics' do
   
   v = Lib::MergeObjects.merge_array_objects( Validation::Validation.find( :all, :conditions => { :crossvalidation_id => params[:id] } ) )
   v.validation_uri = nil
-  v.created_at = nil
+  v.date = nil
   v.id = nil
   content_type "application/x-yaml"
   v.to_yaml

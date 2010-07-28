@@ -133,7 +133,7 @@ module Reports
     
     protected
     def create_meta_data(type, validation_set, validation_uris)
-      # the validtion_set contains the resolved single validations
+      # the validation_set contains the resolved single validations
       # crossvalidation uris are only added if given as validation_uris - param
       meta_data = {}
       { :validation_uri => "validation_uris",  
