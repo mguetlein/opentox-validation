@@ -4,17 +4,6 @@
 #end
 require "lib/merge.rb"
 
-unless ActiveRecord::Base.connected?
-  ActiveRecord::Base.establish_connection(  
-     :adapter => @@config[:database][:adapter],
-     :host => @@config[:database][:host],
-     :database => @@config[:database][:database],
-     :username => @@config[:database][:username],
-     :password => @@config[:database][:password]
-  )
-  ActiveRecord::Base.logger = Logger.new("/dev/null")
-end
-
 module Lib
 
   VAL_PROPS_GENERAL = [ :validation_uri, :model_uri, :algorithm_uri, :training_dataset_uri, :prediction_feature,

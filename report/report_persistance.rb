@@ -222,14 +222,11 @@ module Reports
       new_report_with_id(report_content, type, report.id)
     end
     
-    def list_reports(type, filter_params=nil)
+    def list_reports(type, filter_params={})
       #QMRF-STUB
       return "1" if type == ReportFactory::RT_QMRF
-      
-      filter_params = {} unless filter_params
-      filter_params.each{ |k,v| raise Reports::BadRequest.new("no report-attribute: "+k.to_s) unless ReportData.column_names.include?(k.gsub(/_like$/,"")) }
-      filter_params[:report_type] = type
-      ReportData.find(:all, :conditions => filter_params).collect{ |r| r.id }
+      filter_params["report_type"]=type unless filter_params.has_key?("report_type")
+      ReportData.find_like(filter_params).collect{ |r| r.id }
     end
     
     def get_report(type, id, format, force_formating, params)

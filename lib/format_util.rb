@@ -11,6 +11,13 @@ class String
       m.upcase
     end
   end
+  
+  def from_rdf_format
+    gsub(/[A-Z]/) do |m|
+      "_"+m.downcase
+    end
+  end
+  
 end
 
 class Hash
@@ -30,3 +37,4 @@ class Hash
     return res
   end
 end
+

@@ -17,7 +17,7 @@ module Lib
   
     def initialize(is_classification, test_dataset_uri, test_target_dataset_uri, prediction_feature, prediction_dataset_uri, predicted_variable)
       
-        LOGGER.debug("loading prediciton via test-dateset:'"+test_dataset_uri.to_s+
+        LOGGER.debug("loading prediciton via test-dataset:'"+test_dataset_uri.to_s+
           "', test-target-datset:'"+test_target_dataset_uri.to_s+
           "', prediction-dataset:'"+prediction_dataset_uri.to_s+
           "', prediction_feature: '"+prediction_feature.to_s+"' "+

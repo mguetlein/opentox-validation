@@ -5,12 +5,12 @@ end
 
 require 'validation/validation_service.rb'
 require 'lib/merge.rb'
+require 'lib/active_record_setup.rb'
 
 get '/crossvalidation/?' do
   LOGGER.info "list all crossvalidations"
   content_type "text/uri-list"
-  params.each{ |k,v| halt 400,"no crossvalidation-attribute: "+k.to_s unless Validation::Crossvalidation.column_names.include?(k.gsub(/_like$/,""))  }
-  Validation::Crossvalidation.find(:all, :conditions => params).collect{ |d| url_for("/crossvalidation/", :full) + d.id.to_s }.join("\n")
+  Validation::Crossvalidation.find_like(params).collect{ |d| url_for("/crossvalidation/", :full) + d.id.to_s }.join("\n")
 end
 
 post '/crossvalidation/loo/?' do
@@ -115,8 +115,7 @@ end
 get '/?' do
   LOGGER.info "list all validations"
   content_type "text/uri-list"
-  params.each{ |k,v| halt 400,"no validation-attribute: "+k.to_s unless Validation::Validation.column_names.include?(k.gsub(/_like$/,""))  }
-  Validation::Validation.find(:all, :conditions => params).collect{ |d| url_for("/", :full) + d.id.to_s }.join("\n")
+  Validation::Validation.find_like(params).collect{ |d| url_for("/", :full) + d.id.to_s }.join("\n")
 end
 
 get '/:id' do
@@ -252,5 +251,5 @@ delete '/:id' do
     halt 404, "Validation '#{params[:id]}' not found."
   end
   content_type "text/plain"
-  Validation::Validation.delete(params[:id])
+  validation.delete
 end

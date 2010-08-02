@@ -26,22 +26,6 @@ result example (accept-header: text/uri-list)
 <<< <validation_service>/validation_id_j
 
 
-search available validations with url-encoded parameters
--------------------------------------------------------------------
-
->>> curl <validation_service>?training_dataset_uri=<training_dataset_uri>&algorithm_uri=<algorithm_uri>
-
-Hint: you can perform a pattern search (instead of an exact match search) by adding a _like to the parameter, i.e. training_dataset_uri_like 
-
-result example (accept-header: application/rdf-xml)			
-<<< not yet supported
-
-result example (accept-header: text/uri-list)
-<<< <validation_service>/<validation_id>
-<<< <validation_service>/validation_id_i
-<<< <validation_service>/validation_id_j
-
-
 get validation
 -------------------------------------------------------------------
 
@@ -294,3 +278,31 @@ result example (accept-header: application/rdf-xml)
 
 result example (accept-header: text/uri-list)
 <<< <validation_service>/report/crossvalidation/id_i
+
+
+
+Filter resources
+===================================================================
+
+It is possible to filter the list of available resources (i.e. validations, crossvalidation, reports) according to property-values.
+
+
+filter available validations for a particular training dataset and model
+-------------------------------------------------------------------
+
+>>> curl <validation_service>?trainingDataset=<training_dataset_uri>\&model=<model_uri>
+
+alternatively, use property names in (internal) yaml format:
+
+>>> curl <validation_service>?training_dataset_uri=<training_dataset_uri>\&model_uri=<model_uri>
+
+
+search available validation report for a particular algorithm
+-------------------------------------------------------------------
+
+>>> curl <validation_service>/report/validation?algorithm=lazar
+
+alternatively, use property names in (internal) yaml format:
+
+>>> curl <validation_service>/report/validation?algorithm_uris=lazar
+
