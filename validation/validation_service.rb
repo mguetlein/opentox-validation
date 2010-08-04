@@ -49,14 +49,15 @@ module Validation
     # PENDING: model and referenced datasets are deleted as well, keep it that way?
     def delete
     
-      model = OpenTox::Model::PredictionModel.find(self.model_uri) if self.model_uri
-      model.destroy if model
+      #model = OpenTox::Model::PredictionModel.find(self.model_uri) if self.model_uri
+      #model.destroy if model
       
       #[@test_dataset_uri, @training_dataset_uri, @prediction_dataset_uri].each do  |d|
         #dataset = OpenTox::Dataset.find(d) if d 
         #dataset.delete if dataset
       #end
-      destroy
+      
+      Validation::Validation.delete(self.id)
       "Successfully deleted validation "+self.id.to_s+"."
     end
     
@@ -121,16 +122,16 @@ module Validation
       compute_validation_stats_with_model( model )
     end
       
-    def compute_validation_stats_with_model( model=nil )
+    def compute_validation_stats_with_model( model=nil, dry_run=false )
       
       model = OpenTox::Model::PredictionModel.find(self.model_uri) if model==nil and self.model_uri
       $sinatra.halt 400, "model not found: "+self.model_uri.to_s unless model
       prediction_feature = self.prediction_feature ? nil : model.dependentVariables
       algorithm_uri = self.algorithm_uri ? nil : model.algorithm
-      compute_validation_stats( model.classification?, model.predictedVariables, prediction_feature, algorithm_uri )
+      compute_validation_stats( model.classification?, model.predictedVariables, prediction_feature, algorithm_uri, dry_run )
     end
       
-    def compute_validation_stats( classification, predicted_feature, prediction_feature=nil, algorithm_uri=nil)
+    def compute_validation_stats( classification, predicted_feature, prediction_feature=nil, algorithm_uri=nil, dry_run=false)
       
       self.attributes = { :prediction_feature => prediction_feature } if self.prediction_feature==nil && prediction_feature
       self.attributes = { :algorithm_uri => algorithm_uri } if self.algorithm_uri==nil && algorithm_uri
@@ -140,18 +141,21 @@ module Validation
       prediction = Lib::OTPredictions.new( classification, 
         self.test_dataset_uri, self.test_target_dataset_uri, self.prediction_feature, 
         self.prediction_dataset_uri, predicted_feature )
-      if prediction.classification?
-        self.attributes = { :classification_statistics => prediction.compute_stats }
-      else
-        self.attributes = { :regression_statistics => prediction.compute_stats }
+        
+      unless dry_run
+        if prediction.classification?
+          self.attributes = { :classification_statistics => prediction.compute_stats }
+        else
+          self.attributes = { :regression_statistics => prediction.compute_stats }
+        end
+        self.attributes = { :num_instances => prediction.num_instances,
+               :num_without_class => prediction.num_without_class,
+               :percent_without_class => prediction.percent_without_class,
+               :num_unpredicted => prediction.num_unpredicted,
+               :percent_unpredicted => prediction.percent_unpredicted }
+        self.save!
       end
-      
-      self.attributes = { :num_instances => prediction.num_instances,
-             :num_without_class => prediction.num_without_class,
-             :percent_without_class => prediction.percent_without_class,
-             :num_unpredicted => prediction.num_unpredicted,
-             :percent_unpredicted => prediction.percent_unpredicted }
-      self.save!
+      prediction
     end
   end
   

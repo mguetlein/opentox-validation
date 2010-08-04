@@ -85,6 +85,18 @@ get '/crossvalidation/:id/statistics' do
   v.to_yaml
 end
 
+get '/crossvalidation/:id/predictions' do
+  LOGGER.info "get predictions for crossvalidation with id "+params[:id].to_s
+  begin
+    crossvalidation = Validation::Crossvalidation.find(params[:id])
+  rescue ActiveRecord::RecordNotFound => ex
+    halt 404, "Crossvalidation '#{params[:id]}' not found."
+  end
+  content_type "application/x-yaml"
+  validations = Validation::Validation.find( :all, :conditions => { :crossvalidation_id => params[:id] } )
+  Lib::OTPredictions.to_array( validations.collect{ |v| v.compute_validation_stats_with_model(nil, true) } ).to_yaml
+end
+
 
 post '/crossvalidation/?' do
   content_type "text/uri-list"
@@ -226,6 +238,18 @@ post '/validate_datasets' do
   end
   halt 202,task_uri
 end
+
+get '/:id/:predictions' do
+  LOGGER.info "get validation predictions "+params.inspect
+  begin
+    validation = Validation::Validation.find(params[:id])
+  rescue ActiveRecord::RecordNotFound => ex
+    halt 404, "Validation '#{params[:id]}' not found."
+  end
+  content_type "text/x-yaml"
+  p = validation.compute_validation_stats_with_model(nil, true)
+  p.to_array.to_yaml
+end 
 
 get '/:id/:attribute' do
   LOGGER.info "access validation attribute "+params.inspect

@@ -101,7 +101,7 @@ module Reports::ReportFactory
     end
       
     report.add_section_result(validation_set, Lib::ALL_PROPS, "All Results", "All Results")
-    report.add_section_predictions( validation_set, [:crossvalidation_fold] ) 
+    report.add_section_predictions( validation_set ) #, [:crossvalidation_fold] ) 
     return report
   end
   
@@ -241,11 +241,14 @@ class Reports::ReportContent
                               section_title="Predictions",
                               section_text="This section contains predictions.",
                               table_title="Predictions")
-                                
+
+    #PENING
+    raise "validation attributes not implemented in get prediction array" if  validation_attributes.size>0
+    
     section_table = @xml_report.add_section(@xml_report.get_root_element, section_title)
     if validation_set.validations[0].get_predictions
       @xml_report.add_paragraph(section_table, section_text) if section_text
-      @xml_report.add_table(section_table, table_title, Reports::PredictionUtil.predictions_to_array(validation_set, validation_attributes))
+      @xml_report.add_table(section_table, table_title, Lib::OTPredictions.to_array(validation_set.validations.collect{|v| v.get_predictions}, true, true))
     else
       @xml_report.add_paragraph(section_table, "No prediction info available.")
     end

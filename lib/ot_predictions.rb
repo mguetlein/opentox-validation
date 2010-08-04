@@ -105,7 +105,6 @@ module Lib
               value = value.to_s unless value==nil
               raise "illegal class_value of predicted value "+value.to_s+" class: "+value.class.to_s unless value==nil or class_values.index(value)!=nil
               predicted_values << class_values.index(value)
-              confidence_values << prediction_dataset.get_prediction_confidence(c, predicted_variable)
             else
               value = prediction_dataset.get_predicted_regression(c, predicted_variable)
               begin
@@ -115,8 +114,8 @@ module Lib
                 value = nil
               end
               predicted_values << value
-              confidence_values << nil
             end
+            confidence_values << prediction_dataset.get_prediction_confidence(c, predicted_variable)
           end
         end
         
@@ -135,6 +134,50 @@ module Lib
       end
       return res
     end
+    
+    def to_array()
+      OTPredictions.to_array( [self] )
+    end
+    
+    def self.to_array( predictions, add_pic=false, format=false )
+  
+      res = []
+      predictions.each do |p|
+        (0..p.num_instances-1).each do |i|
+          a = []
+          
+          #PENDING!
+          a.push( "http://ambit.uni-plovdiv.bg:8080/ambit2/depict/cdk?search="+
+            URI.encode(OpenTox::Compound.new(:uri=>p.identifier(i)).smiles) ) if add_pic
+          
+          a << (format ? p.actual_value(i).to_nice_s : p.actual_value(i))
+          a << (format ? p.predicted_value(i).to_nice_s : p.predicted_value(i))
+          if p.classification?
+            if (p.predicted_value(i)!=nil and p.actual_value(i)!=nil)
+              a << (p.classification_miss?(i) ? 1 : 0)
+            else
+              a << nil
+            end
+          end
+          if p.confidence_values_available?
+            a << (format ? p.confidence_value(i).to_nice_s : p.confidence_value(i))
+          end
+          a << p.identifier(i)
+          res << a
+        end
+      end
+        
+      header = []
+      header << "compound" if add_pic
+      header << "actual value"
+      header << "predicted value"
+      header << "missclassified" if predictions[0].classification?
+      header << "confidence value" if predictions[0].confidence_values_available?
+      header << "compound-uri"
+      res.insert(0, header)
+      
+      return res
+  end
     
   end
 end
