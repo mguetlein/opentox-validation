@@ -239,7 +239,7 @@ post '/validate_datasets' do
   halt 202,task_uri
 end
 
-get '/:id/:predictions' do
+get '/:id/predictions' do
   LOGGER.info "get validation predictions "+params.inspect
   begin
     validation = Validation::Validation.find(params[:id])

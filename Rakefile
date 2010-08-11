@@ -71,7 +71,7 @@ task :migrate => :load_config do
        :password => @@config[:database][:password]
        )  
   ActiveRecord::Base.logger = Logger.new($stdout)
-  ActiveRecord::Migrator.migrate('db/migrate', ENV["VERSION"] ? ENV["VERSION"].to_i : 2 )
+  ActiveRecord::Migrator.migrate('db/migrate', ENV["VERSION"] ? ENV["VERSION"].to_i : 3 )
 end
 
 

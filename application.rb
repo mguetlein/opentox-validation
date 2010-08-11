@@ -1,5 +1,5 @@
 require 'rubygems'
-gem 'opentox-ruby-api-wrapper', '= 1.5.7'
+gem 'opentox-ruby-api-wrapper', '= 1.6.2'
 [ 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper' ].each do |lib|
   require lib
 end
@@ -36,6 +36,7 @@ require "nightly/nightly_application.rb"
 # (otherwise sinatra will try to locate a validation with name examples or report)
 
 require "report/report_application.rb"
+require "reach_reports/reach_application.rb"
 require "validation/validation_application.rb"
 
 

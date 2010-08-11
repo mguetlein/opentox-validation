@@ -18,13 +18,29 @@ class ValidationTest < Test::Unit::TestCase
   
   def test_it
     $test_case = self
+    
+    #get "?model=http://localhost/model/1" 
+#    get "/crossvalidation/3/predictions"
+#    puts last_response.body
+
+#    post "/validate_datasets",{
+#      :test_dataset_uri=>"http://apps.deaconsult.net:8080/ambit2/dataset/R3924",
+#      :prediction_dataset_uri=>"http://apps.ideaconsult.net:8080/ambit2/dataset/R3924?feature_uris[]=http%3A%2F%2Fapps.ideaconsult.net%3A8080%2Fambit2%2Fmodel%2F52%2Fpredicted",
+#      #:test_target_dataset_uri=>"http://localhost/dataset/202",
+#      :prediction_feature=>"http://apps.ideaconsult.net:8080/ambit2/feature/21715",
+#      :predicted_feature=>"http://apps.ideaconsult.net:8080/ambit2/feature/28944",
+#      :regression=>"true"}
+#      #:classification=>"true"}
+#    puts last_response.body
+    
+    #delete "/7"
 
     #get "/crossvalidation/4/statistics"
 #    post "",:model_uri=>"http://localhost/model/1",:test_dataset_uri=>"http://localhost/dataset/3",
 #      :test_target_dataset_uri=>"http://localhost/dataset/1"
 
-    #get "/crossvalidation/1",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
-    #puts last_response.body
+  #  get "/1",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
+   # puts last_response.body
     
 #    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
 #    puts last_response.body
@@ -39,9 +55,9 @@ class ValidationTest < Test::Unit::TestCase
 #      #:classification=>"true"}
 #    puts last_response.body
     
-    run_test("3b" ) #, "http://localhost/validation/826") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
+    run_test("8b") #, "http://localhost/validation/crossvalidation/3" )# //localhost/validation/42")#, "http://localhost/validation/report/validation/8") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
     
-    #run_test("7a") #,"http://localhost/validation/crossvalidation/10") #, "http://localhost/validation/321")
+   # run_test("7a","http://localhost/validation/40") #,"http://localhost/validation/crossvalidation/10") #, "http://localhost/validation/321")
     
     #run_test("8b", "http://localhost/validation/crossvalidation/4")
  
@@ -55,7 +71,8 @@ class ValidationTest < Test::Unit::TestCase
     Sinatra::Application
   end
   
-  def run_test(select, validation_uri=nil)
+  def run_test(select=nil, validation_uri=nil, report_uri=nil)
+    puts ValidationExamples.list unless select
     validationExamples = ValidationExamples.select(select)
     validationExamples.each do |vv|
       vv.each do |v| 
@@ -65,10 +82,14 @@ class ValidationTest < Test::Unit::TestCase
           ex.upload_files
           ex.check_requirements
           ex.validate
-          LOGGER.debug "validation done "+ex.validation_uri.to_s
+          LOGGER.debug "validation done '"+ex.validation_uri.to_s+"'"
+        end
+        ex.report_uri = report_uri
+        unless ex.report_uri
+          ex.report
         end
         ex.verify_yaml
-        ex.report
+        ex.compare_yaml_vs_rdf
       end
     end
   end

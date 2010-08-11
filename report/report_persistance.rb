@@ -70,7 +70,6 @@ end
 class Reports::FileReportPersistance < Reports::ReportPersistance
   
   def initialize()
-    raise "pls specify report-directory (:reports -> :report_dir) in config file" unless @@config[:reports] and @@config[:reports][:report_dir]
     FileUtils.mkdir REPORT_DIR unless File.directory?(REPORT_DIR)
     raise "report cannot be found nor created" unless File.directory?(REPORT_DIR)
     LOGGER.debug "reports are stored in "+REPORT_DIR 
