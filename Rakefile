@@ -1,6 +1,5 @@
 require 'rubygems'
 require 'rake'
-require 'tasks/opentox'
 
 REPORT_GEMS = ['rubygems', 'logger', 'fileutils', 'sinatra', 'sinatra/url_for', 'rest_client', 
   'yaml', 'opentox-ruby-api-wrapper', 'fileutils', 'mime/types', 'abbrev', 
