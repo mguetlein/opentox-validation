@@ -19,6 +19,10 @@ class ValidationTest < Test::Unit::TestCase
   def test_it
     $test_case = self
     
+#    d = OpenTox::Dataset.find("http://ot-dev.in-silico.ch/dataset/307")
+#    puts d.compounds.inspect
+#    exit
+    
     #get "?model=http://localhost/model/1" 
 #    get "/crossvalidation/3/predictions"
 #    puts last_response.body
@@ -55,7 +59,7 @@ class ValidationTest < Test::Unit::TestCase
 #      #:classification=>"true"}
 #    puts last_response.body
     
-    run_test("8b") #, "http://localhost/validation/crossvalidation/3" )# //localhost/validation/42")#, "http://localhost/validation/report/validation/8") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
+    run_test("1b") #, "http://localhost/validation/crossvalidation/5" )# //localhost/validation/42")#, "http://localhost/validation/report/validation/8") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
     
    # run_test("7a","http://localhost/validation/40") #,"http://localhost/validation/crossvalidation/10") #, "http://localhost/validation/321")
     

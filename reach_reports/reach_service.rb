@@ -9,7 +9,7 @@ module ReachReports
     end
   end 
   
-  def self.create_report( type, params )
+  def self.create_report( type, params, xml_data=nil )
     
     #content_type "text/uri-list"
     #task_uri = OpenTox::Task.as_task do |task|
@@ -19,12 +19,17 @@ module ReachReports
       if params[:model_uri]
         report = ReachReports::QmrfReport.new :model_uri => params[:model_uri]
         build_qmrf_report(report)
+      elsif xml_data
+        input = xml_data.read
+        report = ReachReports::QmrfReport.new
+        ReachReports::QmrfReport.from_xml(report,input)
       else
         $sinatra.halt 400, "illegal parameters for qmrf-report, use either\n"+
           "* model_uri\n"+ 
           "params given: "+params.inspect
       end
     when /(?i)QPRF/
+      $sinatra.halt 400,"qprf report creation not yet implemented"
       if params[:compound_uri]
         report = ReachReports::QprfReport.new :compound_uri => params[:compound_uri]
       else
@@ -45,32 +50,35 @@ module ReachReports
     model = OpenTox::Model::Generic.find(r.model_uri)
      
     # chapter 1
-    r.QSAR_title = model.title
+    #r.QSAR_title = model.title
+    r.qsar_identifier = QsarIdentifier.new
+    r.qsar_identifier.qsar_title = model.title
+
     # TODO
     # QSAR_models -> sparql same endpoint     
-    software = []
-    software << { :url => model.uri, :name => model.title, :contact => model.creator }
+    r.qsar_identifier.qsar_software << QsarSoftware.new( :url => model.uri, :name => model.title, :contact => model.creator )
     algorithm = OpenTox::Algorithm::Generic.find(model.algorithm) if model.algorithm
-    software << { :url => algorithm.uri, :name => algorithm.title }
-    r.QSAR_software = {"software_catalog" => software}
+    r.qsar_identifier.qsar_software << QsarSoftware.new( :url => algorithm.uri, :name => algorithm.title )
+
     #chpater 2
-    r.QMRF_date = DateTime.now.to_s
-    # EMPTY: QMRF_authors, QMRF_date_revision, QMRF_revision
+    r.qsar_general_information = QsarGeneralInformation.new
+    r.qsar_general_information.qmrf_date = DateTime.now.to_s
+    # EMPTY: qmrf_authors, qmrf_date_revision, qmrf_revision
     # TODO: model_authors ?
-    r.model_date = model.date.to_s
+    r.qsar_general_information.model_date = model.date.to_s
     # TODO: references?
     # EMPTY: info_availablity
     # TODO: related_models = find qmrf reports for QSAR_models 
      
     # chapter 3
     # TODO "model_species" ?
-    endpoints = []
+    r.qsar_endpoint = QsarEndpoint.new
+    
     model.predictedVariables.each do |p|
-      endpoints << { :name => p } # TODO :group, :subgroup ? 
+      r.qsar_endpoint.model_endpoint << ModelEndpoint.new( :name => p )
     end
-    r.model_endpoint = { "endpoints_catalog" => endpoints }
     # TODO "endpoint_comments" => "3.3", "endpoint_units" => "3.4",
-    r.endpoint_variable = model.dependentVariables
+    r.qsar_endpoint.endpoint_variable = model.dependentVariables
     # TODO "endpoint_protocol" => "3.6", "endpoint_data_quality" => "3.7",
 
     # chapter 4
@@ -98,26 +106,26 @@ module ReachReports
     # chapter 9
     # "comments" => "9.1", "bibliography" => "9.2", "attachments" => "9.3",
      
-    r.save!
+    r.save
   end
   
-  def self.get_report_content(type, id, *keys)
-    
-    report_content = get_report(type, id).get_content
-    keys.each do |k|
-      $sinatra.halt 400, type+" unknown report property '#{key}'" unless report_content.is_a?(Hash) and report_content.has_key?(k)
-      report_content = report_content[k]
-    end
-    report_content    
-  end
+#  def self.get_report_content(type, id, *keys)
+#    
+#    report_content = get_report(type, id).get_content
+#    keys.each do |k|
+#      $sinatra.halt 400, type+" unknown report property '#{key}'" unless report_content.is_a?(Hash) and report_content.has_key?(k)
+#      report_content = report_content[k]
+#    end
+#    report_content    
+#  end
   
   def self.get_report(type, id)
     
     case type
     when /(?i)QMRF/
-      report = ReachReports::QmrfReport.find(id)
+      report = ReachReports::QmrfReport.get(id)
     when /(?i)QPRF/
-      report = ReachReports::QprfReport.find(id)
+      report = ReachReports::QprfReport.get(id)
     end
     $sinatra.halt 404, type+" report with id '#{id}' not found." unless report
     return report

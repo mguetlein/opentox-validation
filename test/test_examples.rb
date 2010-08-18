@@ -276,6 +276,7 @@ module ValidationExamples
       "7a" =>  [ LazarIrisSplit ],
       "7b" =>  [ MajorityIrisSplit ],
       
+      "8a" => [ LazarIrisCrossvalidation ],
       "8b" => [ MajorityIrisCrossvalidation ],
       
       "9a" => [ ISTLazarISTIrisCrossvalidation ],
