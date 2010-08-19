@@ -19,13 +19,13 @@ module ReachReports
       if params[:model_uri]
         report = ReachReports::QmrfReport.new :model_uri => params[:model_uri]
         build_qmrf_report(report)
-      elsif xml_data
-        input = xml_data.read
+      elsif xml_data and (input = xml_data.read).to_s.size>0
         report = ReachReports::QmrfReport.new
         ReachReports::QmrfReport.from_xml(report,input)
       else
-        $sinatra.halt 400, "illegal parameters for qmrf-report, use either\n"+
-          "* model_uri\n"+ 
+        $sinatra.halt 400, "illegal parameters for qmrf-report creation, either\n"+
+          "* give 'model_uri' as param\n"+
+          "* provide xml file\n"+
           "params given: "+params.inspect
       end
     when /(?i)QPRF/

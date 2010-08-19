@@ -926,7 +926,7 @@ module ReachReports
     end
     
     def report_uri
-      return $sinatra.url_for("/QMRF/"+@id.to_s, :full).to_s
+      return $sinatra.url_for("/reach_report/QMRF/"+@id.to_s, :full).to_s
     end
     
     def self.from_xml(report, xml_data)

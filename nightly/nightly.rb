@@ -21,7 +21,7 @@ class Nightly
     validationExamples = ValidationExamples.select(select)
     return "please \"select\" validation examples:\n"+ValidationExamples.list if validationExamples.size==0
     
-    task_uri = OpenTox::Task.as_task() do
+    task_uri = OpenTox::Task.as_task("Build nightly", "nightly-validation-test-service") do
       LOGGER.info("Building nightly report")
       
       benchmarks = validationExamples.collect{ |e| ValidationBenchmark.new(e) }

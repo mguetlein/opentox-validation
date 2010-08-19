@@ -89,11 +89,12 @@ class ReachTest < Test::Unit::TestCase
   
     #$test_case = self
 
-    file = File.new("qmrf-report.xml")
+    #file = File.new("qmrf-report.xml")
+    file = File.new("/home/martin/win/home/test2.xml")
     raise "File not found: "+file.path.to_s unless File.exist?(file.path)
     data = File.read(file.path)
     #puts "data found "+data.to_s[0..1000]
-    puts OpenTox::RestClientWrapper.post("http://localhost/validation/reach_report/qmrf",{:content_type => "application/qmrf-xml"},data).to_s.chomp
+    puts OpenTox::RestClientWrapper.post("http://localhost/validation/reach_report/qmrf/20",{:content_type => "application/qmrf-xml"},data).to_s.chomp
 
     #post "/reach_report/qmrf/2"
     #puts last_response.body

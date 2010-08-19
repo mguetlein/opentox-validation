@@ -13,6 +13,11 @@ def extract_type(params)
   params.delete("type")
 end
 
+get '/reach_report' do
+  content_type "text/uri-list"
+  url_for('/reach_report/QMRF', :full)+"\n"+url_for('/reach_report/QPRF', :full)+"\n"
+end
+
 get '/reach_report/:type' do
   content_type "text/uri-list"
   type = extract_type(params)
@@ -57,12 +62,14 @@ end
 post '/reach_report/:type/:id' do
   
   type = extract_type(params)
-  LOGGER.info "set "+type+" report with id "+params[:id].to_s+"' "+request.env['HTTP_ACCEPT'].to_s+"'"
+  LOGGER.info "Post to "+type+" report with id "+params[:id].to_s+"' "+request.env['HTTP_ACCEPT'].to_s+"'"
   rep = ReachReports.get_report(type, params[:id])
 
   input = request.env["rack.input"].read
-  halt 400, "no xml data specified" unless input && input.to_s.size>0 
+  halt 400, "no xml data specified" unless input && input.to_s.size>0
+  
   ReachReports::QmrfReport.from_xml(rep,input)
+  
   #f = File.new("/home/martin/info_home/.public_html/qmrf.out.xml","w")
   #f.puts rep.to_xml
 end

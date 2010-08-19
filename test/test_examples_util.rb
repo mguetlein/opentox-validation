@@ -231,12 +231,12 @@ module ValidationExamples
     end
     
     def validate
-      begin
+      #begin
         @validation_uri = Util.validation_post '/'+validation_type, get_params
-      rescue => ex
-        @validation_error = ex.message
-        LOGGER.error ex.message
-      end
+      #rescue => ex
+      #  @validation_error = ex.message
+      #  LOGGER.error ex.message
+      #end
     end
     
     def compare_yaml_vs_rdf
