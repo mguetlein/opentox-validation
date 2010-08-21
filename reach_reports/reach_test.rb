@@ -89,23 +89,26 @@ class ReachTest < Test::Unit::TestCase
   
     #$test_case = self
 
-    #file = File.new("qmrf-report.xml")
-    file = File.new("/home/martin/win/home/test2.xml")
-    raise "File not found: "+file.path.to_s unless File.exist?(file.path)
-    data = File.read(file.path)
-    #puts "data found "+data.to_s[0..1000]
-    puts OpenTox::RestClientWrapper.post("http://localhost/validation/reach_report/qmrf/20",{:content_type => "application/qmrf-xml"},data).to_s.chomp
+#    #file = File.new("qmrf-report.xml")
+#    file = File.new("/home/martin/win/home/test2.xml")
+#    raise "File not found: "+file.path.to_s unless File.exist?(file.path)
+#    data = File.read(file.path)
+#    #puts "data found "+data.to_s[0..1000]
+#    puts OpenTox::RestClientWrapper.post("http://localhost/validation/reach_report/qmrf/20",{:content_type => "application/qmrf-xml"},data).to_s.chomp
 
-    #post "/reach_report/qmrf/2"
-    #puts last_response.body
-
-#    post '/reach_report/qmrf',:model_uri=>"http://localhost/majority/class/model/1" #http://localhost/model/1"
+    post "/reach_report/qmrf/8"
+    puts last_response.body
+    
+    
+#    #model_uri = "http://localhost/model/1"
+#    model_uri = "http://apps.ideaconsult.net:8080/ambit2/model/2"
+#    post '/reach_report/qmrf',:model_uri=>model_uri #http://localhost/model/1"
 #    ##post '/reach_report/qprf',:compound_uri=>"http://localhost/compound/XYZ"
 #    uri = last_response.body
 #    id = uri.split("/")[-1]
 #    puts uri
 
-    #id = "2"
+    id = "8"
 
     #get '/reach_report/qmrf'
     #puts last_response.body
@@ -118,9 +121,9 @@ class ReachTest < Test::Unit::TestCase
 #    puts "RDF"
 #    puts last_response.body
 
-#    get '/reach_report/qmrf/'+id,nil,'HTTP_ACCEPT' => "application/qmrf-xml"
-#    puts "XML"
-#    puts last_response.body
+    get '/reach_report/qmrf/'+id,nil,'HTTP_ACCEPT' => "application/qmrf-xml"
+    puts "XML"
+    puts last_response.body
     
     
     #r = ReachReports::QmrfReport.find_like( :QSAR_title => "Hamster")

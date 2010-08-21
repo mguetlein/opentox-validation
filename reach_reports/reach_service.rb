@@ -78,7 +78,7 @@ module ReachReports
       r.qsar_endpoint.model_endpoint << ModelEndpoint.new( :name => p )
     end
     # TODO "endpoint_comments" => "3.3", "endpoint_units" => "3.4",
-    r.qsar_endpoint.endpoint_variable = model.dependentVariables
+    r.qsar_endpoint.endpoint_variable = model.dependentVariables if model.dependentVariables
     # TODO "endpoint_protocol" => "3.6", "endpoint_data_quality" => "3.7",
 
     # chapter 4

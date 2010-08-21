@@ -117,18 +117,37 @@ module DataMapper::Resource
         dbg_check[:nodes] << parent_node.name
         dbg_check[:subnodes] << text_node
         
-      elsif xml_info.is_a?(ReachReports::AttributeNodeProperty)
+      elsif xml_info.is_a?(ReachReports::SingleAttributeNodeProperty)
         attr_node = node.elements[ xml_info.xml_prop ]
         self.send(xml_info.prop.to_s+"=", attr_node.attribute(xml_info.attribute))
         dbg_check[:nodes] << attr_node.name
       
-      elsif xml_info.is_a?(ReachReports::MultiAttributeNodeProperty)
+      elsif xml_info.is_a?(ReachReports::AttributeNodeProperty)
         attr_node = node.elements[ xml_info.xml_prop ]
         entry = self.association_class( xml_info.prop ).new
         entry.from_xml(attr_node)
         self.send(xml_info.prop.to_s+"=",entry)
         dbg_check[:nodes] << attr_node.name
       
+      elsif xml_info.is_a?(ReachReports::AttributeSubNodeListProperty)
+      
+        parent_node = node.elements[ xml_info.parent_prop.xml_alias ]
+        raise "parent node not found: '"+ xml_info.parent_prop.xml_alias+"' ("+self.class.to_s+".from_xml)" unless parent_node
+        #puts "parent node "+xml_info.parent_prop.xml_alias
+        prop_node = parent_node.elements[ xml_info.xml_prop ]
+        if prop_node
+          #puts "prop node "+xml_info.xml_prop.to_s
+          prop_node.each_element do |n|
+            #puts "elem node "+n.name.to_s
+            raise "illegal node '"+n.name.to_s+"' should be '"+xml_info.list_element.to_s+"'" unless n.name==xml_info.list_element.to_s
+            entry = self.association_class( xml_info.prop ).new
+            entry.from_xml( n )
+            self.send(xml_info.prop) << entry
+          end
+          dbg_check[:subnodes] << prop_node
+        end
+        dbg_check[:nodes] << parent_node.name   
+        
       else
         raise "type not supported yet: "+xml_info.inspect
       end
@@ -290,14 +309,26 @@ module DataMapper::Resource
         new_node = REXML::Element.find_or_create( node, xml_info.parent_prop.xml_alias)
         REXML::TextElement.find_or_create( new_node, xml_info.xml_prop,self.send(xml_info.prop))
 
-      elsif xml_info.is_a?(ReachReports::AttributeNodeProperty)
+      elsif xml_info.is_a?(ReachReports::SingleAttributeNodeProperty)
         new_node = REXML::Element.find_or_create(node, xml_info.xml_prop)
         new_node.add_attribute(xml_info.attribute, self.send(xml_info.prop).to_s) 
       
-      elsif xml_info.is_a?(ReachReports::MultiAttributeNodeProperty)
+      elsif xml_info.is_a?(ReachReports::AttributeNodeProperty)
         new_node = REXML::Element.find_or_create(node, xml_info.xml_prop)
         self.send(xml_info.prop.to_s+"=",self.association_class(xml_info.prop).new) unless self.send(xml_info.prop)
         self.send(xml_info.prop).to_XML(new_node)
+        
+      elsif xml_info.is_a?(ReachReports::AttributeSubNodeListProperty)
+        new_node = REXML::Element.find_or_create( node, xml_info.parent_prop.xml_alias )
+        #puts "new parent "+xml_info.parent_prop.xml_alias
+        prop_node = REXML::Element.find_or_create( new_node, xml_info.xml_prop )
+        #puts "new prop "+xml_info.xml_prop
+        self.send( xml_info.prop ).each do |elem|
+          #puts "elem "+elem.to_yaml
+          elem_node = REXML::Element.new(xml_info.list_element )
+          elem.to_XML( elem_node )
+          prop_node << elem_node
+        end
         
       else
         raise "type not supported yet: "+xml_info.inspect
@@ -473,19 +504,30 @@ module ReachReports
     
   end
   
-  class MultiAttributeNodeProperty < XmlInfo
+  class AttributeNodeProperty < XmlInfo
     
   end
   
-  class AttributeNodeProperty < XmlInfo
+  class AttributeSubNodeListProperty < XmlInfo
+    
+    attr_accessor :list_element, :parent_prop
+    
+    def initialize( prop, list_element, parent_prop )
+      super(prop)
+      @list_element = list_element
+      @parent_prop = parent_prop
+    end
+  end
+  
+  class SingleAttributeNodeProperty < XmlInfo
     attr_accessor :attribute
     
     def initialize( prop, attribute )
       super(prop)
       @attribute = attribute
     end
-  end 
-
+  end
+  
   class CatalogReference < XmlInfo
     attr_accessor :catalog_name, :catalog_element
     
@@ -534,14 +576,16 @@ module ReachReports
         AttributeProperty.new(:number),
         AttributeProperty.new(:url) ]
     end
+    
+    belongs_to :qsar_general_information
   end  
   
   class QmrfAuthor < Author
-    belongs_to :qsar_general_information
+    property :type, String, :default => "QmrfAuthor"
   end 
   
   class ModelAuthor < Author
-    belongs_to :qsar_general_information
+    property :type, String, :default => "ModelAuthor"
   end 
   
   class Publication
@@ -575,8 +619,10 @@ module ReachReports
     property :info_availability, Text 
     property :related_models, Text
     
-    has n, :qmrf_authors
-    has n, :model_authors
+    # type is needed to distinguish between authors
+    # (the datamapper creates a table "Atuhors", the relation is defined by QsarGeneral.id and Author.id) 
+    has n, :qmrf_authors, :type => "QmrfAuthor"
+    has n, :model_authors, :type => "ModelAuthor"
     has n, :references
     
     def xml_infos
@@ -784,10 +830,10 @@ module ReachReports
     has 1, :training_set_data
     
     def xml_infos
-      [ AttributeNodeProperty.new(:training_set_availability, "answer"),
-        MultiAttributeNodeProperty.new(:training_set_data),
-        AttributeNodeProperty.new(:training_set_descriptors, "answer"),
-        AttributeNodeProperty.new(:dependent_var_availability, "answer"),
+      [ SingleAttributeNodeProperty.new(:training_set_availability, "answer"),
+        AttributeNodeProperty.new(:training_set_data),
+        SingleAttributeNodeProperty.new(:training_set_descriptors, "answer"),
+        SingleAttributeNodeProperty.new(:dependent_var_availability, "answer"),
         TextNodeProperty.new(:other_info),
         TextNodeProperty.new(:preprocessing),
         TextNodeProperty.new(:goodness_of_fit),
@@ -827,10 +873,10 @@ module ReachReports
     has 1, :validation_set_data
     
     def xml_infos
-      [ AttributeNodeProperty.new(:validation_set_availability, "answer"),
-        MultiAttributeNodeProperty.new(:validation_set_data),
-        AttributeNodeProperty.new(:validation_set_descriptors, "answer"),
-        AttributeNodeProperty.new(:validation_dependent_var_availability, "answer"),
+      [ SingleAttributeNodeProperty.new(:validation_set_availability, "answer"),
+        AttributeNodeProperty.new(:validation_set_data),
+        SingleAttributeNodeProperty.new(:validation_set_descriptors, "answer"),
+        SingleAttributeNodeProperty.new(:validation_dependent_var_availability, "answer"),
         TextNodeProperty.new(:validation_other_info),
         TextNodeProperty.new(:experimental_design),
         TextNodeProperty.new(:validation_predictivity),
@@ -866,23 +912,57 @@ module ReachReports
     property :qsar_miscelaneous_id, Integer
   end 
 
+  class Attachment
+     include DataMapper::Resource
+    
+    property :id, Serial
+    property :description, Text
+    property :filetype, String
+    property :url, String, :length => 255
+    
+    def xml_infos
+    [ AttributeProperty.new(:description),
+      AttributeProperty.new(:filetype),
+      AttributeProperty.new(:url),
+      ]
+    end
+    
+    belongs_to :qsar_miscelaneous
+  end
+  
+  class AttachmentTrainingData < Attachment
+    property :type, String, :default => "AttachmentTrainingData"
+  end
+  
+  class AttachmentValidationData < Attachment
+    property :type, String, :default => "AttachmentValidationData"
+  end
+  
+  class AttachmentDocument < Attachment
+    property :type, String, :default => "AttachmentDocument"
+  end
+  
+
   class QsarMiscelaneous
     include DataMapper::Resource
     
     property :id, Serial
     property :comments, Text
-    property :attachment_training_data, Text
-    property :attachment_validation_data, Text
-    property :attachment_documents, Text
     
     has n, :bibliography, Text
+    
+    # type is needed to distinguish between attachments
+    # (the datamapper creates a table "Attachments", the relation is defined by QsarMisc.id and Attachment.id) 
+    has n, :attachment_training_data, :type => "AttachmentTrainingData"
+    has n, :attachment_validation_data, :type => "AttachmentValidationData"
+    has n, :attachment_documents, :type => "AttachmentDocument"
     
     def xml_infos
       [ TextNodeProperty.new(:comments),
         CatalogReference.new(:bibliography,"publications_catalog", "publication"),
-        TextSubnodeProperty.new(:attachment_training_data, :attachments),
-        TextSubnodeProperty.new(:attachment_validation_data, :attachments),
-        TextSubnodeProperty.new(:attachment_documents, :attachments),
+        AttributeSubNodeListProperty.new(:attachment_training_data, :molecules, :attachments),
+        AttributeSubNodeListProperty.new(:attachment_validation_data, :molecules, :attachments),
+        AttributeSubNodeListProperty.new(:attachment_documents, :documents, :attachments),
         ]
     end
     
@@ -930,11 +1010,6 @@ module ReachReports
     end
     
     def self.from_xml(report, xml_data)
-      
-      # DEBUG: REMOVE THIS
-      #xml_data = File.new("qmrf-report.xml").read
-      #puts xml_data
-      # DEBUG: REMOVE THIS
       
       doc = Document.new xml_data
       
@@ -986,6 +1061,29 @@ module ReachReports
 #        puts e.resource.errors.inspect
 #        exit
 #      end
+
+#        puts "XXXXXXXxxxxx"
+#        
+#        puts "1"
+#        puts report.qsar_miscelaneous.attachment_training_data.inspect
+#        puts "2"
+#        puts report.qsar_miscelaneous.attachment_validation_data.inspect
+#        puts "3"
+#        puts report.qsar_miscelaneous.attachment_documents.inspect
+#        
+#        
+#        r = QmrfReport.get(report.id)
+#        
+#        puts "1"
+#        puts r.qsar_miscelaneous.attachment_training_data.inspect
+#        puts "2"
+#        puts r.qsar_miscelaneous.attachment_validation_data.inspect
+#        puts "3"
+#        puts r.qsar_miscelaneous.attachment_documents.inspect
+#        
+#        exit
+        
+
     end
     
     def to_xml
@@ -1117,6 +1215,9 @@ module ReachReports
   QsarInterpretation.auto_upgrade!
   
   Bibliography.auto_upgrade!
+  AttachmentTrainingData.auto_upgrade!
+  AttachmentValidationData.auto_upgrade!
+  AttachmentDocument.auto_upgrade!
   QsarMiscelaneous.auto_upgrade!
   
   QmrfSummary.auto_upgrade!
