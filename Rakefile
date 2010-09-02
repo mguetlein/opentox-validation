@@ -70,7 +70,7 @@ end
 
 desc "Migrate the database through scripts in db/migrate. Target specific version with VERSION=x"
 task :migrate => :load_config do
-  [ 'rubygems', 'active_record', 'logger' ].each{ |l| require l }
+  [ 'rubygems', 'opentox-ruby-api-wrapper', 'active_record', 'logger' ].each{ |l| require l }
   ActiveRecord::Base.establish_connection(  
        :adapter => @@config[:database][:adapter],
        :host => @@config[:database][:host],
