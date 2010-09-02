@@ -182,6 +182,22 @@ module ValidationExamples
   
     ########################################################################################################  
 
+  class ISTRatLiverCrossvalidation < CrossValidation
+    def initialize
+      @dataset_uri = "http://webservices.in-silico.ch/dataset/26"
+      @prediction_feature = "http://toxcreate.org/feature#chr_rat_liver_proliferativelesions"
+    end
+  end
+  
+  class MajorityISTRatLiverCrossvalidation < ISTRatLiverCrossvalidation
+    def initialize
+      @algorithm_uri = File.join(@@config[:services]["opentox-majority"],"/class/algorithm")
+      super
+    end
+  end
+
+      ########################################################################################################  
+
   class ISTEpaCrossvalidation < CrossValidation
     def initialize
       @dataset_uri = "http://ot-dev.in-silico.ch/dataset/69"
@@ -196,6 +212,9 @@ module ValidationExamples
       super
     end
   end
+  
+  ########################################################################################################
+
   
   ########################################################################################################
   
@@ -282,6 +301,8 @@ module ValidationExamples
       "9a" => [ ISTLazarISTIrisCrossvalidation ],
       
       "10a" => [ ISTLazarISTEpaCrossvalidation ],
+      
+      "11b" => [ MajorityISTRatLiverCrossvalidation ],
     }
   
   def self.list

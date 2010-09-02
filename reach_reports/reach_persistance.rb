@@ -40,7 +40,7 @@ class Symbol
     :qsar_endpoint => "QSAR_Endpoint", :qmrf_author => "qmrf_authors", :qsar_algorithm => "QSAR_Algorithm", 
     :qsar_applicability_domain => "QSAR_Applicability_domain", :qsar_robustness => "QSAR_Robustness", 
     :qsar_predictivity => "QSAR_Predictivity", :qsar_interpretation => "QSAR_Interpretation", 
-    :qsar_miscelaneous => "QSAR_Miscelaneous", :qmrf_summary => "QMRF_Summary", :qmrf_number => "QMRF_number" }
+    :qsar_miscellaneous => "QSAR_Miscelaneous", :qmrf_summary => "QMRF_Summary", :qmrf_number => "QMRF_number" }
   
   def xml_alias
     XML_ALIAS[self] ? XML_ALIAS[self] : self.to_s
@@ -325,7 +325,7 @@ module DataMapper::Resource
         #puts "new prop "+xml_info.xml_prop
         self.send( xml_info.prop ).each do |elem|
           #puts "elem "+elem.to_yaml
-          elem_node = REXML::Element.new(xml_info.list_element )
+          elem_node = REXML::Element.new( xml_info.list_element.xml_alias )
           elem.to_XML( elem_node )
           prop_node << elem_node
         end
@@ -620,7 +620,7 @@ module ReachReports
     property :related_models, Text
     
     # type is needed to distinguish between authors
-    # (the datamapper creates a table "Atuhors", the relation is defined by QsarGeneral.id and Author.id) 
+    # (the datamapper creates a table "Authors", the relation is defined by QsarGeneral.id and Author.id) 
     has n, :qmrf_authors, :type => "QmrfAuthor"
     has n, :model_authors, :type => "ModelAuthor"
     has n, :references
@@ -827,7 +827,7 @@ module ReachReports
     property :bootstrap, Text
     property :other_statistics, Text
     
-    has 1, :training_set_data
+    has 1, :training_set_data, :model => "TrainingSetData"
     
     def xml_infos
       [ SingleAttributeNodeProperty.new(:training_set_availability, "answer"),
@@ -870,7 +870,7 @@ module ReachReports
     property :validation_assessment, Text
     property :validation_comments, Text
     
-    has 1, :validation_set_data
+    has 1, :validation_set_data, :model => "ValidationSetData"
     
     def xml_infos
       [ SingleAttributeNodeProperty.new(:validation_set_availability, "answer"),
@@ -908,8 +908,8 @@ module ReachReports
   
   class Bibliography < Publication
     
-    #belongs_to :qsar_miscelaneous
-    property :qsar_miscelaneous_id, Integer
+    #belongs_to :qsar_miscellaneous
+    property :qsar_miscellaneous_id, Integer
   end 
 
   class Attachment
@@ -927,7 +927,7 @@ module ReachReports
       ]
     end
     
-    belongs_to :qsar_miscelaneous
+    belongs_to :qsar_miscellaneous
   end
   
   class AttachmentTrainingData < Attachment
@@ -943,7 +943,7 @@ module ReachReports
   end
   
 
-  class QsarMiscelaneous
+  class QsarMiscellaneous
     include DataMapper::Resource
     
     property :id, Serial
@@ -953,8 +953,8 @@ module ReachReports
     
     # type is needed to distinguish between attachments
     # (the datamapper creates a table "Attachments", the relation is defined by QsarMisc.id and Attachment.id) 
-    has n, :attachment_training_data, :type => "AttachmentTrainingData"
-    has n, :attachment_validation_data, :type => "AttachmentValidationData"
+    has n, :attachment_training_data, :model => "AttachmentValidationData", :type => "AttachmentTrainingData"
+    has n, :attachment_validation_data,  :model => "AttachmentValidationData", :type => "AttachmentValidationData"
     has n, :attachment_documents, :type => "AttachmentDocument"
     
     def xml_infos
@@ -997,7 +997,7 @@ module ReachReports
     
     CHAPTERS = [ :qsar_identifier, :qsar_general_information, :qsar_endpoint, :qsar_algorithm, 
                  :qsar_applicability_domain, :qsar_robustness, :qsar_predictivity, :qsar_interpretation, 
-                 :qsar_miscelaneous, :qmrf_summary ]
+                 :qsar_miscellaneous, :qmrf_summary ]
                
     CHAPTERS.each{ |c,clazz| has 1, c }
     
@@ -1065,21 +1065,21 @@ module ReachReports
 #        puts "XXXXXXXxxxxx"
 #        
 #        puts "1"
-#        puts report.qsar_miscelaneous.attachment_training_data.inspect
+#        puts report.qsar_miscellaneous.attachment_training_data.inspect
 #        puts "2"
-#        puts report.qsar_miscelaneous.attachment_validation_data.inspect
+#        puts report.qsar_miscellaneous.attachment_validation_data.inspect
 #        puts "3"
-#        puts report.qsar_miscelaneous.attachment_documents.inspect
+#        puts report.qsar_miscellaneous.attachment_documents.inspect
 #        
 #        
 #        r = QmrfReport.get(report.id)
 #        
 #        puts "1"
-#        puts r.qsar_miscelaneous.attachment_training_data.inspect
+#        puts r.qsar_miscellaneous.attachment_training_data.inspect
 #        puts "2"
-#        puts r.qsar_miscelaneous.attachment_validation_data.inspect
+#        puts r.qsar_miscellaneous.attachment_validation_data.inspect
 #        puts "3"
-#        puts r.qsar_miscelaneous.attachment_documents.inspect
+#        puts r.qsar_miscellaneous.attachment_documents.inspect
 #        
 #        exit
         
@@ -1218,7 +1218,7 @@ module ReachReports
   AttachmentTrainingData.auto_upgrade!
   AttachmentValidationData.auto_upgrade!
   AttachmentDocument.auto_upgrade!
-  QsarMiscelaneous.auto_upgrade!
+  QsarMiscellaneous.auto_upgrade!
   
   QmrfSummary.auto_upgrade!
   

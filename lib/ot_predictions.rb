@@ -147,8 +147,12 @@ module Lib
           a = []
           
           #PENDING!
-          a.push( "http://ambit.uni-plovdiv.bg:8080/ambit2/depict/cdk?search="+
-            URI.encode(OpenTox::Compound.new(:uri=>p.identifier(i)).smiles) ) if add_pic
+          begin
+            a.push( "http://ambit.uni-plovdiv.bg:8080/ambit2/depict/cdk?search="+
+              URI.encode(OpenTox::Compound.new(:uri=>p.identifier(i)).smiles) ) if add_pic
+          rescue => ex
+            a.push("Could not add pic: "+ex.message)
+          end
           
           a << (format ? p.actual_value(i).to_nice_s : p.actual_value(i))
           a << (format ? p.predicted_value(i).to_nice_s : p.predicted_value(i))

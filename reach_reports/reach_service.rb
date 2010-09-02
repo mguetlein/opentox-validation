@@ -73,12 +73,11 @@ module ReachReports
     # chapter 3
     # TODO "model_species" ?
     r.qsar_endpoint = QsarEndpoint.new
-    
     model.predictedVariables.each do |p|
       r.qsar_endpoint.model_endpoint << ModelEndpoint.new( :name => p )
     end
     # TODO "endpoint_comments" => "3.3", "endpoint_units" => "3.4",
-    r.qsar_endpoint.endpoint_variable = model.dependentVariables if model.dependentVariables
+    r.qsar_endpoint.endpoint_variable =  model.dependentVariables if model.dependentVariables
     # TODO "endpoint_protocol" => "3.6", "endpoint_data_quality" => "3.7",
 
     # chapter 4
@@ -90,10 +89,18 @@ module ReachReports
     # chapter 5
     # TODO app_domain_description, app_domain_method, app_domain_software, applicability_limits
 
+    dataset = model.trainingDataset ? OpenTox::Dataset.find(model.trainingDataset) : nil
+
     # chapter 6
-    # "training_set_availability" => "6.1", "training_set_data" => "6.2","training_set_descriptors" => "6.3", 
+    r.qsar_robustness = QsarRobustness.new
+    r.qsar_robustness.training_set_availability = dataset ? "Yes" : "No"
+    #TODO "training_set_data" => "6.2",
+    # "training_set_descriptors" => "6.3", 
     # "dependent_var_availability" => "6.4", "other_info" => "6.5", "preprocessing" => "6.6", "goodness_of_fit" => "6.7", 
-    # "loo" => "6.8", "lmo" => "6.9", "yscrambling" => "6.10", "bootstrap" => "6.11", "other_statistics" => "6.12",
+    # "loo" => "6.8",
+    puts Lib::Crossvalidation.find(:all, :conditions => {:algorithm_uri => model.algorithm}).inspect if model.algorithm
+    #exit
+    # "lmo" => "6.9", "yscrambling" => "6.10", "bootstrap" => "6.11", "other_statistics" => "6.12",
 
     # chapter 7 
     # "validation_set_availability" => "7.1", "validation_set_data" => "7.2", "validation_set_descriptors" => "7.3", 
@@ -105,6 +112,13 @@ module ReachReports
 
     # chapter 9
     # "comments" => "9.1", "bibliography" => "9.2", "attachments" => "9.3",
+    r.qsar_miscellaneous = QsarMiscellaneous.new
+    r.qsar_miscellaneous.attachment_training_data << AttachmentTrainingData.new( 
+      { :description => dataset.title, 
+        :filetype => "owl-dl", 
+        :url => dataset.uri} ) if dataset 
+        
+    
      
     r.save
   end
