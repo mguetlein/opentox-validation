@@ -43,7 +43,7 @@ end
 desc "load config"
 task :load_config do
   require 'yaml'
-  ENV['RACK_ENV'] = 'test' unless ENV['RACK_ENV']
+  ENV['RACK_ENV'] = 'production' unless ENV['RACK_ENV']
   basedir = File.join(ENV['HOME'], ".opentox")
   config_dir = File.join(basedir, "config")
   config_file = File.join(config_dir, "#{ENV['RACK_ENV']}.yaml")
@@ -70,7 +70,7 @@ end
 
 desc "Migrate the database through scripts in db/migrate. Target specific version with VERSION=x"
 task :migrate => :load_config do
-  [ 'rubygems', 'opentox-ruby-api-wrapper', 'active_record', 'logger' ].each{ |l| require l }
+  [ 'rubygems', 'active_record', 'logger' ].each{ |l| require l }
   ActiveRecord::Base.establish_connection(  
        :adapter => @@config[:database][:adapter],
        :host => @@config[:database][:host],
