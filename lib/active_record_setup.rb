@@ -1,4 +1,6 @@
 
+gem "activerecord", "= 2.3.8"
+gem "ar-extensions", "= 0.9.2"
 ['rubygems', 'logger', 'active_record', 'ar-extensions', 'opentox-ruby-api-wrapper' ].each do |g|
     require g
 end
@@ -17,7 +19,7 @@ end
 class ActiveRecord::Base
   
   def self.find_like(filter_params)
-    puts "params before "+filter_params.inspect
+    #puts "params before "+filter_params.inspect
     filter_params.keys.each do |k|
       key = k.to_s
       unless self.column_names.include?(key)
@@ -32,7 +34,7 @@ class ActiveRecord::Base
       end
       filter_params[key+"_like"] = filter_params.delete(k)
     end
-    puts "params after "+filter_params.inspect
+    #puts "params after "+filter_params.inspect
     self.find(:all, :conditions => filter_params)
   end
 end

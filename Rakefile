@@ -1,23 +1,32 @@
 require 'rubygems'
 require 'rake'
 
-REPORT_GEMS = ['rubygems', 'logger', 'fileutils', 'sinatra', 'sinatra/url_for', 'rest_client', 
-  'yaml', 'opentox-ruby-api-wrapper', 'fileutils', 'mime/types', 'abbrev', 
-  'rexml/document', 'active_record', 'ar-extensions', 'ruby-plot']
-VALIDATION_GEMS = [ 'rubygems', 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper', 'logger', 'active_record', 'ar-extensions' ]
-
+REPORT_GEMS = [  'opentox-ruby-api-wrapper', 'mime-types', 'activerecord', 'activesupport', 'ar-extensions', 'ruby-plot']
+VALIDATION_GEMS = [  'opentox-ruby-api-wrapper', 'activerecord', 'activesupport', 'ar-extensions', 'ruby-plot']
+GEM_VERSIONS = { "activerecord" => "= 2.3.8", "activesupport" => "= 2.3.8", "ar-extensions" => "= 0.9.2", "ruby-plot" => "= 0.0.2" }
+# this is needed because otherwihse ar-extensions adds activesupport 3.0.0 which confuses things
+GEM_INSTALL_OPTIONS = { "ar-extensions" => "--ignore-dependencies" }
 
 
 desc "Install required gems"
 task :install_gems do
   (REPORT_GEMS + VALIDATION_GEMS).uniq.each do |g|
     begin
-      print "> require "+g+" .. "
-      require g
+      if GEM_VERSIONS.has_key?(g)
+        print "> gem "+g+", '"+GEM_VERSIONS[g]+"' .. "
+        gem g, GEM_VERSIONS[g]
+      else
+        print "> gem "+g+" .. "
+        gem g
+      end
       puts "ok"
     rescue LoadError => ex
       puts "NOT FOUND"
-      cmd = "sudo env PATH=$PATH gem install "+g
+      options = ""
+      options += "--version '"+GEM_VERSIONS[g]+"' " if GEM_VERSIONS.has_key?(g)
+      options += GEM_INSTALL_OPTIONS[g]+" " if GEM_INSTALL_OPTIONS.has_key?(g)
+      cmd = "sudo env PATH=$PATH gem install "+options+" "+g
+      puts "installing gem, this may take some time..."
       puts cmd
       IO.popen(cmd){ |f| puts f.gets }
     end
@@ -61,7 +70,7 @@ end
 
 desc "Migrate the database through scripts in db/migrate. Target specific version with VERSION=x"
 task :migrate => :load_config do
-  require 'active_record'
+  [ 'rubygems', 'active_record', 'logger' ].each{ |l| require l }
   ActiveRecord::Base.establish_connection(  
        :adapter => @@config[:database][:adapter],
        :host => @@config[:database][:host],

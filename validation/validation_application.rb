@@ -1,11 +1,12 @@
 
-[ 'rubygems', 'sinatra', 'sinatra/url_for', 'active_record', 'ar-extensions', 'opentox-ruby-api-wrapper' ].each do |lib|
+[ 'rubygems', 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper' ].each do |lib|
   require lib
 end
 
-require 'validation/validation_service.rb'
 require 'lib/merge.rb'
 require 'lib/active_record_setup.rb'
+
+require 'validation/validation_service.rb'
 
 get '/crossvalidation/?' do
   LOGGER.info "list all crossvalidations"
@@ -125,7 +126,7 @@ get '/training_test_split' do
 end
 
 get '/?' do
-  LOGGER.info "list all validations"
+  LOGGER.info "list all validations, params: "+params.inspect
   content_type "text/uri-list"
   Validation::Validation.find_like(params).collect{ |d| url_for("/", :full) + d.id.to_s }.join("\n")
 end
