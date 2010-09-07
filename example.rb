@@ -39,7 +39,7 @@ class Example
             "algorithm_params" => @@alg_params,
             "crossvalidation_id" => "1",
             "validation_report_id" => "1",
-            "crossvalidation_report_id" => "1",
+            "crossvalidation_report_id" => "2",
             "css_file" => @@css_file,
             "prediction_dataset_uri" => @@prediction_data,
             "predicted_feature" => @@predicted_feature }
