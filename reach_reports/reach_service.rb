@@ -125,7 +125,7 @@ module ReachReports
       cvs.each do |cv|
         match = false
         uniq_cvs.each do |cv2|
-          if cv2.dataset_uri == cv.dataset_uri and cv.num_folds == cv2.num_folds and cv.stratified == cv2.stratified and cv.random_seed == cv2.random_seed
+          if cv.dataset_uri == cv2.dataset_uri and cv.num_folds == cv2.num_folds and cv.stratified == cv2.stratified and cv.random_seed == cv2.random_seed
             match = true
             break
           end
@@ -164,15 +164,27 @@ module ReachReports
 
     LOGGER.debug "looking for validations with "+{:model_uri => model.uri}.inspect
     vals = Lib::Validation.find(:all, :conditions => {:model_uri => model.uri})
+    uniq_vals = []
+    vals.each do |val|
+      match = false
+      uniq_vals.each do |val2|
+        if val.test_dataset_uri == val2.test_dataset_uri
+          match = true
+          break
+        end
+      end
+      uniq_vals << val unless match
+    end
+    
     r.qsar_predictivity = QsarPredictivity.new
-    if vals and vals.size > 0
+    if uniq_vals.size > 0
       r.qsar_predictivity.validation_set_availability = "Yes"
       r.qsar_predictivity.validation_set_data = ValidationSetData.new(:chemname => "Yes", :cas => "Yes", 
         :smiles => "Yes", :inchi => "Yes", :mol => "Yes", :formula => "Yes")
 
-      v = [ "found '"+vals.size.to_s+"' test-set validations of model '"+model.uri+"'" ]
+      v = [ "found '"+uniq_vals.size.to_s+"' test-set validations of model '"+model.uri+"'" ]
       v << ""
-      vals.each do |validation|
+      uniq_vals.each do |validation|
         v << "validation: "+validation.validation_uri
         v << "dataset (see 9.3 Validation data): "+validation.test_dataset_uri
         val_datasets << validation.test_dataset_uri

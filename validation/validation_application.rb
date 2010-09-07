@@ -14,6 +14,22 @@ get '/crossvalidation/?' do
   Validation::Crossvalidation.find_like(params).collect{ |d| url_for("/crossvalidation/", :full) + d.id.to_s }.join("\n")+"\n"
 end
 
+post '/crossvalidation/cleanup/?' do
+  LOGGER.info "crossvalidation cleanup, starting..."
+  content_type "text/uri-list"
+  deleted = []
+  Validation::Crossvalidation.find_like(params).each do |cv|
+    num_vals = Validation::Validation.find( :all, :conditions => { :crossvalidation_id => cv.id } ).size
+    if cv.num_folds != num_vals
+      LOGGER.debug "delete cv with id:"+cv.id.to_s+" num-folds should be "+cv.num_folds.to_s+", is "+num_vals.to_s
+      deleted << url_for("/crossvalidation/", :full) + cv.id.to_s
+      Validation::Crossvalidation.delete(cv.id)
+    end
+  end
+  LOGGER.info "crossvalidation cleanup, deleted "+deleted.size.to_s+" cvs"
+  deleted.join("\n")+"\n"
+end
+
 post '/crossvalidation/loo/?' do
   halt 500, "not yet implemented"
 end
