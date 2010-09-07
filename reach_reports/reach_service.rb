@@ -1,3 +1,15 @@
+
+class Array
+
+  def to_html
+    return "" unless size>0
+    s = "<html>\n<head>\n</head>\n<body>\n"
+    s += join(" <br>\n")
+    s += "</body>\n</html>\n"
+    return s
+  end
+end
+  
 module ReachReports
   
   def self.list_reports(type)
@@ -45,17 +57,17 @@ module ReachReports
     #halt 202,task_uri
   end
   
-  def self.build_qmrf_report(r)
 
-    model = OpenTox::Model::Generic.find(r.model_uri)
+  
+  def self.build_qmrf_report(r)
+    
+    model = OpenTox::Model::PredictionModel.find(r.model_uri)
+    classification = model.classification?
      
     # chapter 1
-    #r.QSAR_title = model.title
     r.qsar_identifier = QsarIdentifier.new
     r.qsar_identifier.qsar_title = model.title
-
-    # TODO
-    # QSAR_models -> sparql same endpoint     
+    # TODO QSAR_models -> sparql same endpoint     
     r.qsar_identifier.qsar_software << QsarSoftware.new( :url => model.uri, :name => model.title, :contact => model.creator )
     algorithm = OpenTox::Algorithm::Generic.find(model.algorithm) if model.algorithm
     r.qsar_identifier.qsar_software << QsarSoftware.new( :url => algorithm.uri, :name => algorithm.title )
@@ -89,19 +101,89 @@ module ReachReports
     # chapter 5
     # TODO app_domain_description, app_domain_method, app_domain_software, applicability_limits
 
-    dataset = model.trainingDataset ? OpenTox::Dataset.find(model.trainingDataset) : nil
+    training_dataset = model.trainingDataset ? OpenTox::Dataset.find(model.trainingDataset+"/metadata") : nil
 
     # chapter 6
     r.qsar_robustness = QsarRobustness.new
-    r.qsar_robustness.training_set_availability = dataset ? "Yes" : "No"
+    if training_dataset
+      r.qsar_robustness.training_set_availability = "Yes"
+      r.qsar_robustness.training_set_data = TrainingSetData.new(:chemname => "Yes", :cas => "Yes", 
+        :smiles => "Yes", :inchi => "Yes", :mol => "Yes", :formula => "Yes")
+    end
+    
     #TODO "training_set_data" => "6.2",
     # "training_set_descriptors" => "6.3", 
     # "dependent_var_availability" => "6.4", "other_info" => "6.5", "preprocessing" => "6.6", "goodness_of_fit" => "6.7", 
     # "loo" => "6.8",
-    puts Lib::Crossvalidation.find(:all, :conditions => {:algorithm_uri => model.algorithm}).inspect if model.algorithm
-    #exit
+    
+    val_datasets = []
+    
+    if model.algorithm
+      cvs = Lib::Crossvalidation.find(:all, :conditions => {:algorithm_uri => model.algorithm})
+      cvs = [] unless cvs
+      lmo = [ "found "+cvs.size.to_s+" crossvalidation/s for algorithm '"+model.algorithm ]
+      lmo << ""
+      cvs.each do |cv|
+        lmo << "crossvalidation: "+cv.crossvalidation_uri
+        lmo << "dataset (see 9.3 Validation data): "+cv.dataset_uri
+        val_datasets << cv.dataset_uri
+        lmo << "num-folds: "+cv.num_folds.to_s
+        val  = YAML.load( OpenTox::RestClientWrapper.get File.join(cv.crossvalidation_uri,"statistics") )
+        if classification
+          lmo << "percent_correct: "+val[:classification_statistics][:percent_correct].to_s
+          lmo << "weighted AUC: "+val[:classification_statistics][:weighted_area_under_roc].to_s
+        else
+          lmo << "root_mean_squared_error: "+val[:regression_statistics][:root_mean_squared_error].to_s
+          lmo << "r_square "+val[:regression_statistics][:r_square].to_s
+        end
+        reports = OpenTox::RestClientWrapper.get File.join(CONFIG[:services]["opentox-validation"],"report/crossvalidation?crossvalidation_uris="+cv.crossvalidation_uri)
+        if reports and reports.size>0
+          lmo << "for more info see report: "+reports
+        else
+          lmo << "for more info see report: not yet created for '"+cv.crossvalidation_uri+"'"
+        end
+        lmo << ""
+      end
+    else
+      lmo = [ "no prediction algortihm for model found, crossvalidation not possible" ]
+    end
+    r.qsar_robustness.lmo = lmo.to_html
     # "lmo" => "6.9", "yscrambling" => "6.10", "bootstrap" => "6.11", "other_statistics" => "6.12",
 
+    vals = Lib::Validation.find(:all, :conditions => {:model_uri => model.uri})
+    if vals and vals.size > 0
+      
+      r.qsar_predictivity = QsarPredictivity.new
+      r.qsar_predictivity.validation_set_availability = "Yes"
+      r.qsar_predictivity.validation_set_data = ValidationSetData.new(:chemname => "Yes", :cas => "Yes", 
+        :smiles => "Yes", :inchi => "Yes", :mol => "Yes", :formula => "Yes")
+
+      v = [ "found '"+vals.size.to_s+"' test-set validations of model '"+model.uri+"'" ]
+      v << ""
+      vals.each do |validation|
+        v << "validation: "+validation.validation_uri
+        v << "dataset (see 9.3 Validation data): "+validation.test_dataset_uri
+        val_datasets << validation.test_dataset_uri
+        if classification
+          v << "percent_correct: "+validation.classification_statistics[:percent_correct].to_s
+          v << "weighted AUC: "+validation.classification_statistics[:weighted_area_under_roc].to_s
+        else
+          v << "root_mean_squared_error: "+validation.regression_statistics[:root_mean_squared_error].to_s
+          v << "r_square "+validation.regression_statistics[:r_square].to_s
+        end
+        reports = OpenTox::RestClientWrapper.get File.join(CONFIG[:services]["opentox-validation"],"report/validation?validation_uris="+validation.validation_uri)
+        if reports and reports.size>0
+          v << "for more info see report: "+reports
+        else
+          v << "for more info see report: not yet created for '"+validation.validation_uri+"'"
+        end
+        v << ""
+      end
+    else
+      v = [ "no validation of model '"+model.uri+" found" ] 
+    end
+    r.qsar_predictivity.validation_predictivity = v.to_html
+    
     # chapter 7 
     # "validation_set_availability" => "7.1", "validation_set_data" => "7.2", "validation_set_descriptors" => "7.3", 
     # "validation_dependent_var_availability" => "7.4", "validation_other_info" => "7.5", "experimental_design" => "7.6", 
@@ -112,15 +194,25 @@ module ReachReports
 
     # chapter 9
     # "comments" => "9.1", "bibliography" => "9.2", "attachments" => "9.3",
-    r.qsar_miscellaneous = QsarMiscellaneous.new
-    r.qsar_miscellaneous.attachment_training_data << AttachmentTrainingData.new( 
-      { :description => dataset.title, 
-        :filetype => "owl-dl", 
-        :url => dataset.uri} ) if dataset 
-        
     
-     
+    r.qsar_miscellaneous = QsarMiscellaneous.new
+    
+    r.qsar_miscellaneous.attachment_training_data << AttachmentTrainingData.new( 
+      { :description => training_dataset.title, 
+        :filetype => "owl-dl", 
+        :url => model.trainingDataset} ) if training_dataset
+        
+    val_datasets.each do |data_uri|
+      d = OpenTox::Dataset.find(data_uri+"/metadata")
+      r.qsar_miscellaneous.attachment_validation_data << AttachmentValidationData.new( 
+      { :description => d.title, 
+        :filetype => "owl-dl", 
+        :url => data_uri} )
+    end
+        
     r.save
+    
+    
   end
   
 #  def self.get_report_content(type, id, *keys)

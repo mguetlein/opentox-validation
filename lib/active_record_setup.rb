@@ -28,7 +28,7 @@ class ActiveRecord::Base
           key = key+"_uri"
           unless self.column_names.include?(key)
             key = key+"s"
-            raise "no attribute found: '"+k.to_s+"'" unless self.column_names.include?(key)
+            $sinatra.halt 400,"no attribute found: '"+k.to_s+"'" unless self.column_names.include?(key)
           end
         end
       end

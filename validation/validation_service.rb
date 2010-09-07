@@ -332,6 +332,70 @@ module Validation
   
   module Util
     
+    # splits a dataset into test and training dataset via bootstrapping
+    # (training dataset-size is n, sampling from orig dataset with replacement)
+    # returns map with training_dataset_uri and test_dataset_uri
+    def self.bootstrapping( orig_dataset_uri, prediction_feature, random_seed=nil )
+      
+      random_seed=1 unless random_seed
+      
+      orig_dataset = OpenTox::Dataset.find orig_dataset_uri
+      $sinatra.halt 400, "Dataset not found: "+orig_dataset_uri.to_s unless orig_dataset
+      if prediction_feature
+        $sinatra.halt 400, "Prediction feature '"+prediction_feature.to_s+
+          "' not found in dataset, features are: \n"+
+          orig_dataset.features.inspect unless orig_dataset.features.include?(prediction_feature)
+      else
+        LOGGER.warn "no prediciton feature given, all features included in test dataset"
+      end
+      
+      compounds = orig_dataset.compounds
+      $sinatra.halt 400, "Cannot split datset, num compounds in dataset < 2 ("+compounds.size.to_s+")" if compounds.size<2
+      
+      srand random_seed.to_i
+      while true
+        training_compounds = []
+        compounds.size.times do
+          training_compounds << compounds[rand(compounds.size)]
+        end
+        test_compounds = []
+        compounds.each do |c|
+          test_compounds << c unless training_compounds.include?(c)
+        end
+        if test_compounds.size > 0
+          break
+        else
+          srand rand(10000)
+        end
+      end
+      
+      LOGGER.debug "bootstrapping on dataset "+orig_dataset_uri+
+                    " into training ("+training_compounds.size.to_s+") and test ("+test_compounds.size.to_s+")"+
+                    ", duplicates in training dataset: "+test_compounds.size.to_s
+      
+      result = {}
+      result[:training_dataset_uri] = orig_dataset.create_new_dataset( training_compounds,
+        orig_dataset.features, 
+        "Bootstrapping training dataset of "+orig_dataset.title.to_s, 
+        $sinatra.url_for('/bootstrapping',:full) )
+      result[:test_dataset_uri] = orig_dataset.create_new_dataset( test_compounds,
+        orig_dataset.features.dclone - [prediction_feature], 
+        "Bootstrapping test dataset of "+orig_dataset.title.to_s, 
+        $sinatra.url_for('/bootstrapping',:full) )
+      
+      if ENV['RACK_ENV'] =~ /test|debug/
+        training_dataset = OpenTox::Dataset.find result[:training_dataset_uri]
+        $sinatra.halt 400, "Training dataset not found: '"+result[:training_dataset_uri].to_s+"'" unless training_dataset
+        training_compounds_verify = training_dataset.compounds
+        $sinatra.halt 500, "training compounds error" unless training_compounds_verify==training_compounds
+        $sinatra.halt 400, "Test dataset not found: '"+result[:test_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:test_dataset_uri]
+      end
+      
+      LOGGER.debug "bootstrapping done, training dataset: '"+result[:training_dataset_uri].to_s+"', test dataset: '"+result[:test_dataset_uri].to_s+"'"
+      
+      return result
+    end    
+    
     # splits a dataset into test and training dataset
     # returns map with training_dataset_uri and test_dataset_uri
     def self.train_test_dataset_split( orig_dataset_uri, prediction_feature, split_ratio=nil, random_seed=nil )

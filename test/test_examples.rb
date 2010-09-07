@@ -81,6 +81,30 @@ module ValidationExamples
   end
   
   ########################################################################################################
+  
+  class HamsterBootstrapping < BootstrappingValidation
+    def initialize
+      @dataset_file = File.new("data/hamster_carcinogenicity.yaml","r")
+      @prediction_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+    end
+  end
+  
+  class LazarHamsterBootstrapping < HamsterBootstrapping
+    def initialize
+      @algorithm_uri = File.join(@@config[:services]["opentox-algorithm"],"lazar")
+      @algorithm_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
+      super
+    end
+  end
+  
+  class MajorityHamsterBootstrapping < HamsterBootstrapping
+    def initialize
+      @algorithm_uri = File.join(@@config[:services]["opentox-majority"],"/class/algorithm")
+      super
+    end
+  end  
+  
+  ########################################################################################################
 
   class HamsterTrainingTest < TrainingTestValidation
     def initialize
@@ -303,6 +327,10 @@ module ValidationExamples
       "10a" => [ ISTLazarISTEpaCrossvalidation ],
       
       "11b" => [ MajorityISTRatLiverCrossvalidation ],
+      
+      "12" => [ LazarHamsterBootstrapping, MajorityHamsterBootstrapping ],
+      "12a" => [ LazarHamsterBootstrapping ],
+      "12b" => [ MajorityHamsterBootstrapping ],
     }
   
   def self.list

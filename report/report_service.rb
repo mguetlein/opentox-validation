@@ -30,7 +30,7 @@ module Reports
     #
     def get_all_reports(type, filter_params)
       
-      LOGGER.info "get all reports of type '"+type.to_s+"'"
+      LOGGER.info "get all reports of type '"+type.to_s+"', filter_params: '"+filter_params.inspect+"'"
       check_report_type(type)
       @persistance.list_reports(type, filter_params).collect{ |id| get_uri(type,id) }.join("\n")
     end

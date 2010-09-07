@@ -11,6 +11,21 @@ LOGGER = MyLogger.new(STDOUT)
 LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 LOGGER.formatter = Logger::Formatter.new
 
+#Rack::Test::DEFAULT_HOST = "localhost/validation"
+module Sinatra
+  module UrlForHelper
+    BASE = "http://localhost/validation"
+   def url_for url_fragment, mode=:path_only
+      case mode
+      when :path_only
+        raise "not impl"
+      when :full
+      end
+      "#{BASE}#{url_fragment}"
+    end
+  end
+end
+
 #DataMapper::Model.raise_on_save_failure = true
 #
 #class TestResourceX
@@ -96,19 +111,20 @@ class ReachTest < Test::Unit::TestCase
 #    #puts "data found "+data.to_s[0..1000]
 #    puts OpenTox::RestClientWrapper.post("http://localhost/validation/reach_report/qmrf/20",{:content_type => "application/qmrf-xml"},data).to_s.chomp
 
-    post "/reach_report/qmrf/8"
-    puts last_response.body
+#    post "/reach_report/qmrf/8"
+#    puts last_response.body
     
-    
-#    #model_uri = "http://localhost/model/1"
-#    model_uri = "http://apps.ideaconsult.net:8080/ambit2/model/2"
-#    post '/reach_report/qmrf',:model_uri=>model_uri #http://localhost/model/1"
-#    ##post '/reach_report/qprf',:compound_uri=>"http://localhost/compound/XYZ"
-#    uri = last_response.body
-#    id = uri.split("/")[-1]
-#    puts uri
+    model_uri = "http://localhost/model/1"
+    #model_uri = "http://localhost/majority/regr/model/12"
+    #model_uri = "http://localhost/majority/class/model/1"
+    #model_uri = "http://apps.ideaconsult.net:8080/ambit2/model/2"
+    post '/reach_report/qmrf',:model_uri=>model_uri #http://localhost/model/1"
+    ##post '/reach_report/qprf',:compound_uri=>"http://localhost/compound/XYZ"
+    uri = last_response.body
+    id = uri.split("/")[-1]
+    puts uri
 
-    id = "8"
+#    id = "8"
 
     #get '/reach_report/qmrf'
     #puts last_response.body
@@ -128,6 +144,9 @@ class ReachTest < Test::Unit::TestCase
     
     #r = ReachReports::QmrfReport.find_like( :QSAR_title => "Hamster")
     #puts r.collect{|rr| "report with id:"+rr.id.to_s}.inspect
+    
+    File.new("/home/martin/win/home/qmr_rep_del_me.xml","w").puts last_response.body
+    File.new("/home/martin/info_home/.public_html/qmr_rep_del_me.xml","w").puts last_response.body
   end
 end
 

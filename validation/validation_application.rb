@@ -121,9 +121,16 @@ post '/crossvalidation/?' do
   halt 202,task_uri
 end
 
+
 get '/training_test_split' do
   halt 400, "GET operation not supported, use POST to perform a training_test_split, see "+url_for("/", :full)+" for validation results"
 end
+
+
+get '/bootstrapping' do
+  halt 400, "GET operation not supported, use POST to perform a bootstrapping, see "+url_for("/", :full)+" for validation results"
+end
+
 
 get '/?' do
   LOGGER.info "list all validations, params: "+params.inspect
@@ -190,6 +197,28 @@ post '/training_test_split' do
     halt 400, "prediction_feature missing" unless params[:prediction_feature]
     
     params.merge!(Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:prediction_feature], params[:split_ratio], params[:random_seed]))
+    v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
+                     :test_dataset_uri => params[:test_dataset_uri],
+                     :test_target_dataset_uri => params[:dataset_uri],
+                     :prediction_feature => params[:prediction_feature],
+                     :algorithm_uri => params[:algorithm_uri]
+    v.validate_algorithm( params[:algorithm_params])
+    content_type "text/uri-list"
+    v.validation_uri
+  end
+  halt 202,task_uri
+end
+
+
+post '/bootstrapping' do
+  content_type "text/uri-list"
+  task_uri = OpenTox::Task.as_task( "Perform bootstrapping validation", url_for("/bootstrapping", :full) ) do
+    LOGGER.info "performing bootstrapping validation "+params.inspect
+    halt 400, "dataset_uri missing" unless params[:dataset_uri]
+    halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
+    halt 400, "prediction_feature missing" unless params[:prediction_feature]
+    
+    params.merge!(Validation::Util.bootstrapping(params[:dataset_uri], params[:prediction_feature], params[:random_seed]))
     v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
                      :test_dataset_uri => params[:test_dataset_uri],
                      :test_target_dataset_uri => params[:dataset_uri],

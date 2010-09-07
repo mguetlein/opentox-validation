@@ -11,6 +11,21 @@ LOGGER = MyLogger.new(STDOUT)
 LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 LOGGER.formatter = Logger::Formatter.new
 
+#Rack::Test::DEFAULT_HOST = "localhost" #"/validation"
+module Sinatra
+  module UrlForHelper
+    BASE = "http://localhost/validation"
+   def url_for url_fragment, mode=:path_only
+      case mode
+      when :path_only
+        raise "not impl"
+      when :full
+      end
+      "#{BASE}#{url_fragment}"
+    end
+  end
+end
+
 
 class ValidationTest < Test::Unit::TestCase
   include Rack::Test::Methods
@@ -37,17 +52,19 @@ class ValidationTest < Test::Unit::TestCase
 #      #:classification=>"true"}
 #    puts last_response.body
     
-    #delete "/7"
+    #get "/"
+    #puts last_response.body
 
     #get "/crossvalidation/4/statistics"
 #    post "",:model_uri=>"http://localhost/model/1",:test_dataset_uri=>"http://localhost/dataset/3",
 #      :test_target_dataset_uri=>"http://localhost/dataset/1"
 
-  #  get "/1",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
-   # puts last_response.body
-    
-#    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
+#    get "/crossvalidation/2",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
 #    puts last_response.body
+    
+    #get "/crossvalidation?model_uri=lazar"
+#    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
+    #puts last_response.body
     
 #    post "/validate_datasets",{
 #      :test_dataset_uri=>"http://localhost/dataset/204",
@@ -59,7 +76,9 @@ class ValidationTest < Test::Unit::TestCase
 #      #:classification=>"true"}
 #    puts last_response.body
     
-    #run_test("1a") #, "http://localhost/validation/crossvalidation/5" )# //localhost/validation/42")#, "http://localhost/validation/report/validation/8") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
+    #run_test("12b"); #,"http://localhost/validation/crossvalidation/2");
+    
+    #run_test("11b", "http://localhost/validation/crossvalidation/2" )# //localhost/validation/42")#, "http://localhost/validation/report/validation/8") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
     
    # run_test("7a","http://localhost/validation/40") #,"http://localhost/validation/crossvalidation/10") #, "http://localhost/validation/321")
     
@@ -68,7 +87,7 @@ class ValidationTest < Test::Unit::TestCase
     #puts Nightly.build_nightly("1")
     
     #prepare_examples
-    #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
+    do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
   end
 
   def app

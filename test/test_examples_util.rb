@@ -40,7 +40,7 @@ module ValidationExamples
         $test_case.post uri,params 
         return wait($test_case.last_response.body)
       else
-        return OpenTox::RestClientWrapper.post(File.join(@@config[:services]["opentox-validation"],uri),params)
+        return OpenTox::RestClientWrapper.post(File.join(@@config[:services]["opentox-validation"],uri),params).to_s
       end
     end
     
@@ -322,6 +322,20 @@ module ValidationExamples
       "training_test_split"
     end
   end
+  
+  class BootstrappingValidation < ValidationExample
+    def params
+      [:algorithm_uri, :dataset_uri, :prediction_feature]
+    end
+    
+    def opt_params
+      [ :algorithm_params, :random_seed ]
+    end
+    
+    def validation_type
+      "bootstrapping"
+    end
+  end  
   
   class CrossValidation < ValidationExample
     def params

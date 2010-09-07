@@ -116,6 +116,27 @@ result example (accept-header: text/uri-list)
 <<< <validation_service>/id_i
 
 
+validate an algorithm on a dataset via bootstrapping
+-------------------------------------------------------------------
+
+>>> curl -X POST -d algorithm_uri="<algorithm_uri>" \
+ -d dataset_uri="<dataset_uri>" \
+ -d prediction_feature="<prediction_feature>" \
+ -d algorithm_params="<algorithm_params>" \
+ -d random_seed=2 \
+ <validation_service>/bootstrapping
+
+optional params:
+algorithm_params, default is empty
+random_seed, default is 1
+	
+result example (accept-header: application/rdf-xml)			
+<<< not yet supported
+
+result example (accept-header: text/uri-list)
+<<< <validation_service>/id_i
+
+
 get list of available crossvalidations
 -------------------------------------------------------------------
 
