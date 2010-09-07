@@ -121,13 +121,25 @@ module ReachReports
     if model.algorithm
       cvs = Lib::Crossvalidation.find(:all, :conditions => {:algorithm_uri => model.algorithm})
       cvs = [] unless cvs
+      uniq_cvs = []
+      cvs.each do |cv|
+        match = false
+        uniq_cvs.each do |cv2|
+          if cv2.dataset_uri == cv.dataset_uri and cv.num_folds == cv2.num_folds and cv.stratified == cv2.stratified and cv.random_seed == cv2.random_seed
+            match = true
+            break
+          end
+        end
+        uniq_cvs << cv unless match
+      end
+       
       lmo = [ "found "+cvs.size.to_s+" crossvalidation/s for algorithm '"+model.algorithm ]
       lmo << ""
-      cvs.each do |cv|
+      uniq_cvs.each do |cv|
         lmo << "crossvalidation: "+cv.crossvalidation_uri
         lmo << "dataset (see 9.3 Validation data): "+cv.dataset_uri
         val_datasets << cv.dataset_uri
-        lmo << "num-folds: "+cv.num_folds.to_s
+        lmo << "settings: num-folds="+cv.num_folds.to_s+", random-seed="+cv.random_seed.to_s+", stratified:"+cv.stratified.to_s
         val  = YAML.load( OpenTox::RestClientWrapper.get File.join(cv.crossvalidation_uri,"statistics") )
         if classification
           lmo << "percent_correct: "+val[:classification_statistics][:percent_correct].to_s
