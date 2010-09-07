@@ -150,10 +150,10 @@ module ReachReports
     r.qsar_robustness.lmo = lmo.to_html
     # "lmo" => "6.9", "yscrambling" => "6.10", "bootstrap" => "6.11", "other_statistics" => "6.12",
 
+    LOGGER.debug "looking for validations with "+{:model_uri => model.uri}.inspect
     vals = Lib::Validation.find(:all, :conditions => {:model_uri => model.uri})
+    r.qsar_predictivity = QsarPredictivity.new
     if vals and vals.size > 0
-      
-      r.qsar_predictivity = QsarPredictivity.new
       r.qsar_predictivity.validation_set_availability = "Yes"
       r.qsar_predictivity.validation_set_data = ValidationSetData.new(:chemname => "Yes", :cas => "Yes", 
         :smiles => "Yes", :inchi => "Yes", :mol => "Yes", :formula => "Yes")
@@ -180,7 +180,7 @@ module ReachReports
         v << ""
       end
     else
-      v = [ "no validation of model '"+model.uri+" found" ] 
+      v = [ "no validation for model '"+model.uri+"' found" ] 
     end
     r.qsar_predictivity.validation_predictivity = v.to_html
     
