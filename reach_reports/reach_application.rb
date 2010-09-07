@@ -67,6 +67,7 @@ post '/reach_report/:type/:id' do
 
   input = request.env["rack.input"].read
   halt 400, "no xml data specified" unless input && input.to_s.size>0
+  LOGGER.debug "size of posted data: "+input.to_s.size.to_s
   
   ReachReports::QmrfReport.from_xml(rep,input)
   

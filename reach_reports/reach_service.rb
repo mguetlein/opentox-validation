@@ -15,9 +15,9 @@ module ReachReports
   def self.list_reports(type)
     case type
     when /(?i)QMRF/
-      ReachReports::QmrfReport.all.collect{ |r| r.report_uri }.join("\n")
+      ReachReports::QmrfReport.all.collect{ |r| r.report_uri }.join("\n")+"\n"
     when /(?i)QPRF/
-      ReachReports::QprfReport.all.collect{ |r| r.report_uri }.join("\n")
+      ReachReports::QprfReport.all.collect{ |r| r.report_uri }.join("\n")+"\n"
     end
   end 
   
