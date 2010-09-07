@@ -86,8 +86,9 @@ class ValidationTest < Test::Unit::TestCase
  
     #puts Nightly.build_nightly("1")
     
-    #prepare_examples
-    do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
+   #prepare_examples
+    #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
+    do_test_examples_ortona
   end
 
   def app
@@ -122,7 +123,11 @@ class ValidationTest < Test::Unit::TestCase
   end  
   
  def do_test_examples # USES CURL, DO NOT FORGET TO RESTART
-   get '/test_examples'
+   post '/test_examples'
+ end
+ 
+  def do_test_examples_ortona 
+   post '/test_examples',:examples=>"http://ortona.informatik.uni-freiburg.de/validation/examples"
  end
   
 end

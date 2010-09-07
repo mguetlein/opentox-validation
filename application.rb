@@ -23,10 +23,11 @@ get '/prepare_examples/?' do
   Example.prepare_example_resources
 end
 
-get '/test_examples/?' do
-  LOGGER.info "test examples"
+post '/test_examples/?' do
+  examples = params[:examples]
+  LOGGER.info "test examples "+examples.to_s
   content_type "text/plain"
-  Example.test_examples
+  Example.test_examples(examples)
 end
 
 require "test/test_application.rb"

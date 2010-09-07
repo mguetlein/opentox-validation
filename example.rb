@@ -100,8 +100,15 @@ class Example
   end
   
   # performs all curl calls listed in examples after ">>>", next line is added if line ends with "\"
-  def self.test_examples
-    lines = transform_example.split("\n")
+  def self.test_examples(example_uri=nil)
+    
+    if (example_uri)
+      examples = OpenTox::RestClientWrapper.get(example_uri)
+    else
+      examples = transform_example # use local examples
+    end
+    
+    lines = examples.split("\n")
     curl_call = false
     curl_calls = []
     
@@ -136,7 +143,7 @@ class Example
         result = ""
         IO.popen(cmd.to_s+" 2> /dev/null") do |f| 
           while line = f.gets
-            result += line
+            result += line if result.size<50
           end
         end
         result.gsub!(/\n/, " \\n ")
@@ -151,7 +158,7 @@ class Example
           log "failed ( " +result.to_s[0,50]+" )"
         end
       end
-      log num.to_s+"/"+num.to_s+" curls succeeded"
+      log suc.to_s+"/"+num.to_s+" curls succeeded"
       @@summary
     end
     "testing in background, check log for results"
