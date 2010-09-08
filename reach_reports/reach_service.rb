@@ -150,7 +150,7 @@ module ReachReports
         end
         reports = OpenTox::RestClientWrapper.get File.join(CONFIG[:services]["opentox-validation"],"report/crossvalidation?crossvalidation_uris="+cv.crossvalidation_uri)
         if reports and reports.size>0
-          lmo << "for more info see report: "+reports
+          lmo << "for more info see report: "+reports.split("\n")[0]
         else
           lmo << "for more info see report: not yet created for '"+cv.crossvalidation_uri+"'"
         end
@@ -197,7 +197,7 @@ module ReachReports
         end
         reports = OpenTox::RestClientWrapper.get File.join(CONFIG[:services]["opentox-validation"],"report/validation?validation_uris="+validation.validation_uri)
         if reports and reports.size>0
-          v << "for more info see report: "+reports
+          v << "for more info see report: "+reports.split("\n")[0]
         else
           v << "for more info see report: not yet created for '"+validation.validation_uri+"'"
         end
