@@ -117,7 +117,7 @@ end
 
 post '/crossvalidation/?' do
   content_type "text/uri-list"
-  task_uri = OpenTox::Task.as_task( "Perform crossvalidation", url_for("/crossvalidation", :full) ) do
+  task_uri = OpenTox::Task.as_task( "Perform crossvalidation", url_for("/crossvalidation", :full), params ) do
     LOGGER.info "creating crossvalidation "+params.inspect
     halt 400, "dataset_uri missing" unless params[:dataset_uri]
     halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
@@ -177,7 +177,7 @@ end
 
 post '/?' do
   content_type "text/uri-list"
-  task_uri = OpenTox::Task.as_task( "Perform validation", url_for("/", :full) ) do |task|
+  task_uri = OpenTox::Task.as_task( "Perform validation", url_for("/", :full), params ) do |task|
     LOGGER.info "creating validation "+params.inspect
     if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri]
       v = Validation::Validation.new :model_uri => params[:model_uri], 
@@ -206,7 +206,7 @@ end
 
 post '/training_test_split' do
   content_type "text/uri-list"
-  task_uri = OpenTox::Task.as_task( "Perform training test split validation", url_for("/training_test_split", :full) ) do
+  task_uri = OpenTox::Task.as_task( "Perform training test split validation", url_for("/training_test_split", :full), params ) do
     LOGGER.info "creating training test split "+params.inspect
     halt 400, "dataset_uri missing" unless params[:dataset_uri]
     halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
@@ -228,7 +228,7 @@ end
 
 post '/bootstrapping' do
   content_type "text/uri-list"
-  task_uri = OpenTox::Task.as_task( "Perform bootstrapping validation", url_for("/bootstrapping", :full) ) do
+  task_uri = OpenTox::Task.as_task( "Perform bootstrapping validation", url_for("/bootstrapping", :full), params ) do
     LOGGER.info "performing bootstrapping validation "+params.inspect
     halt 400, "dataset_uri missing" unless params[:dataset_uri]
     halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
@@ -259,7 +259,7 @@ end
 
 post '/validate_datasets' do
   content_type "text/uri-list"
-  task_uri = OpenTox::Task.as_task( "Perform dataset validation", url_for("/validate_datasets", :full) ) do
+  task_uri = OpenTox::Task.as_task( "Perform dataset validation", url_for("/validate_datasets", :full), params ) do
     LOGGER.info "validating values "+params.inspect
     halt 400, "test_dataset_uri missing" unless params[:test_dataset_uri]
     halt 400, "prediction_datset_uri missing" unless params[:prediction_dataset_uri]
