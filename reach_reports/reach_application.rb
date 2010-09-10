@@ -26,10 +26,16 @@ get '/reach_report/:type' do
 end
 
 post '/reach_report/:type' do
-  content_type "text/uri-list"
+  
   type = extract_type(params)
-  LOGGER.info "creating "+type+" report "+params.inspect
-  ReachReports.create_report(type,params,request.env["rack.input"])
+  content_type "text/uri-list"
+  task_uri = OpenTox::Task.as_task( "Create "+type+" report", url_for("/reach_report/"+type, :full), params ) do
+  
+    LOGGER.info "creating "+type+" report "+params.inspect
+    ReachReports.create_report(type,params,request.env["rack.input"])
+  end
+  halt 202,task_uri
+  
 end
 
 get '/reach_report/:type/:id' do
