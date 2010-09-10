@@ -160,6 +160,7 @@ get '/reach_report/:type/:id/editor' do
 <application-desc main-class="ambit.applications.qmrf.QMRFEditor">
 <argument>-x http://opentox.informatik.uni-freiburg.de/validation/reach_report/QMRF/
 EOF
+  jnlp.chomp!
   jnlp += params[:id].to_s
 
   jnlp += <<EOF 
