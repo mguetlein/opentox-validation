@@ -1,7 +1,8 @@
 
 require "report/xml_report_util.rb"
 
-ENV['REPORT_DTD'] = "docbook-xml-4.5/docbookx.dtd" unless ENV['REPORT_DTD']
+ENV['DOCBOOK_DIRECTORY'] = "docbook-xml-4.5" unless ENV['DOCBOOK_DIRECTORY']
+ENV['REPORT_DTD'] = "docbookx.dtd" unless ENV['REPORT_DTD']
 
 #transfer to absolute path
 #ENV['REPORT_DTD'] = File.expand_path(ENV['REPORT_DTD']) if File.exist?(ENV['REPORT_DTD'])
@@ -23,7 +24,7 @@ module Reports
       @doc = Document.new
       decl = XMLDecl.new
       @doc << decl
-      type = DocType.new('article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "'+$sinatra.url_for('/'+ENV['REPORT_DTD'], :full)+'"')
+      type = DocType.new('article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "'+$sinatra.url_for('/'+ENV['DOCBOOK_DIRECTORY']+'/'+ENV['REPORT_DTD'], :full)+'"')
       @doc << type
   
       @root = Element.new("article")

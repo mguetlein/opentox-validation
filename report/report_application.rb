@@ -17,19 +17,29 @@ def perform
   end
 end
 
-
-get '/'+ENV['REPORT_DTD'] do
-  content_type "application/xml-dtd"
-  body(File.new(ENV['REPORT_DTD']))
+def get_docbook_resource(filepath)
+  perform do |rs|
+    halt 404,"not found: "+filepath unless File.exist?(filepath)
+    types = MIME::Types.type_for(filepath)
+    content_type(types[0].content_type) if types and types.size>0 and types[0]
+    result = body(File.new(filepath))
+  end
 end
 
+get '/'+ENV['DOCBOOK_DIRECTORY']+'/:subdir/:resource' do
+  path_array = request.env['REQUEST_URI'].split("/")
+  get_docbook_resource ENV['DOCBOOK_DIRECTORY']+"/"+path_array[-2]+"/"+path_array[-1]
+end
+
+get '/'+ENV['DOCBOOK_DIRECTORY']+'/:resource' do
+  get_docbook_resource ENV['DOCBOOK_DIRECTORY']+"/"+request.env['REQUEST_URI'].split("/")[-1]
+end
 
 get '/report/:type/css_style_sheet/?' do
   perform do |rs|
     "@import \""+params[:css_style_sheet]+"\";"
   end
 end
-
 
 get '/report/?' do
   perform do |rs|
