@@ -18,7 +18,7 @@ def perform
 end
 
 
-get '/+'ENV['REPORT_DTD'] do
+get '/'+ENV['REPORT_DTD'] do
   content_type "application/xml-dtd"
   body(File.new(ENV['REPORT_DTD']))
 end
