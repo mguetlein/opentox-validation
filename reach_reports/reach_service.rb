@@ -23,17 +23,19 @@ module ReachReports
   
   def self.create_report( type, params, xml_data=nil )
     
-    #content_type "text/uri-list"
-    #task_uri = OpenTox::Task.as_task do |task|
-    
+    result_uri = ""
     case type
     when /(?i)QMRF/
       if params[:model_uri]
-        report = ReachReports::QmrfReport.new :model_uri => params[:model_uri]
-        build_qmrf_report(report)
+        result_uri = OpenTox::Task.as_task( "Create "+type+" report", $sinatra.url_for("/reach_report/"+type, :full), params ) do
+          report = ReachReports::QmrfReport.new :model_uri => params[:model_uri]
+          build_qmrf_report(report)
+          report.report_uri
+        end
       elsif xml_data and (input = xml_data.read).to_s.size>0
         report = ReachReports::QmrfReport.new
         ReachReports::QmrfReport.from_xml(report,input)
+        result_uri = report.report_uri
       else
         $sinatra.halt 400, "illegal parameters for qmrf-report creation, either\n"+
           "* give 'model_uri' as param\n"+
@@ -43,18 +45,14 @@ module ReachReports
     when /(?i)QPRF/
       $sinatra.halt 400,"qprf report creation not yet implemented"
       if params[:compound_uri]
-        report = ReachReports::QprfReport.new :compound_uri => params[:compound_uri]
+        #report = ReachReports::QprfReport.new :compound_uri => params[:compound_uri]
       else
         $sinatra.halt 400, "illegal parameters for qprf-report, use either\n"+
           "* compound-uri\n"+ 
           "params given: "+params.inspect
       end
     end
-    
-    report.report_uri
-    
-    #end
-    #halt 202,task_uri
+    result_uri
   end
   
 

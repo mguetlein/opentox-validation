@@ -1011,6 +1011,7 @@ module ReachReports
     
     def self.from_xml(report, xml_data)
       
+      raise "xml data size < 255, probably no qmrf report : '"+xml_data.to_s+"'" if xml_data.to_s.size<255
       doc = Document.new xml_data
       
       root = doc.elements["QMRF"]
