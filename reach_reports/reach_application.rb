@@ -141,6 +141,7 @@ get '/reach_report/:type/:id/editor' do
 <jar href="qmrfedit2/OT_QMRFEditor_lib/commons-cli-1.0.jar" download="lazy" />
 <jar href="qmrfedit2/OT_QMRFEditor_lib/commons-io-1.1.jar" download="lazy" />
 <jar href="qmrfedit2/OT_QMRFEditor_lib/commons-logging-1.0.4.jar" download="lazy" />
+<jar href="qmrfedit2/OT_QMRFEditor_lib/commons-codec-1.3.jar" download="eager" />
 <jar href="qmrfedit2/OT_QMRFEditor_lib/fop.jar" download="lazy" />
 <jar href="qmrfedit2/OT_QMRFEditor_lib/jai_codec.jar" download="lazy" />
 <jar href="qmrfedit2/OT_QMRFEditor_lib/jai_core.jar" download="lazy" />
