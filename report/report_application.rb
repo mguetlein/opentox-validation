@@ -18,6 +18,12 @@ def perform
 end
 
 
+get '/+'ENV['REPORT_DTD'] do
+  content_type "application/xml-dtd"
+  body(File.new(ENV['REPORT_DTD']))
+end
+
+
 get '/report/:type/css_style_sheet/?' do
   perform do |rs|
     "@import \""+params[:css_style_sheet]+"\";"
