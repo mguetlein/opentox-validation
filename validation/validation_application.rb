@@ -60,6 +60,7 @@ get '/crossvalidation/:id' do
 end
 
 delete '/crossvalidation/:id/?' do
+  halt 400,"delete temporarily disabled"
   LOGGER.info "delete crossvalidation with id "+params[:id].to_s
   content_type "text/plain"
   begin
@@ -328,6 +329,7 @@ get '/:id/:attribute' do
 end
 
 delete '/:id' do
+  halt 400,"delete temporarily disabled"
   LOGGER.info "delete validation with id "+params[:id].to_s
   begin
     validation = Validation::Validation.find(params[:id])

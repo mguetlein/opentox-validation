@@ -107,6 +107,7 @@ get '/report/:type/:id/:resource' do
 end
 
 delete '/report/:type/:id' do
+  halt 400,"delete temporarily disabled"
   perform do |rs|
     content_type "text/plain"
     rs.delete_report(params[:type],params[:id])
