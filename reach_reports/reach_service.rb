@@ -234,11 +234,9 @@ module ReachReports
       r.qsar_miscellaneous.attachment_validation_data << AttachmentValidationData.new( 
       { :description => d.title, 
         :filetype => "owl-dl", 
-        :url => data_uri} )
+        :url => data_uri} ) if d
     end
-        
     r.save
-    
     
   end
   
