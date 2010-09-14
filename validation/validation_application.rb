@@ -204,6 +204,20 @@ post '/?' do
   halt 202,task_uri
 end
 
+
+post '/cleanup/?' do
+  LOGGER.info "validation cleanup, starting..."
+  content_type "text/uri-list"
+  deleted = []
+  Validation::Validation.find( :all, :conditions => { :prediction_dataset_uri => nil } ).each do |val|
+    LOGGER.debug "delete val with id:"+val.id.to_s+" prediction_dataset_uri is nil"
+    deleted << url_for("/", :full) + val.id.to_s
+    Validation::Validation.delete(val.id)
+  end
+  LOGGER.info "validation cleanup, deleted "+deleted.size.to_s+" validations"
+  deleted.join("\n")+"\n"
+end
+
 post '/training_test_split' do
   content_type "text/uri-list"
   task_uri = OpenTox::Task.as_task( "Perform training test split validation", url_for("/training_test_split", :full), params ) do
