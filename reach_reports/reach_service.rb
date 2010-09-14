@@ -230,7 +230,7 @@ module ReachReports
         :url => model.trainingDataset} ) if training_dataset
         
     val_datasets.each do |data_uri|
-      d = OpenTox::Dataset.find(data_uri) #+"/metadata")
+      d = OpenTox::Dataset.find_secure(data_uri) #+"/metadata")
       r.qsar_miscellaneous.attachment_validation_data << AttachmentValidationData.new( 
       { :description => d.title, 
         :filetype => "owl-dl", 
