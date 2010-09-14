@@ -99,7 +99,8 @@ module ReachReports
     # chapter 5
     # TODO app_domain_description, app_domain_method, app_domain_software, applicability_limits
 
-    training_dataset = model.trainingDataset ? OpenTox::Dataset.find(model.trainingDataset+"/metadata") : nil
+    #training_dataset = model.trainingDataset ? OpenTox::Dataset.find(model.trainingDataset+"/metadata") : nil
+    training_dataset = model.trainingDataset ? OpenTox::Dataset.find(model.trainingDataset) : nil
 
     # chapter 6
     r.qsar_robustness = QsarRobustness.new
@@ -229,7 +230,7 @@ module ReachReports
         :url => model.trainingDataset} ) if training_dataset
         
     val_datasets.each do |data_uri|
-      d = OpenTox::Dataset.find(data_uri+"/metadata")
+      d = OpenTox::Dataset.find(data_uri) #+"/metadata")
       r.qsar_miscellaneous.attachment_validation_data << AttachmentValidationData.new( 
       { :description => d.title, 
         :filetype => "owl-dl", 
