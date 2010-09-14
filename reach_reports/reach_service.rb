@@ -61,7 +61,7 @@ module ReachReports
     
     model = OpenTox::Model::PredictionModel.find(r.model_uri)
     classification = model.classification?
-     
+    
     # chapter 1
     r.qsar_identifier = QsarIdentifier.new
     r.qsar_identifier.qsar_title = model.title
@@ -121,14 +121,18 @@ module ReachReports
       cvs = [] unless cvs
       uniq_cvs = []
       cvs.each do |cv|
-        match = false
-        uniq_cvs.each do |cv2|
-          if cv.dataset_uri == cv2.dataset_uri and cv.num_folds == cv2.num_folds and cv.stratified == cv2.stratified and cv.random_seed == cv2.random_seed
-            match = true
-            break
+        # PENDING: cv classification hack
+        val = Validation::Validation.first( :all, :conditions => { :crossvalidation_id => cv.id } )
+        if (val.classification_statistics!=nil) == classification
+          match = false
+          uniq_cvs.each do |cv2|
+            if cv.dataset_uri == cv2.dataset_uri and cv.num_folds == cv2.num_folds and cv.stratified == cv2.stratified and cv.random_seed == cv2.random_seed
+              match = true
+              break
+            end
           end
+          uniq_cvs << cv unless match
         end
-        uniq_cvs << cv unless match
       end
        
       lmo = [ "found "+cvs.size.to_s+" crossvalidation/s for algorithm '"+model.algorithm ]
