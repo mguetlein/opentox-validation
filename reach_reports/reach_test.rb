@@ -114,13 +114,16 @@ class ReachTest < Test::Unit::TestCase
 #    post "/reach_report/qmrf/8"
 #    puts last_response.body
     
+    #model_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/model/173393"
     model_uri = "http://localhost/model/1"
     #model_uri = "http://localhost/majority/regr/model/12"
-    #model_uri = "http://localhost/majority/class/model/1"
+   # model_uri = "http://localhost/majority/class/model/91"
     #model_uri = "http://apps.ideaconsult.net:8080/ambit2/model/2"
     post '/reach_report/qmrf',:model_uri=>model_uri #http://localhost/model/1"
     ##post '/reach_report/qprf',:compound_uri=>"http://localhost/compound/XYZ"
     uri = last_response.body
+    puts "task: "+uri.to_s
+    uri = Lib::TestUtil.wait_for_task(uri)
     id = uri.split("/")[-1]
     puts uri
 

@@ -222,8 +222,6 @@ module Reports
     end
     
     def list_reports(type, filter_params={})
-      #QMRF-STUB
-      return "1" if type == ReportFactory::RT_QMRF
       filter_params["report_type"]=type unless filter_params.has_key?("report_type")
       ReportData.find_like(filter_params).collect{ |r| r.id }
     end

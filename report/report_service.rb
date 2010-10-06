@@ -20,7 +20,7 @@ module Reports
     def get_report_types
       
       LOGGER.info "list all report types"
-      Reports::ReportFactory::REPORT_TYPES.collect{ |t| get_uri(t) }.join("\n")
+      Reports::ReportFactory::REPORT_TYPES.collect{ |t| get_uri(t) }.join("\n")+"\n"
     end
     
     # lists all stored reports of a certain type, returns a list of uris
@@ -32,7 +32,7 @@ module Reports
       
       LOGGER.info "get all reports of type '"+type.to_s+"', filter_params: '"+filter_params.inspect+"'"
       check_report_type(type)
-      @persistance.list_reports(type, filter_params).collect{ |id| get_uri(type,id) }.join("\n")
+      @persistance.list_reports(type, filter_params).collect{ |id| get_uri(type,id) }.join("\n")+"\n"
     end
     
     # creates a report of a certain type, __validation_uris__ must contain be a list of validation or cross-validation-uris

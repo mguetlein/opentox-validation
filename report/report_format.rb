@@ -14,7 +14,6 @@ module Reports::ReportFormat
   
   # returns report-format, according to header value
   def self.get_format(accept_header_value)
-    return "text/html" if accept_header_value =~ /\*\/\*/
     begin
       content_type =  MIMEParse::best_match(CONTENT_TYPES, accept_header_value)
       raise RuntimeException.new unless content_type

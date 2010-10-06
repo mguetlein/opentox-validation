@@ -1,5 +1,5 @@
 require 'rubygems'
-gem 'opentox-ruby-api-wrapper', '= 1.6.2'
+gem 'opentox-ruby-api-wrapper', '= 1.6.2.1'
 [ 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper' ].each do |lib|
   require lib
 end
@@ -13,8 +13,14 @@ require "example.rb"
 
 get '/examples/?' do
   LOGGER.info "list examples"
-  content_type "text/plain"
-  Example.transform_example
+  
+  if request.env['HTTP_ACCEPT'] =~ /text\/html/
+    content_type "text/html"
+    OpenTox.text_to_html Example.transform_example
+  else
+    content_type "text/plain"
+    Example.transform_example
+  end
 end
 
 get '/prepare_examples/?' do

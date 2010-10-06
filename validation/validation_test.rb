@@ -34,6 +34,10 @@ class ValidationTest < Test::Unit::TestCase
   def test_it
     $test_case = self
     
+    #get "/report/crossvalidation/15",nil,'HTTP_ACCEPT' => "text/html" 
+#    get "/",nil,'HTTP_ACCEPT' => "text/html" 
+#    puts last_response.body
+    
 #    d = OpenTox::Dataset.find("http://ot-dev.in-silico.ch/dataset/307")
 #    puts d.compounds.inspect
 #    exit
@@ -52,7 +56,7 @@ class ValidationTest < Test::Unit::TestCase
 #      #:classification=>"true"}
 #    puts last_response.body
     
-    #get "/"
+    #post "/crossvalidation/cleanup"
     #puts last_response.body
 
     #get "/crossvalidation/4/statistics"
@@ -76,7 +80,7 @@ class ValidationTest < Test::Unit::TestCase
 #      #:classification=>"true"}
 #    puts last_response.body
     
-    #run_test("12b"); #,"http://localhost/validation/crossvalidation/2");
+   #run_test("1b")#,"http://localhost/validation/394");
     
     #run_test("11b", "http://localhost/validation/crossvalidation/2" )# //localhost/validation/42")#, "http://localhost/validation/report/validation/8") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
     
@@ -87,8 +91,8 @@ class ValidationTest < Test::Unit::TestCase
     #puts Nightly.build_nightly("1")
     
    #prepare_examples
-    #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
-    do_test_examples_ortona
+    do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
+    #do_test_examples_ortona
   end
 
   def app

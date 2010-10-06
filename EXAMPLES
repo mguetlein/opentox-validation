@@ -40,7 +40,7 @@ validate model on test-dateset
 >>> curl -X POST -d model_uri="<model_uri>" \
  -d test_dataset_uri="<test_dataset_uri>" \
  -d test_target_dataset_uri="<dataset_uri>" \
- <validation_service>
+ <validation_service>/test_set_validation
  
 optional params:
 test_target_dataset_uri, default is test_dataset_uri
@@ -61,7 +61,7 @@ validate an algorithm on a training- and test-dataset
  -d test_target_dataset_uri="<dataset_uri>" \
  -d prediction_feature="<prediction_feature>" \
  -d algorithm_params="<algorithm_params>" \
- <validation_service>
+ <validation_service>/training_test_validation
 
 optional params:
 algorithm_params, default is empty

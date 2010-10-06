@@ -34,9 +34,9 @@ post '/reach_report/:type' do
   result_uri = ReachReports.create_report(type,params,request.env["rack.input"])
   
   if OpenTox::Utils.task_uri?(result_uri)
-    halt 202,result_uri   
+    halt 202,result_uri+"\n"   
   else
-    result_uri
+    result_uri+"\n"
   end
 end
 

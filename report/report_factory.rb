@@ -20,9 +20,8 @@ module Reports::ReportFactory
   RT_VALIDATION = "validation"
   RT_CV = "crossvalidation"
   RT_ALG_COMP = "algorithm_comparison"
-  RT_QMRF = "qmrf"
   
-  REPORT_TYPES = [RT_VALIDATION, RT_CV, RT_ALG_COMP, RT_QMRF ]
+  REPORT_TYPES = [RT_VALIDATION, RT_CV, RT_ALG_COMP ]
   
   # creates a report of a certain type according to the validation data in validation_set 
   #
