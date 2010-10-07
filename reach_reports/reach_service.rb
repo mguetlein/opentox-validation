@@ -100,7 +100,11 @@ module ReachReports
     # TODO app_domain_description, app_domain_method, app_domain_software, applicability_limits
 
     #training_dataset = model.trainingDataset ? OpenTox::Dataset.find(model.trainingDataset+"/metadata") : nil
-    training_dataset = model.trainingDataset ? OpenTox::Dataset.find(model.trainingDataset) : nil
+    begin
+      training_dataset = model.trainingDataset ? OpenTox::Dataset.find(model.trainingDataset) : nil
+    rescue
+      LOGGER.warn "training_dataset not found "+model.trainingDataset.to_s
+    end
 
     # chapter 6
     r.qsar_robustness = QsarRobustness.new
@@ -230,11 +234,15 @@ module ReachReports
         :url => model.trainingDataset} ) if training_dataset
         
     val_datasets.each do |data_uri|
-      d = OpenTox::Dataset.find_secure(data_uri) #+"/metadata")
-      r.qsar_miscellaneous.attachment_validation_data << AttachmentValidationData.new( 
-      { :description => d.title, 
-        :filetype => "owl-dl", 
-        :url => data_uri} ) if d
+      begin
+        d = OpenTox::Dataset.find(data_uri) #+"/metadata")
+        r.qsar_miscellaneous.attachment_validation_data << AttachmentValidationData.new( 
+          { :description => d.title, 
+            :filetype => "owl-dl", 
+            :url => data_uri} ) if d
+      rescue
+        LOGGER.warn "could not add dataset: "+data_uri.to_s
+      end
     end
     r.save
     
