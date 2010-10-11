@@ -10,17 +10,26 @@ ENV['SAXON_JAR'] = "saxonhe9-2-0-3j/saxon9he.jar" unless ENV['SAXON_JAR']
 #
 module Reports::ReportFormat
   
-  CONTENT_TYPES = ["application/x-yaml","text/html","application/rdf+xml", "text/xml","application/pdf"]
-  
   # returns report-format, according to header value
   def self.get_format(accept_header_value)
-    begin
-      content_type =  MIMEParse::best_match(CONTENT_TYPES, accept_header_value)
-      raise RuntimeException.new unless content_type
-    rescue
-      raise Reports::BadRequest.new("Accept header '"+accept_header_value.to_s+"' not supported, supported types are "+CONTENT_TYPES.join(", "))
+    
+    case accept_header_value
+    when /text\/html/
+      "text/html"
+    when /application\/rdf\+xml/
+      "application/rdf+xml"
+    when /text\/xml/
+      "text/xml"
+    when /application\/x-yaml|\*\/\*/
+      "application/x-yaml"
+    else
+      raise Reports::BadRequest.new("Accept header '"+accept_header_value.to_s+
+        "' not supported, supported types are "+
+        "text/html"+", "+
+        "application/rdf+xml"+", "+
+        "text/xml"+", "+
+        "application/x-yaml")
     end
-    return content_type
   end
   
   def self.get_filename_extension(format)

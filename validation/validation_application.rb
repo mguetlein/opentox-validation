@@ -84,19 +84,20 @@ get '/crossvalidation/:id' do
   when "application/rdf+xml"
     content_type "application/rdf+xml"
     crossvalidation.to_rdf
-  when /application\/x-yaml/
-    content_type "application/x-yaml"
-    crossvalidation.to_yaml
   when /text\/html/
     related_links = 
       "Search for corresponding cv report:  "+$sinatra.url_for("/report/crossvalidation?crossvalidation="+crossvalidation.crossvalidation_uri,:full)+"\n"+
       "Statistics for this crossvalidation: "+$sinatra.url_for("/crossvalidation/"+params[:id]+"/statistics",:full)+"\n"+
+      "Predictions of this crossvalidation: "+$sinatra.url_for("/crossvalidation/"+params[:id]+"/predictions",:full)+"\n"+
       "All crossvalidations:                "+$sinatra.url_for("/crossvalidation",:full)+"\n"+
       "All crossvalidation reports:         "+$sinatra.url_for("/report/crossvalidation",:full)
     description = 
         "A crossvalidation resource."
     content_type "text/html"
     OpenTox.text_to_html crossvalidation.to_yaml,related_links,description
+  when /application\/x-yaml|\*\/\*/
+    content_type "application/x-yaml"
+    crossvalidation.to_yaml
   else
     halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported, valid Accept-Headers: \"application/rdf+xml\", \"application/x-yaml\", \"text/html\"."
   end
@@ -144,16 +145,16 @@ delete '/crossvalidation/:id/?' do
   Validation::Crossvalidation.delete(params[:id])
 end
 
-get '/crossvalidation/:id/validations' do
-  LOGGER.info "get all validations for crossvalidation with id "+params[:id].to_s
-  begin
-    crossvalidation = Validation::Crossvalidation.find(params[:id])
-  rescue ActiveRecord::RecordNotFound => ex
-    halt 404, "Crossvalidation '#{params[:id]}' not found."
-  end
-  content_type "text/uri-list"
-  Validation::Validation.find( :all, :conditions => { :crossvalidation_id => params[:id] } ).collect{ |v| v.validation_uri.to_s }.join("\n")+"\n"
-end
+#get '/crossvalidation/:id/validations' do
+#  LOGGER.info "get all validations for crossvalidation with id "+params[:id].to_s
+#  begin
+#    crossvalidation = Validation::Crossvalidation.find(params[:id])
+#  rescue ActiveRecord::RecordNotFound => ex
+#    halt 404, "Crossvalidation '#{params[:id]}' not found."
+#  end
+#  content_type "text/uri-list"
+#  Validation::Validation.find( :all, :conditions => { :crossvalidation_id => params[:id] } ).collect{ |v| v.validation_uri.to_s }.join("\n")+"\n"
+#end
 
 get '/crossvalidation/:id/predictions' do
   LOGGER.info "get predictions for crossvalidation with id "+params[:id].to_s
@@ -164,7 +165,21 @@ get '/crossvalidation/:id/predictions' do
   end
   content_type "application/x-yaml"
   validations = Validation::Validation.find( :all, :conditions => { :crossvalidation_id => params[:id] } )
-  Lib::OTPredictions.to_array( validations.collect{ |v| v.compute_validation_stats_with_model(nil, true) } ).to_yaml
+  p = Lib::OTPredictions.to_array( validations.collect{ |v| v.compute_validation_stats_with_model(nil, true) } ).to_yaml
+  
+  case request.env['HTTP_ACCEPT'].to_s
+  when /text\/html/
+    content_type "text/html"
+    description = 
+      "The crossvalidation predictions as (yaml-)array."
+    related_links = 
+      "All crossvalidations:         "+$sinatra.url_for("/crossvalidation",:full)+"\n"+
+      "Correspoding crossvalidation: "+$sinatra.url_for("/crossvalidation/"+params[:id],:full)
+    OpenTox.text_to_html p, related_links, description
+  else
+    content_type "text/x-yaml"
+    p
+  end
 end
 
 get '/?' do
@@ -442,21 +457,21 @@ get '/:id/predictions' do
   end
 end 
 
-get '/:id/:attribute' do
-  LOGGER.info "access validation attribute "+params.inspect
-  begin
-    validation = Validation::Validation.find(params[:id])
-  rescue ActiveRecord::RecordNotFound => ex
-    halt 404, "Validation '#{params[:id]}' not found."
-  end
-  begin
-    raise unless validation.attribute_loaded?(params[:attribute])
-  rescue
-    halt 400, "Not a validation attribute: "+params[:attribute].to_s
-  end
-  content_type "text/plain"
-  return validation.send(params[:attribute])
-end
+#get '/:id/:attribute' do
+#  LOGGER.info "access validation attribute "+params.inspect
+#  begin
+#    validation = Validation::Validation.find(params[:id])
+#  rescue ActiveRecord::RecordNotFound => ex
+#    halt 404, "Validation '#{params[:id]}' not found."
+#  end
+#  begin
+#    raise unless validation.attribute_loaded?(params[:attribute])
+#  rescue
+#    halt 400, "Not a validation attribute: "+params[:attribute].to_s
+#  end
+#  content_type "text/plain"
+#  return validation.send(params[:attribute])
+#end
 
 get '/:id' do
   LOGGER.info "get validation with id "+params[:id].to_s+" '"+request.env['HTTP_ACCEPT'].to_s+"'"
@@ -470,9 +485,6 @@ get '/:id' do
   when "application/rdf+xml"
     content_type "application/rdf+xml"
     validation.to_rdf
-  when /application\/x-yaml/ 
-    content_type "application/x-yaml"
-    validation.to_yaml
   when /text\/html/
     content_type "text/html"
     description = 
@@ -483,6 +495,9 @@ get '/:id' do
       "All validations:                 "+$sinatra.url_for("/",:full)+"\n"+
       "All validation reports:          "+$sinatra.url_for("/report/validation",:full)
     OpenTox.text_to_html validation.to_yaml,related_links,description
+  when /application\/x-yaml|\*\/\*/ 
+    content_type "application/x-yaml"
+    validation.to_yaml
   else
     halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported, valid Accept-Headers: \"application/rdf+xml\", \"application/x-yaml\", \"text/html\"."
   end

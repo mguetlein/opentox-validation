@@ -80,11 +80,15 @@ end
 
 post '/report/:type/:id/format_html' do
   
-  perform do |rs| 
-    rs.get_report(params[:type],params[:id],"text/html",true,params)
-    content_type "text/uri-list"
-    rs.get_uri(params[:type],params[:id])+"\n"
+  task_uri = OpenTox::Task.as_task("Format report",url_for("/report/"+params[:type]+"/format_html", :full), params) do
+    perform do |rs| 
+      rs.get_report(params[:type],params[:id],"text/html",true,params)
+      content_type "text/uri-list"
+      rs.get_uri(params[:type],params[:id])+"\n"
+    end
   end
+  content_type "text/uri-list"
+  halt 202,task_uri+"\n"  
 end
 
 

@@ -146,6 +146,7 @@ class Example
             result += line if result.size<50
           end
         end
+        result.chomp!
         result.gsub!(/\n/, " \\n ")
         if ($?==0)
           if OpenTox::Utils.task_uri?(result)
