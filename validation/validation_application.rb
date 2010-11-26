@@ -10,7 +10,7 @@ require 'validation/validation_service.rb'
 
 get '/crossvalidation/?' do
   LOGGER.info "list all crossvalidations"
-  uri_list = Validation::Crossvalidation.find_like(params).collect{ |d| url_for("/crossvalidation/", :full) + d.id.to_s }.join("\n")+"\n"
+  uri_list = Validation::Crossvalidation.find_like(params).collect{ |cv| cv.crossvalidation_uri }.join("\n")+"\n"
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     related_links = 
       "Single validations:      "+$sinatra.url_for("/",:full)+"\n"+
@@ -29,7 +29,7 @@ end
 
 post '/crossvalidation/?' do
   content_type "text/uri-list"
-  task_uri = OpenTox::Task.as_task( "Perform crossvalidation", url_for("/crossvalidation", :full), params ) do
+  task_uri = OpenTox::Task.as_task( "Perform crossvalidation", url_for("/crossvalidation", :full), params ) do |task|
     LOGGER.info "creating crossvalidation "+params.inspect
     halt 400, "dataset_uri missing" unless params[:dataset_uri]
     halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
@@ -41,8 +41,7 @@ post '/crossvalidation/?' do
                   :algorithm_uri => params[:algorithm_uri] }
     [ :num_folds, :random_seed, :stratified ].each{ |sym| cv_params[sym] = params[sym] if params[sym] }
     cv = Validation::Crossvalidation.new cv_params
-    cv.create_cv_datasets( params[:prediction_feature] )
-    cv.perform_cv( params[:algorithm_params])
+    cv.perform_cv( params[:prediction_feature], params[:algorithm_params], task )
     cv.crossvalidation_uri
   end
   halt 202,task_uri+"\n"
@@ -56,7 +55,7 @@ post '/crossvalidation/cleanup/?' do
     num_vals = Validation::Validation.find( :all, :conditions => { :crossvalidation_id => cv.id } ).size
     if cv.num_folds != num_vals
       LOGGER.debug "delete cv with id:"+cv.id.to_s+" num-folds should be "+cv.num_folds.to_s+", is "+num_vals.to_s
-      deleted << url_for("/crossvalidation/", :full) + cv.id.to_s
+      deleted << cv.crossvalidation_uri
       Validation::Crossvalidation.delete(cv.id)
     end
   end
@@ -110,13 +109,13 @@ get '/crossvalidation/:id/statistics' do
   rescue ActiveRecord::RecordNotFound => ex
     halt 404, "Crossvalidation '#{params[:id]}' not found."
   end
+  halt 400,"Crossvalidation '"+params[:id].to_s+"' not finished" unless crossvalidation.finished
   
   Lib::MergeObjects.register_merge_attributes( Validation::Validation,
-    Lib::VAL_MERGE_AVG,Lib::VAL_MERGE_SUM,Lib::VAL_MERGE_GENERAL-[:validation_uri]) unless 
+    Lib::VAL_MERGE_AVG,Lib::VAL_MERGE_SUM,Lib::VAL_MERGE_GENERAL-[:validation_uri,:crossvalidation_uri]) unless 
       Lib::MergeObjects.merge_attributes_registered?(Validation::Validation)
   
   v = Lib::MergeObjects.merge_array_objects( Validation::Validation.find( :all, :conditions => { :crossvalidation_id => params[:id] } ) )
-  v.validation_uri = nil
   v.date = nil
   v.id = nil
   
@@ -163,6 +162,8 @@ get '/crossvalidation/:id/predictions' do
   rescue ActiveRecord::RecordNotFound => ex
     halt 404, "Crossvalidation '#{params[:id]}' not found."
   end
+  halt 400,"Crossvalidation '"+params[:id].to_s+"' not finished" unless crossvalidation.finished
+  
   content_type "application/x-yaml"
   validations = Validation::Validation.find( :all, :conditions => { :crossvalidation_id => params[:id] } )
   p = Lib::OTPredictions.to_array( validations.collect{ |v| v.compute_validation_stats_with_model(nil, true) } ).to_yaml
@@ -184,7 +185,7 @@ end
 
 get '/?' do
   LOGGER.info "list all validations, params: "+params.inspect
-  uri_list = Validation::Validation.find_like(params).collect{ |d| url_for("/", :full) + d.id.to_s }.join("\n")+"\n"
+  uri_list = Validation::Validation.find_like(params).collect{ |v| v.validation_uri }.join("\n")+"\n"
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     related_links = 
       "To perform a validation:\n"+
@@ -215,11 +216,12 @@ post '/test_set_validation' do
   LOGGER.info "creating test-set-validation "+params.inspect
   if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri]
     task_uri = OpenTox::Task.as_task( "Perform test-set-validation", url_for("/", :full), params ) do |task|
-      v = Validation::Validation.new :model_uri => params[:model_uri], 
+      v = Validation::Validation.new :validation_type => "test_set_validation", 
+                       :model_uri => params[:model_uri], 
                        :test_dataset_uri => params[:test_dataset_uri],
                        :test_target_dataset_uri => params[:test_target_dataset_uri],
                        :prediction_feature => params[:prediction_feature]
-      v.validate_model
+      v.validate_model( task )
       v.validation_uri
     end
     halt 202,task_uri+"\n"
@@ -231,7 +233,7 @@ end
 
 get '/test_set_validation' do
   LOGGER.info "list all test-set-validations, params: "+params.inspect
-  uri_list = "NOT YET IMPLEMENTED"
+  uri_list = Validation::Validation.find( :all, :conditions => { :validation_type => "test_set_validation" } ).collect{ |v| v.validation_uri }.join("\n")+"\n"
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     related_links = 
       "All validations:    "+$sinatra.url_for("/",:full)+"\n"+
@@ -253,12 +255,13 @@ post '/training_test_validation/?' do
   LOGGER.info "creating training-test-validation "+params.inspect
   if params[:algorithm_uri] and params[:training_dataset_uri] and params[:test_dataset_uri] and params[:prediction_feature] and !params[:model_uri]
     task_uri = OpenTox::Task.as_task( "Perform training-test-validation", url_for("/", :full), params ) do |task|
-      v = Validation::Validation.new :algorithm_uri => params[:algorithm_uri],
+      v = Validation::Validation.new :validation_type => "training_test_validation", 
+                        :algorithm_uri => params[:algorithm_uri],
                         :training_dataset_uri => params[:training_dataset_uri], 
                         :test_dataset_uri => params[:test_dataset_uri],
                         :test_target_dataset_uri => params[:test_target_dataset_uri],
                         :prediction_feature => params[:prediction_feature]
-      v.validate_algorithm( params[:algorithm_params]) 
+      v.validate_algorithm( params[:algorithm_params], task ) 
       v.validation_uri
     end
     halt 202,task_uri+"\n"
@@ -270,7 +273,7 @@ end
 
 get '/training_test_validation' do
   LOGGER.info "list all training-test-validations, params: "+params.inspect
-  uri_list = "NOT YET IMPLEMENTED"
+  uri_list = Validation::Validation.find( :all, :conditions => { :validation_type => "training_test_validation" } ).collect{ |v| v.validation_uri }.join("\n")+"\n"
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     related_links = 
       "All validations:    "+$sinatra.url_for("/",:full)+"\n"+
@@ -294,19 +297,21 @@ end
 
 post '/bootstrapping' do
   content_type "text/uri-list"
-  task_uri = OpenTox::Task.as_task( "Perform bootstrapping validation", url_for("/bootstrapping", :full), params ) do
+  task_uri = OpenTox::Task.as_task( "Perform bootstrapping validation", url_for("/bootstrapping", :full), params ) do |task|
     LOGGER.info "performing bootstrapping validation "+params.inspect
     halt 400, "dataset_uri missing" unless params[:dataset_uri]
     halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
     halt 400, "prediction_feature missing" unless params[:prediction_feature]
     
-    params.merge!(Validation::Util.bootstrapping(params[:dataset_uri], params[:prediction_feature], params[:random_seed]))
-    v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
+    params.merge!( Validation::Util.bootstrapping( params[:dataset_uri], 
+      params[:prediction_feature], params[:random_seed], OpenTox::SubTask.create(task,0,33)) )
+    v = Validation::Validation.new :validation_type => "bootstrapping", 
+                     :training_dataset_uri => params[:training_dataset_uri], 
                      :test_dataset_uri => params[:test_dataset_uri],
                      :test_target_dataset_uri => params[:dataset_uri],
                      :prediction_feature => params[:prediction_feature],
                      :algorithm_uri => params[:algorithm_uri]
-    v.validate_algorithm( params[:algorithm_params])
+    v.validate_algorithm( params[:algorithm_params], OpenTox::SubTask.create(task,33,100))
     v.validation_uri
   end
   halt 202,task_uri+"\n"
@@ -314,7 +319,7 @@ end
 
 get '/bootstrapping' do
   LOGGER.info "list all bootstrapping-validations, params: "+params.inspect
-  uri_list = "NOT YET IMPLEMENTED"
+  uri_list = Validation::Validation.find( :all, :conditions => { :validation_type => "bootstrapping" } ).collect{ |v| v.validation_uri }.join("\n")+"\n"
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     related_links = 
       "All validations:    "+$sinatra.url_for("/",:full)+"\n"+
@@ -336,20 +341,24 @@ get '/bootstrapping' do
 end
 
 post '/training_test_split' do
+  
   content_type "text/uri-list"
-  task_uri = OpenTox::Task.as_task( "Perform training test split validation", url_for("/training_test_split", :full), params ) do
+  task_uri = OpenTox::Task.as_task( "Perform training test split validation", url_for("/training_test_split", :full), params )  do |task|
+    
     LOGGER.info "creating training test split "+params.inspect
     halt 400, "dataset_uri missing" unless params[:dataset_uri]
     halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
     halt 400, "prediction_feature missing" unless params[:prediction_feature]
     
-    params.merge!(Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:prediction_feature], params[:split_ratio], params[:random_seed]))
-    v = Validation::Validation.new :training_dataset_uri => params[:training_dataset_uri], 
+    params.merge!( Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:prediction_feature], 
+      params[:split_ratio], params[:random_seed], OpenTox::SubTask.create(task,0,33)))
+    v = Validation::Validation.new  :validation_type => "training_test_split", 
+                     :training_dataset_uri => params[:training_dataset_uri], 
                      :test_dataset_uri => params[:test_dataset_uri],
                      :test_target_dataset_uri => params[:dataset_uri],
                      :prediction_feature => params[:prediction_feature],
                      :algorithm_uri => params[:algorithm_uri]
-    v.validate_algorithm( params[:algorithm_params])
+    v.validate_algorithm( params[:algorithm_params], OpenTox::SubTask.create(task,33,100))
     v.validation_uri
   end
   halt 202,task_uri+"\n"
@@ -357,7 +366,7 @@ end
 
 get '/training_test_split' do
   LOGGER.info "list all training-test-split-validations, params: "+params.inspect
-  uri_list = "NOT YET IMPLEMENTED"
+  uri_list = Validation::Validation.find( :all, :conditions => { :validation_type => "training_test_split" } ).collect{ |v| v.validation_uri }.join("\n")+"\n"
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     related_links = 
       "All validations:    "+$sinatra.url_for("/",:full)+"\n"+
@@ -385,18 +394,12 @@ post '/cleanup/?' do
   deleted = []
   Validation::Validation.find( :all, :conditions => { :prediction_dataset_uri => nil } ).each do |val|
     LOGGER.debug "delete val with id:"+val.id.to_s+" prediction_dataset_uri is nil"
-    deleted << url_for("/", :full) + val.id.to_s
+    deleted << val.validation_uri
     Validation::Validation.delete(val.id)
   end
   LOGGER.info "validation cleanup, deleted "+deleted.size.to_s+" validations"
   deleted.join("\n")+"\n"
 end
-
-
-
-
-
-
 
 post '/plain_training_test_split' do
     LOGGER.info "creating pure training test split "+params.inspect
@@ -409,14 +412,15 @@ end
 
 post '/validate_datasets' do
   content_type "text/uri-list"
-  task_uri = OpenTox::Task.as_task( "Perform dataset validation", url_for("/validate_datasets", :full), params ) do
+  task_uri = OpenTox::Task.as_task( "Perform dataset validation", url_for("/validate_datasets", :full), params ) do |task|
     LOGGER.info "validating values "+params.inspect
     halt 400, "test_dataset_uri missing" unless params[:test_dataset_uri]
     halt 400, "prediction_datset_uri missing" unless params[:prediction_dataset_uri]
+    params[:validation_type] = "validate_datasets" 
     
     if params[:model_uri]
       v = Validation::Validation.new params
-      v.compute_validation_stats_with_model()
+      v.compute_validation_stats_with_model(nil,false,task)
     else
       halt 400, "please specify 'model_uri' or 'prediction_feature'" unless params[:prediction_feature]
       halt 400, "please specify 'model_uri' or 'predicted_feature'" unless params[:predicted_feature]
@@ -427,7 +431,7 @@ post '/validate_datasets' do
       clazz = params.delete("classification")!=nil
       regr = params.delete("regression")!=nil
       v = Validation::Validation.new params            
-      v.compute_validation_stats((clazz and !regr),predicted_feature)
+      v.compute_validation_stats((clazz and !regr),predicted_feature,nil,false,task)
     end
     v.validation_uri
   end
@@ -441,6 +445,7 @@ get '/:id/predictions' do
   rescue ActiveRecord::RecordNotFound => ex
     halt 404, "Validation '#{params[:id]}' not found."
   end
+  halt 400,"Validation '"+params[:id].to_s+"' not finished" unless validation.finished
   p = validation.compute_validation_stats_with_model(nil, true)
   case request.env['HTTP_ACCEPT'].to_s
   when /text\/html/

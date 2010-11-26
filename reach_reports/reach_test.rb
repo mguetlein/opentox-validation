@@ -115,8 +115,9 @@ class ReachTest < Test::Unit::TestCase
 #    puts last_response.body
     
     #model_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/model/173393"
-    model_uri = "http://localhost/model/1"
-    #model_uri = "http://localhost/majority/regr/model/12"
+    model_uri = "http://localhost/model/6"
+    #http://localhost/majority/class/model/15
+    #model_uri = "http://localhost/majority/class/model/15"
    # model_uri = "http://localhost/majority/class/model/91"
     #model_uri = "http://apps.ideaconsult.net:8080/ambit2/model/2"
     post '/reach_report/qmrf',:model_uri=>model_uri #http://localhost/model/1"
@@ -148,8 +149,9 @@ class ReachTest < Test::Unit::TestCase
     #r = ReachReports::QmrfReport.find_like( :QSAR_title => "Hamster")
     #puts r.collect{|rr| "report with id:"+rr.id.to_s}.inspect
     
-    File.new("/home/martin/win/home/qmr_rep_del_me.xml","w").puts last_response.body
-    File.new("/home/martin/info_home/.public_html/qmr_rep_del_me.xml","w").puts last_response.body
+    File.new("/home/martin/tmp/qmr_rep_del_me.xml","w").puts last_response.body
+    #File.new("/home/martin/win/home/qmr_rep_del_me.xml","w").puts last_response.body
+    #File.new("/home/martin/info_home/.public_html/qmr_rep_del_me.xml","w").puts last_response.body
   end
 end
 

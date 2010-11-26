@@ -1,7 +1,7 @@
 
 # the variance is computed when merging results for these attributes 
 VAL_ATTR_VARIANCE = [ :area_under_roc, :percent_correct, :root_mean_squared_error, :mean_absolute_error, :r_square, :accuracy  ]
-VAL_ATTR_RANKING = [ :area_under_roc, :percent_correct, :true_positive_rate, :true_negative_rate, :accuracy ]
+VAL_ATTR_RANKING = [ :area_under_roc, :percent_correct, :true_positive_rate, :true_negative_rate, :weighted_area_under_roc ] #:accuracy ]
 
 ATTR_NICE_NAME = {}
 
@@ -20,10 +20,14 @@ class Object
   
   def to_nice_s
     if is_a?(Float)
-      if self>0.01
+      if self==0
+        return "0"
+      elsif abs>0.1
         return "%.2f" % self
+      elsif abs>0.01
+        return "%.3f" % self
       else
-        return self.to_s
+        return "%.2e" % self
       end
     end
     return collect{ |i| i.to_nice_s  }.join(", ") if is_a?(Array)
@@ -81,20 +85,26 @@ module Reports
     # call-seq:
     #   get_predictions => Reports::Predictions
     # 
-    def get_predictions
-      return @predictions if @predictions
-      unless @prediction_dataset_uri
-        LOGGER.info("no predictions available, prediction_dataset_uri not set")
-        return nil
+    def get_predictions( task=nil )
+      if @predictions
+        task.progress(100) if task
+        @predictions
+      else
+        unless @prediction_dataset_uri
+          LOGGER.info("no predictions available, prediction_dataset_uri not set")
+          task.progress(100) if task
+          nil
+        else
+          @predictions = @@validation_access.get_predictions( self, task )
+        end
       end
-      @predictions = @@validation_access.get_predictions( self )
     end
     
     # returns the predictions feature values (i.e. the domain of the class attribute)
     #
-    def get_prediction_feature_values
-      return @prediction_feature_values if @prediction_feature_values
-      @prediction_feature_values = @@validation_access.get_prediction_feature_values(self) 
+    def get_class_domain()
+      @class_domain = @@validation_access.get_class_domain(self) unless @class_domain
+      @class_domain
     end
     
     # is classification validation? cache to save resr-calls
@@ -115,6 +125,24 @@ module Reports
       @@validation_access.init_cv(self)
     end
     
+    @@persistance = Reports::ReportService.persistance
+    
+    def validation_report_uri
+      #puts "searching for validation report: "+self.validation_uri.to_s
+      return @validation_report_uri if @validation_report_uri!=nil
+      ids = @@persistance.list_reports("validation",{:validation=>validation_uri })
+      @validation_report_uri = Reports::ReportService.instance.get_uri("validation",ids[-1]) if ids and ids.size>0
+    end
+    
+    def cv_report_uri
+      #puts "searching for cv report: "+self.crossvalidation_uri.to_s
+      return @cv_report_uri if @cv_report_uri!=nil
+      raise "no cv uri "+to_yaml unless self.crossvalidation_uri
+      ids = @@persistance.list_reports("crossvalidation",{:crossvalidation=>self.crossvalidation_uri.to_s })
+      #puts "-> "+ids.inspect
+      @cv_report_uri = Reports::ReportService.instance.get_uri("crossvalidation",ids[-1]) if ids and ids.size>0
+    end
+    
     def clone_validation
       new_val = clone
       VAL_ATTR_VARIANCE.each { |a| new_val.send((a.to_s+"_variance=").to_sym,nil) }
@@ -133,6 +161,13 @@ module Reports
       validation_uris = Reports::Validation.resolve_cv_uris(validation_uris) if validation_uris
       @validations = Array.new
       validation_uris.each{|u| @validations.push(Reports::Validation.new(u))} if validation_uris
+    end
+
+  
+    def self.create(validations)
+      set = ValidationSet.new
+      validations.each{ |v| set.validations.push(v) }
+      set
     end
     
     def get(index)
@@ -194,20 +229,34 @@ module Reports
       return val
     end
     
-    def get_true_prediction_feature_value
-      if all_classification?
-        class_values = get_prediction_feature_values
-        if class_values.size == 2
-          (0..1).each do |i|
-            return class_values[i] if (class_values[i].to_s.downcase == "true" || class_values[i].to_s.downcase == "active")
-          end
-        end
-      end
-      return nil
+#    def get_true_prediction_feature_value
+#      if all_classification?
+#        class_values = get_class_domain
+#        if class_values.size == 2
+#          (0..1).each do |i|
+#            return class_values[i] if (class_values[i].to_s.downcase == "true" || class_values[i].to_s.downcase == "active")
+#          end
+#        end
+#      end
+#      return nil
+#    end
+    
+    def get_class_domain( )
+      return unique_value("get_class_domain")
     end
     
-    def get_prediction_feature_values
-      return unique_value("get_prediction_feature_values")
+    def get_domain_for_attr( attribute )
+      class_domain = get_class_domain()
+      if Lib::Validation.classification_property?(attribute) and 
+        !Lib::Validation.depends_on_class_value?(attribute)
+        [ nil ]
+      elsif Lib::Validation.classification_property?(attribute) and 
+          class_domain.size==2 and 
+          Lib::Validation.complement_exists?(attribute)
+        [ class_domain[0] ]
+      else
+        class_domain
+      end
     end
     
     # checks weather all validations are classification validations
@@ -246,6 +295,39 @@ module Reports
       return new_set
     end
     
+    def to_table( attribute_col, attribute_row, attribute_val)
+      
+      row_values = get_values(attribute_row)
+      #puts row_values.inspect
+      col_values = get_values(attribute_col)
+      #puts col_values.inspect
+      
+      cell_values = {}
+      row_values.each do |row|
+        col_values.each do |col|
+          val = nil
+          @validations.each do |v|
+            if v.send(attribute_row)==row and v.send(attribute_col)==col
+              raise "two validation have equal row and column values"if val!=nil
+              val = v.send(attribute_val).to_nice_s
+            end
+          end
+          cell_values[row] = [] if cell_values[row]==nil
+          cell_values[row] << val
+        end
+      end
+      #puts cell_values.inspect
+      
+      table = []
+      table << [ "" ] + col_values
+      row_values.each do |row|
+        table << [ row ] + cell_values[row]
+      end
+      #puts table.inspect
+      
+      table
+    end
+    
     # returns an array, with values for __attributes__, that can be use for a table
     # * first row is header row
     # * other rows are values
@@ -253,7 +335,7 @@ module Reports
     # call-seq:
     #   to_array(attributes, remove_nil_attributes) => array
     # 
-    def to_array(attributes, remove_nil_attributes=true, true_class_value=nil)
+    def to_array(attributes, remove_nil_attributes=true)
       array = Array.new
       array.push(attributes.collect{|a| a.to_s.nice_attr})
       attribute_not_nil = Array.new(attributes.size)
@@ -263,19 +345,43 @@ module Reports
           if VAL_ATTR_VARIANCE.index(a)
             variance = v.send( (a.to_s+"_variance").to_sym )
           end
-          variance = " +- "+variance.to_nice_s if variance
+          
+          #variance = " +- "+variance.to_nice_s if variance
           attribute_not_nil[index] = true if remove_nil_attributes and v.send(a)!=nil
           index += 1
           val = v.send(a)
-          val = val[true_class_value] if true_class_value!=nil && val.is_a?(Hash) && Lib::VAL_CLASS_PROPS_PER_CLASS_COMPLEMENT_EXISTS.index(a)!=nil
-          val.to_nice_s + variance.to_s
+          
+          class_domain = get_domain_for_attr(a)
+          # get domain for classification attribute, i.e. ["true","false"]
+          if class_domain.size==1 && class_domain[0]!=nil
+            # or the attribute has a complementary value, i.e. true_positive_rate
+            # -> domain is reduced to one class value
+            raise "illegal state" unless (val.is_a?(Hash))
+            val = val[class_domain[0]]
+          end
+          
+          if variance
+            if (val.is_a?(Array))
+              raise "not implemented"
+            elsif (val.is_a?(Hash))
+              val.collect{ |i,j| i.to_nice_s+": "+j.to_nice_s + " +- " +
+                variance[i].to_nice_s  }.join(", ")
+            else
+              val.to_nice_s + " +- " + variance.to_nice_s
+            end
+          else
+            val.to_nice_s
+          end
+          
         end)
       end
+
       if remove_nil_attributes #delete in reverse order to avoid shifting of indices
         (0..attribute_not_nil.size-1).to_a.reverse.each do |i|
           array.each{|row| row.delete_at(i)} unless attribute_not_nil[i]
         end
       end
+      
       return array
     end
     
@@ -294,6 +400,7 @@ module Reports
       
       #compute grouping
       grouping = Reports::Util.group(@validations, equal_attributes)
+      #puts "groups "+grouping.size.to_s
   
       Lib::MergeObjects.register_merge_attributes( Reports::Validation,
         Lib::VAL_MERGE_AVG,Lib::VAL_MERGE_SUM,Lib::VAL_MERGE_GENERAL) unless 
@@ -310,6 +417,10 @@ module Reports
       return new_set
     end
     
+    def sort(attribute, ascending=true)
+      @validations.sort!{ |a,b| a.send(attribute).to_s <=> b.send(attribute).to_s }
+    end
+    
     # creates a new validaiton set, that contains a ranking for __ranking_attribute__
     # (i.e. for ranking attribute :acc, :acc_ranking is calculated)
     # all validation with equal values for __equal_attributes__ are compared
@@ -319,7 +430,8 @@ module Reports
     #   compute_ranking(equal_attributes, ranking_attribute) => array
     # 
     def compute_ranking(equal_attributes, ranking_attribute, class_value=nil )
-    
+      
+      #puts "compute_ranking("+equal_attributes.inspect+", "+ranking_attribute.inspect+", "+class_value.to_s+" )"
       new_set = Reports::ValidationSet.new
       (0..@validations.size-1).each do |i|
         new_set.validations.push(@validations[i].clone_validation)
@@ -337,14 +449,16 @@ module Reports
               raise "no value for class value "+class_value.class.to_s+" "+class_value.to_s+" in hash "+val.inspect.to_s unless val.has_key?(class_value)
               val = val[class_value]
             else
-              raise "is a hash "+ranking_attribute+", specify class value plz"
+              raise "value for '"+ranking_attribute.to_s+"' is a hash, specify class value plz"
             end
           end
           rank_hash[i] = val
         end
+        #puts rank_hash.inspect
               
         # sort group accrording to second value (= ranking value)
         rank_array = rank_hash.sort { |a, b| b[1] <=> a[1] } 
+        #puts rank_array.inspect
         
         # create ranks array
         ranks = Array.new
@@ -370,6 +484,7 @@ module Reports
             end
           end
         end
+        #puts ranks.inspect
         
         # set rank as validation value
         (0..rank_array.size-1).each do |j|

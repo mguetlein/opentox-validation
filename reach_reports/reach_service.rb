@@ -23,13 +23,14 @@ module ReachReports
   
   def self.create_report( type, params, xml_data=nil )
     
-    result_uri = ""
     case type
     when /(?i)QMRF/
       if params[:model_uri]
-        result_uri = OpenTox::Task.as_task( "Create "+type+" report", $sinatra.url_for("/reach_report/"+type, :full), params ) do
+        result_uri = OpenTox::Task.as_task( "Create "+type+" report", 
+          $sinatra.url_for("/reach_report/"+type, :full), params ) do |task|
+            
           report = ReachReports::QmrfReport.new :model_uri => params[:model_uri]
-          build_qmrf_report(report)
+          build_qmrf_report(report, task)
           report.report_uri
         end
       elsif xml_data and (input = xml_data.read).to_s.size>0
@@ -57,8 +58,9 @@ module ReachReports
   
 
   
-  def self.build_qmrf_report(r)
+  def self.build_qmrf_report(r, task=nil)
     
+    #puts r.model_uri
     model = OpenTox::Model::PredictionModel.find(r.model_uri)
     classification = model.classification?
     
@@ -66,9 +68,11 @@ module ReachReports
     r.qsar_identifier = QsarIdentifier.new
     r.qsar_identifier.qsar_title = model.title
     # TODO QSAR_models -> sparql same endpoint     
-    r.qsar_identifier.qsar_software << QsarSoftware.new( :url => model.uri, :name => model.title, :contact => model.creator )
+    r.qsar_identifier.qsar_software << QsarSoftware.new( :url => model.uri, 
+      :name => model.title, :contact => model.creator )
     algorithm = OpenTox::Algorithm::Generic.find(model.algorithm) if model.algorithm
     r.qsar_identifier.qsar_software << QsarSoftware.new( :url => algorithm.uri, :name => algorithm.title )
+    task.progress(10) if task
 
     #chpater 2
     r.qsar_general_information = QsarGeneralInformation.new
@@ -79,7 +83,8 @@ module ReachReports
     # TODO: references?
     # EMPTY: info_availablity
     # TODO: related_models = find qmrf reports for QSAR_models 
-     
+    task.progress(20) if task
+    
     # chapter 3
     # TODO "model_species" ?
     r.qsar_endpoint = QsarEndpoint.new
@@ -89,12 +94,14 @@ module ReachReports
     # TODO "endpoint_comments" => "3.3", "endpoint_units" => "3.4",
     r.qsar_endpoint.endpoint_variable =  model.dependentVariables if model.dependentVariables
     # TODO "endpoint_protocol" => "3.6", "endpoint_data_quality" => "3.7",
-
+    task.progress(30) if task
+    
     # chapter 4
     # TODO algorithm_type (='type of model')
     # TODO algorithm_explicit.equation
     # TODO algorithm_explicit.algorithms_catalog
     # TODO algorithms_descriptors, descriptors_selection, descriptors_generation, descriptors_generation_software, descriptors_chemicals_ratio
+    task.progress(40) if task
 
     # chapter 5
     # TODO app_domain_description, app_domain_method, app_domain_software, applicability_limits
@@ -103,8 +110,9 @@ module ReachReports
     begin
       training_dataset = model.trainingDataset ? OpenTox::Dataset.find(model.trainingDataset) : nil
     rescue
-      LOGGER.warn "training_dataset not found "+model.trainingDataset.to_s
+      LOGGER.warn "build qmrf: training_dataset not found "+model.trainingDataset.to_s
     end
+    task.progress(50) if task
 
     # chapter 6
     r.qsar_robustness = QsarRobustness.new
@@ -122,47 +130,56 @@ module ReachReports
     val_datasets = []
     
     if model.algorithm
-      cvs = Lib::Crossvalidation.find(:all, :conditions => {:algorithm_uri => model.algorithm})
-      cvs = [] unless cvs
-      uniq_cvs = []
-      cvs.each do |cv|
-        # PENDING: cv classification hack
+      cvs = Lib::Crossvalidation.find_all_uniq({:algorithm_uri => model.algorithm})
+      # PENDING: cv classification/regression hack
+      cvs = cvs.delete_if do |cv|
         val = Validation::Validation.first( :all, :conditions => { :crossvalidation_id => cv.id } )
-        if (val.classification_statistics!=nil) == classification
-          match = false
-          uniq_cvs.each do |cv2|
-            if cv.dataset_uri == cv2.dataset_uri and cv.num_folds == cv2.num_folds and cv.stratified == cv2.stratified and cv.random_seed == cv2.random_seed
-              match = true
-              break
+        (val.classification_statistics!=nil) != classification
+      end
+      
+      lmo = [ "found "+cvs.size.to_s+" crossvalidation/s for algorithm '"+model.algorithm+"'" ]
+      if cvs.size>0
+        cvs_same_data = []
+        cvs_other_data = []
+        cvs.each do |cv|
+          if cv.dataset_uri == model.trainingDataset
+            cvs_same_data << cv
+          else
+            cvs_other_data << cv
+          end
+        end
+        lmo << cvs_same_data.size.to_s+" crossvalidations/s where performed on the training dataset of the model ("+
+          model.trainingDataset.to_s+")"
+        lmo << cvs_other_data.size.to_s+" crossvalidations/s where performed on the other datasets"        
+        lmo << ""
+        
+        {cvs_same_data => "training dataset", cvs_other_data => "other datasets"}.each do |cvs,desc|
+          next if cvs.size==0
+          lmo << "crossvalidation/s on "+desc
+          cvs.each do |cv|
+            lmo << "crossvalidation: "+cv.crossvalidation_uri
+            lmo << "dataset (see 9.3 Validation data): "+cv.dataset_uri
+            val_datasets << cv.dataset_uri
+            lmo << "settings: num-folds="+cv.num_folds.to_s+", random-seed="+cv.random_seed.to_s+", stratified:"+cv.stratified.to_s
+            val  = YAML.load( OpenTox::RestClientWrapper.get File.join(cv.crossvalidation_uri,"statistics") )
+            if classification
+              lmo << "percent_correct: "+val[:classification_statistics][:percent_correct].to_s
+              lmo << "weighted AUC: "+val[:classification_statistics][:weighted_area_under_roc].to_s
+            else
+              lmo << "root_mean_squared_error: "+val[:regression_statistics][:root_mean_squared_error].to_s
+              lmo << "r_square "+val[:regression_statistics][:r_square].to_s
+            end
+            reports = OpenTox::RestClientWrapper.get File.join(CONFIG[:services]["opentox-validation"],"report/crossvalidation?crossvalidation_uris="+cv.crossvalidation_uri)
+            if reports and reports.size>0
+              lmo << "for more info see report: "+reports.split("\n")[0]
+            else
+              lmo << "for more info see report: not yet created for '"+cv.crossvalidation_uri+"'"
             end
           end
-          uniq_cvs << cv unless match
+          lmo << ""
         end
       end
-       
-      lmo = [ "found "+cvs.size.to_s+" crossvalidation/s for algorithm '"+model.algorithm ]
-      lmo << ""
-      uniq_cvs.each do |cv|
-        lmo << "crossvalidation: "+cv.crossvalidation_uri
-        lmo << "dataset (see 9.3 Validation data): "+cv.dataset_uri
-        val_datasets << cv.dataset_uri
-        lmo << "settings: num-folds="+cv.num_folds.to_s+", random-seed="+cv.random_seed.to_s+", stratified:"+cv.stratified.to_s
-        val  = YAML.load( OpenTox::RestClientWrapper.get File.join(cv.crossvalidation_uri,"statistics") )
-        if classification
-          lmo << "percent_correct: "+val[:classification_statistics][:percent_correct].to_s
-          lmo << "weighted AUC: "+val[:classification_statistics][:weighted_area_under_roc].to_s
-        else
-          lmo << "root_mean_squared_error: "+val[:regression_statistics][:root_mean_squared_error].to_s
-          lmo << "r_square "+val[:regression_statistics][:r_square].to_s
-        end
-        reports = OpenTox::RestClientWrapper.get File.join(CONFIG[:services]["opentox-validation"],"report/crossvalidation?crossvalidation_uris="+cv.crossvalidation_uri)
-        if reports and reports.size>0
-          lmo << "for more info see report: "+reports.split("\n")[0]
-        else
-          lmo << "for more info see report: not yet created for '"+cv.crossvalidation_uri+"'"
-        end
-        lmo << ""
-      end
+      
     else
       lmo = [ "no prediction algortihm for model found, crossvalidation not possible" ]
     end
@@ -202,7 +219,8 @@ module ReachReports
           v << "root_mean_squared_error: "+validation.regression_statistics[:root_mean_squared_error].to_s
           v << "r_square "+validation.regression_statistics[:r_square].to_s
         end
-        reports = OpenTox::RestClientWrapper.get File.join(CONFIG[:services]["opentox-validation"],"report/validation?validation_uris="+validation.validation_uri)
+        reports = OpenTox::RestClientWrapper.get(File.join(CONFIG[:services]["opentox-validation"],
+          "report/validation?validation_uris="+validation.validation_uri))
         if reports and reports.size>0
           v << "for more info see report: "+reports.split("\n")[0]
         else
@@ -214,15 +232,18 @@ module ReachReports
       v = [ "no validation for model '"+model.uri+"' found" ] 
     end
     r.qsar_predictivity.validation_predictivity = v.to_html
+    task.progress(60) if task
     
     # chapter 7 
     # "validation_set_availability" => "7.1", "validation_set_data" => "7.2", "validation_set_descriptors" => "7.3", 
     # "validation_dependent_var_availability" => "7.4", "validation_other_info" => "7.5", "experimental_design" => "7.6", 
     # "validation_predictivity" => "7.7", "validation_assessment" => "7.8", "validation_comments" => "7.9", 
+    task.progress(70) if task
 
     # chapter 8
     # "mechanistic_basis" => "8.1", "mechanistic_basis_comments" => "8.2", "mechanistic_basis_info" => "8.3",
-
+    task.progress(80) if task
+    
     # chapter 9
     # "comments" => "9.1", "bibliography" => "9.2", "attachments" => "9.3",
     
@@ -244,8 +265,10 @@ module ReachReports
         LOGGER.warn "could not add dataset: "+data_uri.to_s
       end
     end
-    r.save
+    task.progress(90) if task
     
+    r.save
+    task.progress(100) if task
   end
   
 #  def self.get_report_content(type, id, *keys)

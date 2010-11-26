@@ -83,8 +83,7 @@ class Example
     
     log "crossvalidation"
     cv = Validation::Crossvalidation.new({ :dataset_uri => data_uri, :algorithm_uri => @@alg, :num_folds => 5, :stratified => false })
-    cv.create_cv_datasets(  URI.decode(@@feature) )
-    cv.perform_cv( @@alg_params )
+    cv.perform_cv( URI.decode(@@feature), @@alg_params )
     
     log "create validation report"
     rep = Reports::ReportService.new(File.join(@@config[:services]["opentox-validation"],"report"))

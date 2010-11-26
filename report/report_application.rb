@@ -80,15 +80,9 @@ end
 
 post '/report/:type/:id/format_html' do
   
-  task_uri = OpenTox::Task.as_task("Format report",url_for("/report/"+params[:type]+"/format_html", :full), params) do
-    perform do |rs| 
-      rs.get_report(params[:type],params[:id],"text/html",true,params)
-      content_type "text/uri-list"
-      rs.get_uri(params[:type],params[:id])+"\n"
-    end
-  end
+  rs.get_report(params[:type],params[:id],"text/html",true,params)
   content_type "text/uri-list"
-  halt 202,task_uri+"\n"  
+  rs.get_uri(params[:type],params[:id])+"\n"
 end
 
 
@@ -128,9 +122,9 @@ delete '/report/:type/:id' do
 end
 
 post '/report/:type' do
-  task_uri = OpenTox::Task.as_task("Create report",url_for("/report/"+params[:type], :full), params) do
+  task_uri = OpenTox::Task.as_task("Create report",url_for("/report/"+params[:type], :full), params) do |task|
     perform do |rs|
-      rs.create_report(params[:type],params[:validation_uris]?params[:validation_uris].split(/\n|,/):nil)
+      rs.create_report(params[:type],params[:validation_uris]?params[:validation_uris].split(/\n|,/):nil,task)
     end
   end
   content_type "text/uri-list"

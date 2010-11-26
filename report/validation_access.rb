@@ -20,7 +20,7 @@ class Reports::ValidationAccess
   
   # yields predictions (Lib::OTPredictions) if available 
   #
-  def get_predictions(validation)
+  def get_predictions(validation, task=nil)
     raise "not implemented"
   end
   
@@ -32,12 +32,11 @@ class Reports::ValidationAccess
   
   # get domain/class values of prediction feature
   #
-  def get_prediction_feature_values(validation)
+  def get_class_domain(validation)
     raise "not implemented"
   end
   
   # is validation classification?
-  #
   def classification?(validation)
     raise "not implemented"
   end
@@ -50,8 +49,8 @@ end
 
 class Reports::ValidationDB < Reports::ValidationAccess
   
-  def initialize
-     @model_store = {}
+  def initialize()
+    @model_store = {}
   end
   
   def resolve_cv_uris(validation_uris)
@@ -59,6 +58,14 @@ class Reports::ValidationDB < Reports::ValidationAccess
     validation_uris.each do |u|
       if u.to_s =~ /.*\/crossvalidation\/[0-9]+/
         cv_id = u.split("/")[-1].to_i
+        cv = nil
+        begin
+          cv = Lib::Crossvalidation.find( cv_id )
+        rescue => ex
+          raise "could not access crossvalidation with id "+validation_id.to_s+", error-msg: "+ex.message
+        end
+        raise Reports::BadRequest.new("crossvalidation with id '"+cv_id.to_s+"' not found") unless cv
+        raise Reports::BadRequest.new("crossvalidation with id '"+cv_id.to_s+"' not finished") unless cv.finished
         res += Lib::Validation.find( :all, :conditions => { :crossvalidation_id => cv_id } ).collect{|v| v.validation_uri.to_s}
       else
         res += [u.to_s]
@@ -66,7 +73,6 @@ class Reports::ValidationDB < Reports::ValidationAccess
     end
     res
   end
-  
   
   def init_validation(validation, uri)
   
@@ -81,6 +87,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
       raise "could not access validation with id "+validation_id.to_s+", error-msg: "+ex.message
     end
     raise Reports::BadRequest.new "no validation found with id "+validation_id.to_s unless v #+" and uri "+uri.to_s unless v
+    raise Reports::BadRequest.new "validation with id "+validation_id.to_s+" is not finished yet" unless v.finished
     
     (Lib::VAL_PROPS + Lib::VAL_CV_PROPS).each do |p|
       validation.send("#{p.to_s}=".to_sym, v.send(p))
@@ -103,12 +110,13 @@ class Reports::ValidationDB < Reports::ValidationAccess
     end
   end
 
-  def get_predictions(validation)
-    Lib::OTPredictions.new( validation.classification?, validation.test_dataset_uri, validation.test_target_dataset_uri,
-    validation.prediction_feature, validation.prediction_dataset_uri, validation.predicted_variable)
+  def get_predictions(validation, task=nil)
+    Lib::OTPredictions.new( validation.classification?, validation.test_dataset_uri, 
+      validation.test_target_dataset_uri, validation.prediction_feature, validation.prediction_dataset_uri, 
+      validation.predicted_variable, task)
   end
   
-  def get_prediction_feature_values( validation )
+  def get_class_domain( validation )
     OpenTox::Feature.domain( validation.prediction_feature )
   end
   
@@ -197,7 +205,7 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
     end
   end
 
-  def get_predictions(validation)
+  def get_predictions(validation, task=nil)
     Lib::Predictions.new( validation.prediction_feature, validation.test_dataset_uri, validation.prediction_dataset_uri)
   end
 end
@@ -283,7 +291,7 @@ class Reports::ValidationMockLayer < Reports::ValidationAccess
     #validation.CV_dataset_name = @datasets[validation.crossvalidation_id.to_i * NUM_FOLDS]
   end
   
-  def get_predictions(validation)
+  def get_predictions(validation, task=nil)
   
     p = Array.new
     c = Array.new

@@ -223,7 +223,7 @@ module Reports
     
     def list_reports(type, filter_params={})
       filter_params["report_type"]=type unless filter_params.has_key?("report_type")
-      ReportData.find_like(filter_params).collect{ |r| r.id }
+      ReportData.find_like(filter_params).delete_if{|r| r.report_type!=type}.collect{ |r| r.id }
     end
     
     def get_report(type, id, format, force_formating, params)

@@ -23,8 +23,8 @@ class Reports::ApplicationTest < Test::Unit::TestCase
 #      puts  OpenTox::RestClientWrapper.post("http://localhost/validation/report/qmrf/1",{:content_type => "application/qmrf-xml"},data).to_s.chomp
 
     #get "/report/qmrf/1",nil,'HTTP_ACCEPT' => "application/qmrf-xml"#"application/rdf+xml"#"application/x-yaml"     
-    get "/report/validation" # ?model=http://localhost/model/1" #,nil,'HTTP_ACCEPT' => "application/rdf+xml"#"application/x-yaml"     
-    puts last_response.body.to_s
+#    get "/report/validation" # ?model=http://localhost/model/1" #,nil,'HTTP_ACCEPT' => "application/rdf+xml"#"application/x-yaml"     
+#    puts last_response.body.to_s
     
     #Reports::XMLReport.generate_demo_xml_report.write_to
     #raise "stop"
@@ -33,7 +33,7 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     #puts uri
     #get uri
     
-    #get '/report/validation/1',nil,'HTTP_ACCEPT' => "text/html"     
+    get '/report/validation/117',nil,'HTTP_ACCEPT' => "text/html"     
     #post '/report/validation/1/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
     
     #post 'http://ot.validation.de/report/validation',:validation_uris=>"http://ot.validation.de/1"

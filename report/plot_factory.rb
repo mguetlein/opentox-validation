@@ -8,6 +8,43 @@ class Array
     self[i] = self[j]
     self[j] = tmp
   end
+  
+  # summing up values of fields where array __groups__ has equal values
+  # EXAMPLE
+  # self:       [1,    0,  1,  2,  3,  0, 2]
+  # __groups__: [100, 90, 70, 70, 30, 10, 0]
+  # returns:
+  # [ 1, 0, 3, 3, 0, 2]
+  # (fields with equal value 70 are compressed)
+  # PRECONDITION
+  # __groups__ has to be sorted
+  def compress_sum(groups)
+    compress(groups) do |a,b|
+      a+b
+    end
+  end
+  
+  # see compress_sum, replace sum with max
+  def compress_max(groups)
+    compress(groups) do |a,b|
+      a > b ? a : b
+    end
+  end
+  
+  private
+  def compress(groups)
+    raise "length not equal" unless self.size==groups.size
+    raise "to small" unless self.size>=2
+    a = [ self[0] ]
+    (1..groups.size-1).each do |i|
+      if groups[i]!=groups[i-1]
+        a << self[i]
+      else
+        a[-1] = yield a[-1],self[i]
+      end
+    end
+    a
+  end
 end
 
 
@@ -15,7 +52,7 @@ module Reports
   
   module PlotFactory
     
-    def self.create_regression_plot( out_file, validation_set )
+    def self.create_regression_plot( out_file, validation_set, name_attribute )
       
       LOGGER.debug "Creating regression plot, out-file:"+out_file.to_s
       
@@ -23,13 +60,27 @@ module Reports
       x = []
       y = []
       validation_set.validations.each do |v|
-        names << v.algorithm_uri
-        x << v.get_predictions.predicted_values
-        y << v.get_predictions.actual_values
+        x_i = v.get_predictions.predicted_values
+        y_i = v.get_predictions.actual_values
+        
+        # filter out nil-predictions
+        not_nil_indices = []
+        x_i.size.times do |i|
+          not_nil_indices << i if x_i[i]!=nil && y_i[i]!=nil
+        end
+        if not_nil_indices.size < x_i.size
+          x_i = not_nil_indices.collect{ |i| x_i[i] }
+          y_i = not_nil_indices.collect{ |i| y_i[i] }
+        end
+
+        names << ( name_attribute==:crossvalidation_fold ? "fold " : "" ) + v.send(name_attribute).to_s
+        x << x_i
+        y << y_i
       end
       
       RubyPlot::plot_points(out_file, "Regression plot", "Predicted values", "Actual values", names, x, y )
     end
+    
     
     # creates a roc plot (result is plotted into out_file)
     # * if (split_set_attributes == nil?)
@@ -41,19 +92,22 @@ module Reports
     #
     def self.create_roc_plot( out_file, validation_set, class_value, split_set_attribute=nil, show_single_curves=false )
       
-      LOGGER.debug "creating roc plot, out-file:"+out_file.to_s
+      LOGGER.debug "creating roc plot for '"+validation_set.size.to_s+"' validations, out-file:"+out_file.to_s
       
       if split_set_attribute
         attribute_values = validation_set.get_values(split_set_attribute)
-        
         names = []
         fp_rates = []
         tp_rates = []
         attribute_values.each do |value|
-          data = transform_predictions(validation_set.filter({split_set_attribute => value}), class_value, false)
-          names << value.to_s
-          fp_rates << data[:fp_rate][0]
-          tp_rates << data[:tp_rate][0]
+          begin
+            data = transform_predictions(validation_set.filter({split_set_attribute => value}), class_value, false)
+            names << value.to_s
+            fp_rates << data[:fp_rate][0]
+            tp_rates << data[:tp_rate][0]
+          rescue
+            LOGGER.warn "could not create ROC plot for "+value.to_s
+          end
         end
         RubyPlot::plot_lines(out_file, "ROC-Plot", "False positive rate", "True Positive Rate", names, fp_rates, tp_rates )
       else
@@ -62,28 +116,33 @@ module Reports
       end  
     end
     
-    def self.create_bar_plot( out_file, validation_set, class_value, title_attribute, value_attributes )
+    def self.create_bar_plot( out_file, validation_set, title_attribute, value_attributes )
   
       LOGGER.debug "creating bar plot, out-file:"+out_file.to_s
       
       data = []
       titles = []
+      labels = []
       
       validation_set.validations.each do |v|
         values = []
         value_attributes.each do |a|
-          value = v.send(a)
-          if value.is_a?(Hash)
-            if class_value==nil
-              avg_value = 0
-              value.values.each{ |val| avg_value+=val }
-              value = avg_value/value.values.size.to_f
-            else
-              raise "bar plot value is hash, but no entry for class-value ("+class_value.to_s+"); value for "+a.to_s+" -> "+value.inspect unless value.key?(class_value)
-              value = value[class_value]
+          validation_set.get_domain_for_attr(a).each do |class_value|
+            value = v.send(a)
+            if value.is_a?(Hash)
+              if class_value==nil
+                avg_value = 0
+                value.values.each{ |val| avg_value+=val }
+                value = avg_value/value.values.size.to_f
+              else
+                raise "bar plot value is hash, but no entry for class-value ("+class_value.to_s+"); value for "+a.to_s+" -> "+value.inspect unless value.key?(class_value)
+                value = value[class_value]
+              end
             end
+            raise "value is nil\nattribute: "+a.to_s+"\nvalidation: "+v.inspect if value==nil
+            values.push(value)
+            labels.push(a.to_s.gsub("_","-") + ( class_value==nil ? "" : "("+class_value.to_s+")" ))
           end
-          values.push(value)
         end
         
         titles << v.send(title_attribute).to_s
@@ -94,8 +153,6 @@ module Reports
       (0..titles.size-1).each do |i|
         data[i] = [titles[i]] + data[i]
       end
-      
-      labels = value_attributes.collect{|a| a.to_s.gsub("_","-")}
       
       LOGGER.debug "bar plot labels: "+labels.inspect 
       LOGGER.debug "bar plot data: "+data.inspect
@@ -177,11 +234,15 @@ module Reports
           sum_roc_values[:confidence_values] += roc_values[:confidence_values]
           sum_roc_values[:actual_values] += roc_values[:actual_values]
           if add_single_folds
-            tp_fp_rates = get_tp_fp_rates(roc_values)
-            names << "fold "+i.to_s
-            fp_rate << tp_fp_rates[:fp_rate]
-            tp_rate << tp_fp_rates[:tp_rate]
-            faint << true
+            begin
+              tp_fp_rates = get_tp_fp_rates(roc_values)
+              names << "fold "+i.to_s
+              fp_rate << tp_fp_rates[:fp_rate]
+              tp_rate << tp_fp_rates[:tp_rate]
+              faint << true
+            rescue
+              LOGGER.warn "could not get ROC vals for fold "+i.to_s
+            end
           end
         end
         tp_fp_rates = get_tp_fp_rates(sum_roc_values)
@@ -195,6 +256,18 @@ module Reports
         tp_fp_rates = get_tp_fp_rates(roc_values)
         return { :names => ["default"], :fp_rate => [tp_fp_rates[:fp_rate]], :tp_rate => [tp_fp_rates[:tp_rate]] }
       end
+    end
+    
+    def self.demo_rock_plot
+      roc_values = {:confidence_values => [0.1, 0.9, 0.5, 0.6, 0.6, 0.6], 
+                    :predicted_values =>  [1, 0, 0, 1, 0, 1],
+                    :actual_values =>     [0, 1, 0, 0, 1, 1]}
+      tp_fp_rates = get_tp_fp_rates(roc_values)
+      data = { :names => ["default"], :fp_rate => [tp_fp_rates[:fp_rate]], :tp_rate => [tp_fp_rates[:tp_rate]] }                    
+      RubyPlot::plot_lines("/tmp/plot.svg",
+        "ROC-Plot", 
+        "False positive rate", 
+        "True Positive Rate", data[:names], data[:fp_rate], data[:tp_rate], data[:faint] )
     end
     
     def self.get_tp_fp_rates(roc_values)
@@ -232,9 +305,11 @@ module Reports
         end
       end
       #puts c.inspect+"\n"+a.inspect+"\n"+p.inspect+"\n\n"
-     
+      
       tp_rate = [0]
       fp_rate = [0]
+      w = [1]
+      c2 = [Float::MAX]
       (0..p.size-1).each do |i|
         if a[i]==p[i]
           tp_rate << tp_rate[-1]+1
@@ -243,8 +318,15 @@ module Reports
           fp_rate << fp_rate[-1]+1
           tp_rate << tp_rate[-1]
         end
+        w << 1
+        c2 << c[i]
       end
-      #puts tp_rate.inspect+"\n"+fp_rate.inspect+"\n\n"
+      #puts c2.inspect+"\n"+tp_rate.inspect+"\n"+fp_rate.inspect+"\n"+w.inspect+"\n\n"
+      
+      tp_rate = tp_rate.compress_max(c2)
+      fp_rate = fp_rate.compress_max(c2)
+      w = w.compress_sum(c2)
+      #puts tp_rate.inspect+"\n"+fp_rate.inspect+"\n"+w.inspect+"\n\n"
       
       (0..tp_rate.size-1).each do |i|
         tp_rate[i] = tp_rate[-1]>0 ? tp_rate[i]/tp_rate[-1].to_f*100 : 100
@@ -256,5 +338,14 @@ module Reports
     end
   end
 end
-   
+
+#require "rubygems"
+#require "ruby-plot"
 #Reports::PlotFactory::demo_ranking_plot
+#Reports::PlotFactory::demo_rock_plot
+
+#a = [1,    0,  1,  2,  3,  0, 2]
+#puts a.compress_sum([100, 90, 70, 70, 30, 10, 0]).inspect
+#puts a.compress_max([100, 90, 70, 70, 30, 10, 0]).inspect
+
+

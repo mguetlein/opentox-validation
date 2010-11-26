@@ -54,7 +54,7 @@ task :load_config do
   puts "config loaded"
 end
 
-# USER VERSION 0 instead
+# USE VERSION 0 instead
 #desc "Clear database"
 #task :clear_db => :load_config  do
 #  if  @@config[:database][:adapter]=="mysql"

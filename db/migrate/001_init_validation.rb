@@ -4,8 +4,7 @@ class InitValidation < ActiveRecord::Migration
 
     create_table :crossvalidations do |t|
       
-      [:crossvalidation_uri,
-       :algorithm_uri, 
+      [:algorithm_uri, 
        :dataset_uri ].each do |p|
         t.column p, :string, :limit => 255
       end
@@ -19,23 +18,21 @@ class InitValidation < ActiveRecord::Migration
         t.column p, :integer, :null => false
       end
      
-      [ :stratified ].each do |p|
+      [ :stratified, :finished ].each do |p|
         t.column p, :boolean, :null => false
       end
-      
     end
     
     create_table :validations do |t|
       
-      [:validation_uri,
+      [:validation_type,
        :model_uri,
        :algorithm_uri, 
        :training_dataset_uri, 
        :test_target_dataset_uri, 
        :test_dataset_uri, 
        :prediction_dataset_uri, 
-       :prediction_feature,
-       :crossvalidation_uri].each do |p|
+       :prediction_feature].each do |p|
         t.column p, :string, :limit => 255
       end
       
@@ -54,6 +51,10 @@ class InitValidation < ActiveRecord::Migration
       [:classification_statistics, :regression_statistics].each do |p|
         t.column(p, :text, :limit => 16320)
       end
+      
+      [ :finished ].each do |p|
+        t.column p, :boolean, :null => false
+      end      
     end
   end
 

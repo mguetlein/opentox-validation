@@ -69,14 +69,18 @@ module Reports::ReportFormat
   
   def self.format_report_to_html(directory, xml_filename, html_filename, css_style_sheet)
     css_style_sheet = "http://opentox.informatik.uni-freiburg.de/simple_ot_stylesheet.css" unless css_style_sheet
-    css = css_style_sheet ? " html.stylesheet=css_style_sheet?css_style_sheet="+URI.encode(css_style_sheet.to_s) : nil
+  
+    css =  css_style_sheet ? "--stringparam html.stylesheet "+URI.encode(css_style_sheet.to_s) : nil
+    cmd = "xsltproc "+css.to_s+" "+ENV['REPORT_XSL']+" "+File.join(directory,xml_filename.to_s)+" > "+File.join(directory,html_filename.to_s)
+    #css = css_style_sheet ? " html.stylesheet=css_style_sheet?css_style_sheet="+URI.encode(css_style_sheet.to_s) : nil
+    #cmd = "java -jar "+ENV['SAXON_JAR']+" -o:" + File.join(directory,html_filename.to_s)+
+    #  " -s:"+File.join(directory,xml_filename.to_s)+" -xsl:"+ENV['REPORT_XSL']+" -versionmsg:off"+css.to_s
       
-    cmd = "java -jar "+ENV['SAXON_JAR']+" -o:" + File.join(directory,html_filename.to_s)+
-      " -s:"+File.join(directory,xml_filename.to_s)+" -xsl:"+ENV['REPORT_XSL']+" -versionmsg:off"+css.to_s
     LOGGER.debug "Converting report to html: '"+cmd+"'"
     IO.popen(cmd.to_s) do |f|
       while line = f.gets do
-        LOGGER.info "saxon-xslt> "+line 
+        LOGGER.info "xsltproc> "+line
+        #LOGGER.info "saxon-xslt> "+line
       end
     end
     raise "error during conversion" unless $?==0

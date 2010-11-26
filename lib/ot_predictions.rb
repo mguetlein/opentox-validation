@@ -15,7 +15,8 @@ module Lib
       return @compounds[instance_index]
     end
   
-    def initialize(is_classification, test_dataset_uri, test_target_dataset_uri, prediction_feature, prediction_dataset_uri, predicted_variable)
+    def initialize(is_classification, test_dataset_uri, test_target_dataset_uri, 
+      prediction_feature, prediction_dataset_uri, predicted_variable, task=nil)
       
         LOGGER.debug("loading prediciton via test-dataset:'"+test_dataset_uri.to_s+
           "', test-target-datset:'"+test_target_dataset_uri.to_s+
@@ -79,6 +80,7 @@ module Lib
             actual_values.push value
           end
         end
+        task.progress(40) if task # loaded actual values
         
         prediction_dataset = OpenTox::Dataset.find prediction_dataset_uri
         raise "prediction dataset not found: '"+prediction_dataset_uri.to_s+"'" unless prediction_dataset
@@ -118,9 +120,11 @@ module Lib
             confidence_values << prediction_dataset.get_prediction_confidence(c, predicted_variable)
           end
         end
+        task.progress(80) if task # loaded predicted values and confidence
         
         super(predicted_values, actual_values, confidence_values, is_classification, class_values)
         raise "illegal num compounds "+num_info if  @compounds.size != @predicted_values.size
+        task.progress(100) if task # done with the mathmatics
     end
     
 
@@ -128,7 +132,7 @@ module Lib
     
       res = {}
       if @is_classification
-        (Lib::VAL_CLASS_PROPS_EXTENDED).each{ |s| res[s] = send(s)}  
+        (Lib::VAL_CLASS_PROPS).each{ |s| res[s] = send(s)}  
       else
         (Lib::VAL_REGR_PROPS).each{ |s| res[s] = send(s) }  
       end
@@ -151,7 +155,8 @@ module Lib
             a.push( "http://ambit.uni-plovdiv.bg:8080/ambit2/depict/cdk?search="+
               URI.encode(OpenTox::Compound.new(:uri=>p.identifier(i)).smiles) ) if add_pic
           rescue => ex
-            a.push("Could not add pic: "+ex.message)
+            #a.push("Could not add pic: "+ex.message)
+            a.push(p.identifier(i))
           end
           
           a << (format ? p.actual_value(i).to_nice_s : p.actual_value(i))

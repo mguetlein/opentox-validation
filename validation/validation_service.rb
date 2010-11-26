@@ -37,12 +37,10 @@ module Validation
     # constructs a validation object, Rsets id und uri
     def initialize( params={} )
       $sinatra.halt 500,"do not set id manually" if params[:id]
-      $sinatra.halt 500,"do not set uri manually" if params[:validation_uri]
+      params[:finished] = false
       super params
       self.save!
       raise "internal error, validation-id not set "+to_yaml if self.id==nil
-      self.attributes = { :validation_uri => $sinatra.url_for("/"+self.id.to_s, :full).to_s }
-      self.save!
     end
     
     # deletes a validation
@@ -62,7 +60,7 @@ module Validation
     end
     
     # validates an algorithm by building a model and validating this model
-    def validate_algorithm( algorithm_params=nil )
+    def validate_algorithm( algorithm_params=nil, task=nil )
       
       $sinatra.halt 404, "no algorithm uri: '"+self.algorithm_uri.to_s+"'" if self.algorithm_uri==nil or self.algorithm_uri.to_s.size<1
       
@@ -77,7 +75,8 @@ module Validation
       end
       LOGGER.debug "building model '"+algorithm_uri.to_s+"' "+params.inspect
       
-      model = OpenTox::Model::PredictionModel.build(algorithm_uri, params)
+      model = OpenTox::Model::PredictionModel.build(algorithm_uri, params, 
+        OpenTox::SubTask.create(task, 0, 33) )
       $sinatra.halt 500,"model building failed" unless model
       self.attributes = { :model_uri => model.uri }
       self.save!
@@ -85,12 +84,12 @@ module Validation
       $sinatra.halt 500,"error after building model: model.dependent_variable != validation.prediciton_feature ("+
         model.dependentVariables.to_s+" != "+self.prediction_feature+")" if self.prediction_feature!=model.dependentVariables
           
-      validate_model
+      validate_model OpenTox::SubTask.create(task, 33, 100)
     end
     
     # validates a model
     # PENDING: a new dataset is created to store the predictions, this should be optional: delete predictions afterwards yes/no
-    def validate_model
+    def validate_model( task=nil )
       
       LOGGER.debug "validating model '"+self.model_uri+"'"
       
@@ -113,25 +112,27 @@ module Validation
       
       prediction_dataset_uri = ""
       benchmark = Benchmark.measure do 
-        prediction_dataset_uri = model.predict_dataset(self.test_dataset_uri)
+        prediction_dataset_uri = model.predict_dataset(self.test_dataset_uri, OpenTox::SubTask.create(task, 0, 50))
       end
       self.attributes = { :prediction_dataset_uri => prediction_dataset_uri,
              :real_runtime => benchmark.real }
       self.save!
       
-      compute_validation_stats_with_model( model )
+      compute_validation_stats_with_model( model, false, OpenTox::SubTask.create(task, 50, 100) )
     end
       
-    def compute_validation_stats_with_model( model=nil, dry_run=false )
+    def compute_validation_stats_with_model( model=nil, dry_run=false, task=nil )
       
       model = OpenTox::Model::PredictionModel.find(self.model_uri) if model==nil and self.model_uri
       $sinatra.halt 400, "model not found: "+self.model_uri.to_s unless model
       prediction_feature = self.prediction_feature ? nil : model.dependentVariables
       algorithm_uri = self.algorithm_uri ? nil : model.algorithm
-      compute_validation_stats( model.classification?, model.predictedVariables, prediction_feature, algorithm_uri, dry_run )
+      compute_validation_stats( model.classification?, model.predictedVariables, 
+        prediction_feature, algorithm_uri, dry_run, task )
     end
       
-    def compute_validation_stats( classification, predicted_feature, prediction_feature=nil, algorithm_uri=nil, dry_run=false)
+    def compute_validation_stats( classification, predicted_feature, prediction_feature=nil, 
+        algorithm_uri=nil, dry_run=false, task=nil )
       
       self.attributes = { :prediction_feature => prediction_feature } if self.prediction_feature==nil && prediction_feature
       self.attributes = { :algorithm_uri => algorithm_uri } if self.algorithm_uri==nil && algorithm_uri
@@ -140,7 +141,8 @@ module Validation
       LOGGER.debug "computing prediction stats"
       prediction = Lib::OTPredictions.new( classification, 
         self.test_dataset_uri, self.test_target_dataset_uri, self.prediction_feature, 
-        self.prediction_dataset_uri, predicted_feature )
+        self.prediction_dataset_uri, predicted_feature, OpenTox::SubTask.create(task, 0, 80) )
+      #reading datasets and computing the main stats is 80% the work 
         
       unless dry_run
         if prediction.classification?
@@ -152,9 +154,12 @@ module Validation
                :num_without_class => prediction.num_without_class,
                :percent_without_class => prediction.percent_without_class,
                :num_unpredicted => prediction.num_unpredicted,
-               :percent_unpredicted => prediction.percent_unpredicted }
+               :percent_unpredicted => prediction.percent_unpredicted,
+               :finished => true}
         self.save!
       end
+      
+      task.progress(100) if task
       prediction
     end
   end
@@ -165,16 +170,19 @@ module Validation
     def initialize( params={} )
       
       $sinatra.halt 500,"do not set id manually" if params[:id]
-      $sinatra.halt 500,"do not set uri manually" if params[:crossvalidation_uri]
-      
       params[:num_folds] = 10 if params[:num_folds]==nil
       params[:random_seed] = 1 if params[:random_seed]==nil
       params[:stratified] = false if params[:stratified]==nil
+      params[:finished] = false
       super params
       self.save!
       raise "internal error, crossvalidation-id not set" if self.id==nil
-      self.attributes = { :crossvalidation_uri => $sinatra.url_for("/crossvalidation/"+self.id.to_s, :full) }
-      self.save!
+    end
+    
+    def perform_cv ( prediction_feature, algorithm_params=nil, task=nil )
+      
+      create_cv_datasets( prediction_feature, OpenTox::SubTask.create(task, 0, 0.33) )
+      perform_cv_validations( algorithm_params, OpenTox::SubTask.create(task, 0.33, 1) )
     end
     
     # deletes a crossvalidation, all validations are deleted as well
@@ -186,20 +194,28 @@ module Validation
     
     # creates the cv folds
     # PENDING copying datasets of an equal (same dataset, same params) crossvalidation is disabled for now 
-    def create_cv_datasets( prediction_feature )
+    def create_cv_datasets( prediction_feature, task=nil )
   
-       create_new_cv_datasets( prediction_feature ) #unless copy_cv_datasets( prediction_feature )
+       create_new_cv_datasets( prediction_feature, task ) #unless copy_cv_datasets( prediction_feature )
     end
     
     # executes the cross-validation (build models and validates them)
-    def perform_cv ( algorithm_params=nil )
+    def perform_cv_validations( algorithm_params, task=nil )
       
-      LOGGER.debug "perform cv validations"
+      LOGGER.debug "perform cv validations "+algorithm_params.inspect
+      i = 0
+      task_step = 100 / self.num_folds.to_f;
       @tmp_validations.each do | val |
         validation = Validation.new val
-        validation.validate_algorithm( algorithm_params )
-        #break
+        validation.validate_algorithm( algorithm_params, 
+          OpenTox::SubTask.create(task, i * task_step, ( i + 1 ) * task_step) )
+        raise "validation '"+validation.validation_uri+"' for crossvaldation could not be finished" unless 
+          validation.finished
+        i += 1
       end
+      
+      self.attributes = { :finished => true }
+      self.save!      
     end
     
     private
@@ -222,7 +238,8 @@ module Validation
           Validation.all( :crossvalidation_id => self.id ).each{ |v| v.delete }
           return false
         end
-        validation = Validation.new :crossvalidation_id => self.id,
+        validation = Validation.new :validation_type => "crossvalidation", 
+                                    :crossvalidation_id => self.id,
                                     :crossvalidation_fold => v.crossvalidation_fold,
                                     :training_dataset_uri => v.training_dataset_uri, 
                                     :test_dataset_uri => v.test_dataset_uri,
@@ -234,7 +251,7 @@ module Validation
     
     # creates cv folds (training and testdatasets)
     # stores uris in validation objects 
-    def create_new_cv_datasets( prediction_feature )
+    def create_new_cv_datasets( prediction_feature, task = nil )
       
       $sinatra.halt(500,"random seed not set") unless self.random_seed
       LOGGER.debug "creating datasets for crossvalidation"
@@ -318,13 +335,16 @@ module Validation
         LOGGER.debug "test set:     "+datasetname+"_test, compounds: "+test_compounds.size.to_s
         test_dataset_uri = orig_dataset.create_new_dataset( test_compounds, test_features, datasetname + '_test', source )
       
-        tmp_validation = { :training_dataset_uri => train_dataset_uri, 
+        tmp_validation = { :validation_type => "crossvalidation",
+                           :training_dataset_uri => train_dataset_uri, 
                            :test_dataset_uri => test_dataset_uri,
                            :test_target_dataset_uri => self.dataset_uri,
                            :crossvalidation_id => self.id, :crossvalidation_fold => n,
                            :prediction_feature => prediction_feature,
                            :algorithm_uri => self.algorithm_uri }
         @tmp_validations << tmp_validation
+        
+        task.progress( n / self.num_folds.to_f * 100 ) if task
       end
     end
   end
@@ -335,7 +355,7 @@ module Validation
     # splits a dataset into test and training dataset via bootstrapping
     # (training dataset-size is n, sampling from orig dataset with replacement)
     # returns map with training_dataset_uri and test_dataset_uri
-    def self.bootstrapping( orig_dataset_uri, prediction_feature, random_seed=nil )
+    def self.bootstrapping( orig_dataset_uri, prediction_feature, random_seed=nil, task=nil )
       
       random_seed=1 unless random_seed
       
@@ -372,16 +392,20 @@ module Validation
       LOGGER.debug "bootstrapping on dataset "+orig_dataset_uri+
                     " into training ("+training_compounds.size.to_s+") and test ("+test_compounds.size.to_s+")"+
                     ", duplicates in training dataset: "+test_compounds.size.to_s
+      task.progress(33) if task
       
       result = {}
       result[:training_dataset_uri] = orig_dataset.create_new_dataset( training_compounds,
         orig_dataset.features, 
         "Bootstrapping training dataset of "+orig_dataset.title.to_s, 
         $sinatra.url_for('/bootstrapping',:full) )
+      task.progress(66) if task
+
       result[:test_dataset_uri] = orig_dataset.create_new_dataset( test_compounds,
         orig_dataset.features.dclone - [prediction_feature], 
         "Bootstrapping test dataset of "+orig_dataset.title.to_s, 
         $sinatra.url_for('/bootstrapping',:full) )
+      task.progress(100) if task
       
       if ENV['RACK_ENV'] =~ /test|debug/
         training_dataset = OpenTox::Dataset.find result[:training_dataset_uri]
@@ -390,7 +414,6 @@ module Validation
         $sinatra.halt 500, "training compounds error" unless training_compounds_verify==training_compounds
         $sinatra.halt 400, "Test dataset not found: '"+result[:test_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:test_dataset_uri]
       end
-      
       LOGGER.debug "bootstrapping done, training dataset: '"+result[:training_dataset_uri].to_s+"', test dataset: '"+result[:test_dataset_uri].to_s+"'"
       
       return result
@@ -398,7 +421,7 @@ module Validation
     
     # splits a dataset into test and training dataset
     # returns map with training_dataset_uri and test_dataset_uri
-    def self.train_test_dataset_split( orig_dataset_uri, prediction_feature, split_ratio=nil, random_seed=nil )
+    def self.train_test_dataset_split( orig_dataset_uri, prediction_feature, split_ratio=nil, random_seed=nil, task=nil )
       
       split_ratio=0.67 unless split_ratio
       random_seed=1 unless random_seed
@@ -424,24 +447,28 @@ module Validation
       LOGGER.debug "splitting dataset "+orig_dataset_uri+
                     " into train:0-"+split.to_s+" and test:"+(split+1).to_s+"-"+(compounds.size-1).to_s+
                     " (shuffled with seed "+random_seed.to_s+")"
-      
       compounds.shuffle!( random_seed )
+      task.progress(33) if task
       
       result = {}
       result[:training_dataset_uri] = orig_dataset.create_new_dataset( compounds[0..split],
         orig_dataset.features, 
         "Training dataset split of "+orig_dataset.title.to_s, 
         $sinatra.url_for('/training_test_split',:full) )
+      task.progress(66) if task
+      
       result[:test_dataset_uri] = orig_dataset.create_new_dataset( compounds[(split+1)..-1],
         orig_dataset.features.dclone - [prediction_feature], 
         "Test dataset split of "+orig_dataset.title.to_s, 
         $sinatra.url_for('/training_test_split',:full) )
+      task.progress(100) if task  
       
-      $sinatra.halt 400, "Training dataset not found: '"+result[:training_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:training_dataset_uri]
-      $sinatra.halt 400, "Test dataset not found: '"+result[:test_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:test_dataset_uri]
+      if ENV['RACK_ENV'] =~ /test|debug/
+        $sinatra.halt 400, "Training dataset not found: '"+result[:training_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:training_dataset_uri]
+        $sinatra.halt 400, "Test dataset not found: '"+result[:test_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:test_dataset_uri]
+      end
       
       LOGGER.debug "split done, training dataset: '"+result[:training_dataset_uri].to_s+"', test dataset: '"+result[:test_dataset_uri].to_s+"'"
-      
       return result
     end
   

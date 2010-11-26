@@ -31,6 +31,7 @@ post '/reach_report/:type' do
   content_type "text/uri-list"
   
   LOGGER.info "creating "+type+" report "+params.inspect
+  #puts "creating "+type+" report "+params.inspect
   result_uri = ReachReports.create_report(type,params,request.env["rack.input"])
   
   if OpenTox::Utils.task_uri?(result_uri)

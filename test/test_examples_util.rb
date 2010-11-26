@@ -249,6 +249,7 @@ module ValidationExamples
         yaml = YAML.load(Util.validation_get(@report_uri.split("/")[-3..-1].join("/"),'application/x-yaml'))
         owl = OpenTox::Owl.from_data(Util.validation_get(@report_uri.split("/")[-3..-1].join("/")),@report_uri,"ValidationReport")
         Util.compare_yaml_and_owl(yaml,owl)
+        Util.validation_get(@report_uri.split("/")[-3..-1].join("/"),'text/html')
       else
         puts "no report"
       end

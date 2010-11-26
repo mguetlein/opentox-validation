@@ -1,4 +1,3 @@
-
 # graph-files are generated in the tmp-dir before they are stored
 ENV['TMP_DIR'] = File.join(FileUtils.pwd,"reports","tmp") unless ENV['TMP_DIR']
 
@@ -15,6 +14,7 @@ class Array
           return self.collect{|word| word[prefix.size..-1]}
         end
       end
+      self
   end
 end
 

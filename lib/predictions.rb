@@ -23,13 +23,13 @@ module Lib
                     actual_values, 
                     confidence_values, 
                     is_classification, 
-                    prediction_feature_values=nil )
+                    class_domain=nil )
                     
       @predicted_values = predicted_values
       @actual_values = actual_values
       @confidence_values = confidence_values
       @is_classification = is_classification
-      @prediction_feature_values = prediction_feature_values
+      @class_domain = class_domain
       @num_classes = 1
       
       #puts "predicted:  "+predicted_values.inspect
@@ -43,23 +43,27 @@ module Lib
       raise "illegal num confidence values "+num_info if  @confidence_values.size != @predicted_values.size
       
       @confidence_values.each{ |c| raise "illegal confidence value: '"+c.to_s+"'" unless c==nil or (c.is_a?(Numeric) and c>=0 and c<=1) }
-      conf_val_tmp = {}
-      @confidence_values.each{ |c| conf_val_tmp[c] = nil }
-      if conf_val_tmp.keys.size<2
-        LOGGER.warn("prediction w/o confidence values");
-        @confidence_values=nil
-      end
+      ## check if there is more than one different conf value
+      ## DEPRECATED? not sure anymore what this was about, 
+      ##             I am pretty sure this was for r-plot of roc curves
+      ##             roc curvers are now plotted manually
+      #conf_val_tmp = {}
+      #@confidence_values.each{ |c| conf_val_tmp[c] = nil }
+      #if conf_val_tmp.keys.size<2
+      #  LOGGER.warn("prediction w/o confidence values");
+      #  @confidence_values=nil
+      #end
       
       if @is_classification
-        raise "prediction_feature_values missing while performing classification" unless @prediction_feature_values
-        @num_classes = @prediction_feature_values.size
+        raise "class_domain missing while performing classification" unless @class_domain
+        @num_classes = @class_domain.size
         raise "num classes < 2" if @num_classes<2
         { "predicted"=>@predicted_values, "actual"=>@actual_values }.each do |s,values|
           values.each{ |v| raise "illegal "+s+" classification-value ("+v.to_s+"),"+
             "has to be either nil or index of predicted-values" if v!=nil and (v<0 or v>@num_classes)}
         end
       else
-        raise "prediction_feature_values != nil while performing regression" if @prediction_feature_values
+        raise "class_domain != nil while performing regression" if @class_domain
         { "predicted"=>@predicted_values, "actual"=>@actual_values }.each do |s,values|
           values.each{ |v| raise "illegal "+s+" regression-value ("+v.to_s+"),"+
             "has to be either nil or number" unless v==nil or v.is_a?(Numeric)}
@@ -81,7 +85,7 @@ module Lib
       
       if @is_classification
         @confusion_matrix = []
-        @prediction_feature_values.each do |v|
+        @class_domain.each do |v|
           @confusion_matrix.push( Array.new( @num_classes, 0 ) )
         end
         
@@ -209,31 +213,35 @@ module Lib
       res = {}
       (0..@num_classes-1).each do |actual|
           (0..@num_classes-1).each do |predicted|
-            res[{:confusion_matrix_actual => @prediction_feature_values[actual],
-                 :confusion_matrix_predicted => @prediction_feature_values[predicted]}] = @confusion_matrix[actual][predicted]
+            res[{:confusion_matrix_actual => @class_domain[actual],
+                 :confusion_matrix_predicted => @class_domain[predicted]}] = @confusion_matrix[actual][predicted]
         end
       end
       return res
     end
     
     def area_under_roc(class_index=nil)
-      return prediction_feature_value_map( lambda{ |i| area_under_roc(i) } ) if class_index==nil
+      return prediction_feature_value_map( lambda{ |i| area_under_roc(i) } ) if 
+        class_index==nil
       return 0.0 if @confidence_values==nil
       
       LOGGER.warn("TODO: implement approx computiation of AUC,"+
-        "so far Wilcoxon-Man-Whitney is used (exponential)") if @predicted_values.size>1000
+        "so far Wilcoxon-Man-Whitney is used (exponential)") if 
+        @predicted_values.size>1000
+      #puts "COMPUTING AUC "+class_index.to_s
       
       tp_conf = []
       fp_conf = []
       (0..@predicted_values.size-1).each do |i|
         if @predicted_values[i]==class_index
-          if @actual_values[i]==class_index
+          if @actual_values[i]==@predicted_values[i]
             tp_conf.push(@confidence_values[i])
           else
             fp_conf.push(@confidence_values[i])
           end
         end
       end
+      #puts tp_conf.inspect+"\n"+fp_conf.inspect+"\n\n"
       
       return 0.0 if tp_conf.size == 0
       return 1.0 if fp_conf.size == 0
@@ -241,9 +249,9 @@ module Lib
       tp_conf.each do |tp|
         fp_conf.each do |fp|
           sum += 1 if tp>fp
+          sum += 0.5 if tp==fp
         end
       end
-      
       return sum / (tp_conf.size * fp_conf.size).to_f
     end
     
@@ -460,21 +468,30 @@ module Lib
     # data for roc-plots ###################################################################################
     
     def get_roc_values(class_value)
+      
+      #puts "get_roc_values for class_value: "+class_value.to_s
       raise "no confidence values" if @confidence_values==nil
-      class_index = @prediction_feature_values.index(class_value)
-      raise "class not found "+class_value.to_s if class_index==nil and class_value!=nil
+      raise "no class-value specified" if class_value==nil
+      
+      class_index = @class_domain.index(class_value)
+      raise "class not found "+class_value.to_s if class_index==nil
       
       c = []; p = []; a = []
       (0..@predicted_values.size-1).each do |i|
         # NOTE: not predicted instances are ignored here
-        if (@predicted_values[i]!=nil and (class_value==nil or @predicted_values[i]==class_index))
+        if @predicted_values[i]!=nil and @predicted_values[i]==class_index
           c << @confidence_values[i]
           p << @predicted_values[i]
           a << @actual_values[i]
         end
       end
       
-      return {:predicted_values => p, :actual_values => a, :confidence_values => c}
+      # DO NOT raise exception here, maybe different validations are concated
+      #raise "no instance predicted as '"+class_value+"'" if p.size == 0
+      
+      h = {:predicted_values => p, :actual_values => a, :confidence_values => c}
+      #puts h.inspect
+      return h
     end
     
     ########################################################################################
@@ -489,7 +506,7 @@ module Lib
   
     def predicted_value(instance_index)
       if @is_classification
-        @predicted_values[instance_index]==nil ? nil : @prediction_feature_values[@predicted_values[instance_index]]
+        @predicted_values[instance_index]==nil ? nil : @class_domain[@predicted_values[instance_index]]
       else
         @predicted_values[instance_index]
       end
@@ -501,7 +518,7 @@ module Lib
     
     def actual_value(instance_index)
       if @is_classification
-        @actual_values[instance_index]==nil ? nil : @prediction_feature_values[@actual_values[instance_index]]
+        @actual_values[instance_index]==nil ? nil : @class_domain[@actual_values[instance_index]]
       else
         @actual_values[instance_index]
       end
@@ -535,7 +552,7 @@ module Lib
     def prediction_feature_value_map(proc)
       res = {}
       (0..@num_classes-1).each do |i|
-        res[@prediction_feature_values[i]] = proc.call(i)
+        res[@class_domain[i]] = proc.call(i)
       end
       return res
     end

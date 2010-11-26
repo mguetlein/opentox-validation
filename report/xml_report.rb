@@ -1,3 +1,6 @@
+#['rubygems', 'rexml/document' ].each do |g|
+#    require g
+#end
 
 require "report/xml_report_util.rb"
 
@@ -18,13 +21,23 @@ module Reports
   class XMLReport
     include REXML
     
+    def self.dtd_directory
+      if $sinatra
+        $sinatra.url_for('/'+ENV['DOCBOOK_DIRECTORY']+'/'+ENV['REPORT_DTD'], :full)
+      else
+        f = File.expand_path(File.join(ENV['DOCBOOK_DIRECTORY'],ENV['REPORT_DTD']))
+        raise "cannot find dtd" unless File.exist?(f)
+        f
+      end
+    end
+    
     # create new xmlreport
     def initialize(title, pubdate=nil, author_firstname = nil, author_surname = nil)
       
       @doc = Document.new
       decl = XMLDecl.new
       @doc << decl
-      type = DocType.new('article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "'+$sinatra.url_for('/'+ENV['DOCBOOK_DIRECTORY']+'/'+ENV['REPORT_DTD'], :full)+'"')
+      type = DocType.new('article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "'+XMLReport.dtd_directory+'"')
       @doc << type
   
       @root = Element.new("article")
@@ -94,12 +107,20 @@ module Reports
       media = Element.new("mediaobject")
       image = Element.new("imageobject")
       imagedata = Reports::XMLReportUtil.attribute_element("imagedata",
-        {"fileref" => path, "format"=>filetype, "contentwidth" => "6in",  "contentdepth"=> "4in" 
+        {"fileref" => path, "format"=>filetype, "contentwidth" => "100%",
+        #"contentdepth"=> "4in" 
         })#"width" => "6in", "height" => "5in"}) #"contentwidth" => "100%"})
       #imagedata = Reports::XMLReportUtil.attribute_element("imagedata",{"width" => "6in", "fileref" => path, "format"=>filetype})
       @resource_path_elements[imagedata] = "fileref"
       image << imagedata
+      
       media << image
+      
+#      ulink = Element.new("ulink")
+#      ulink.add_attributes({"url" => "http://google.de"})
+#      ulink << image
+#      media << ulink
+      
       media << Reports::XMLReportUtil.text_element("caption", caption) if caption
       figure << media
       element << figure
