@@ -99,8 +99,9 @@ class Example
     rep.create_report("crossvalidation",cv.crossvalidation_uri)
     
     log "build qmrf"
-    qmrf = OpenTox::RestClientWrapper.post(File.join(@@config[:services]["opentox-validation"],"reach_report/QMRF"),{:model_uri=>@@model})
-    log qmrf
+    task = ReachReports.create_report("QMRF",{:model_uri=>@@model})
+    log Lib::TestUtil.wait_for_task(task)
+    #qmrf = OpenTox::RestClientWrapper.post(File.join(@@config[:services]["opentox-validation"],"reach_report/QMRF"),{:model_uri=>@@model})
     
     log "done"
     @@summary
