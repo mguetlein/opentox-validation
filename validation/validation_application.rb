@@ -194,7 +194,8 @@ get '/?' do
       "* "+$sinatra.url_for("/bootstrapping",:full)+"\n"+
       "* "+$sinatra.url_for("/training_test_split",:full)+"\n"+
       "* "+$sinatra.url_for("/crossvalidation",:full)+"\n"+
-      "Validation reports:              "+$sinatra.url_for("/report/validation",:full)+"\n"+
+      "Validation reporting:            "+$sinatra.url_for("/report",:full)+"\n"+
+      "REACH relevant reporting:        "+$sinatra.url_for("/reach_report",:full)+"\n"+
       "Examples for using this service: "+$sinatra.url_for("/examples",:full)+"\n"
     description = 
         "A validation web service for the OpenTox project ( http://opentox.org ).\n"+

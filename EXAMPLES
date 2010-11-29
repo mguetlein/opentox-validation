@@ -327,3 +327,34 @@ alternatively, use property names in (internal) yaml format:
 
 >>> curl <validation_service>/report/validation?algorithm_uris=lazar
 
+
+
+Reach reporting
+===================================================================
+
+
+get list of available qmrf report
+-------------------------------------------------------------------
+
+>>> curl <validation_service>/reach_report/qmrf
+
+result example (accept-header: application/rdf-xml)			
+<<< not yet supported
+
+result example (accept-header: text/uri-list)
+<<< <validation_service>/reach_report/qmrf/<qmrf_id>
+<<< <validation_service>/reach_report/qmrf/report_id_i
+<<< <validation_service>/reach_report/qmrf/report_id_j
+
+
+create a QMRF from a model
+-------------------------------------------------------------------	
+
+>>> curl -X POST -d model_uri="<model_uri>" \
+ <validation_service>/reach_report/qmrf
+ 
+result example (accept-header: application/rdf-xml)			
+<<< not yet supported
+
+result example (accept-header: text/uri-list)
+<<< <validation_service>/reach_report/qmrf/id

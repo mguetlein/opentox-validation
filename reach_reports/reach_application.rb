@@ -3,6 +3,8 @@
   require lib
 end
 
+QMRF_EDITOR_URI = "http://ortona.informatik.uni-freiburg.de/qmrfedit2/OT_QMRFEditor.jnlp"
+
 require 'reach_reports/reach_persistance.rb'
 require 'reach_reports/reach_service.rb'
 
@@ -14,15 +16,46 @@ def extract_type(params)
 end
 
 get '/reach_report' do
-  content_type "text/uri-list"
-  url_for('/reach_report/QMRF', :full)+"\n"+url_for('/reach_report/QPRF', :full)+"\n"
+  uri_list = url_for('/reach_report/QMRF', :full)+"\n"+url_for('/reach_report/QPRF', :full)+"\n"
+  if request.env['HTTP_ACCEPT'] =~ /text\/html/
+    content_type "text/html"
+    related_links = 
+      "All validations:      "+$sinatra.url_for("/",:full)+"\n"+
+      "Validation reporting: "+$sinatra.url_for("/report",:full)
+    description = 
+        "A list of all suported REACH reporting types."
+    OpenTox.text_to_html uri_list,related_links,description
+  else
+    content_type "text/uri-list"
+    uri_list
+  end
 end
 
 get '/reach_report/:type' do
-  content_type "text/uri-list"
   type = extract_type(params)
   LOGGER.info "list all "+type+" reports"
-  ReachReports.list_reports(type)
+  if request.env['HTTP_ACCEPT'] =~ /text\/html/
+    content_type "text/html"
+    related_links = 
+        "All REACH reporting types:      "+$sinatra.url_for("/reach_report",:full)
+    description = 
+        "A list of "+type+" reports."
+    post_params = ""
+    case type
+    when /(?i)QMRF/
+      related_links += "\n"+ 
+        "OpenTox version of QMRF editor: "+QMRF_EDITOR_URI
+      description += "\n"+
+        "To create a QMRF report use the POST method."
+      post_params = [[[:model_uri]],[["Existing QMRF report, content-type application/qmrf-xml"]]]
+    when /(?i)QPRF/
+      #TODO
+    end
+    OpenTox.text_to_html ReachReports.list_reports(type),related_links,description,post_params
+  else
+    content_type "text/uri-list"
+    ReachReports.list_reports(type)
+  end
 end
 
 post '/reach_report/:type' do
@@ -52,20 +85,26 @@ get '/reach_report/:type/:id' do
     halt 400, "application/rdf+xml not yet supported"
     owl = OpenTox::Owl.create(type+"Report",rep.report_uri)
     owl.set_data( rep.get_content.keys_to_rdf_format )
-    result = owl.rdf
+    owl.rdf
   when "application/qmrf-xml"
     content_type "application/qmrf-xml"
-    result = rep.to_xml
+    rep.to_xml
     #f = File.new("/home/martin/info_home/.public_html/qmrf.out.xml","w")
     #f.puts result
+  when /text\/html/
+    content_type "text/html"
+    related_links =
+        "Open report in QMRF editor: "+rep.report_uri+"/editor"+"\n"+
+        "All "+type+" reports:           "+$sinatra.url_for("/reach_report/"+type,:full)
+    description = 
+        "A QMRF report."
+    OpenTox.text_to_html rep.to_yaml,related_links,description
   when /application\/x-yaml|\*\/\*|^$/ # matches 'application/x-yaml', '*/*', ''
     content_type "application/x-yaml"
-    result = rep.to_yaml
+    rep.to_yaml
   else
     halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported, valid Accept-Headers are \"application/rdf+xml\", \"application/x-yaml\", \"application/qmrf-xml\"."
   end
-  
-  result
 end
 
 post '/reach_report/:type/:id' do

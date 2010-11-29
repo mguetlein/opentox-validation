@@ -42,7 +42,8 @@ class Example
             "crossvalidation_report_id" => "2",
             "css_file" => @@css_file,
             "prediction_dataset_uri" => @@prediction_data,
-            "predicted_feature" => @@predicted_feature }
+            "predicted_feature" => @@predicted_feature,
+            "qmrf_id" => "1"}
     
     sub.each do |k,v|
       res.gsub!(/<#{k}>/,v)
@@ -60,6 +61,9 @@ class Example
     ActiveRecord::Migrator.migrate('db/migrate', 0 )
     ActiveRecord::Migrator.migrate('db/migrate', 1 )
     ActiveRecord::Migrator.migrate('db/migrate', 2 )
+    
+    #delete all qmrf reports
+    ReachReports::QmrfReport.auto_migrate!
     
     #delete_all(@@config[:services]["opentox-dataset"])
     log OpenTox::RestClientWrapper.delete @@config[:services]["opentox-dataset"]
@@ -93,6 +97,10 @@ class Example
     log "create crossvalidation report"
     rep.delete_all_reports("crossvalidation")
     rep.create_report("crossvalidation",cv.crossvalidation_uri)
+    
+    log "build qmrf"
+    qmrf = OpenTox::RestClientWrapper.post(File.join(@@config[:services]["opentox-validation"],"reach_report/QMRF"),{:model_uri=>@@model})
+    log qmrf
     
     log "done"
     @@summary
