@@ -53,7 +53,7 @@ class Example
   
   # creates the resources that are requested by the examples
   def self.prepare_example_resources
-    OpenTox::Task.as_task("prepare examples", "n/a") do task
+    OpenTox::Task.as_task("prepare examples", "n/a") do |task|
       @@summary = ""
       #delete validations
       log "delete validations"
