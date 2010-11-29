@@ -85,28 +85,26 @@ class Example
                      :test_target_dataset_uri => data_uri,
                      :prediction_feature => URI.decode(@@feature),
                      :algorithm_uri => @@alg
-      v.validate_algorithm( @@alg_params ) 
-      task.progress(30)
+      v.validate_algorithm( @@alg_params, OpenTox::SubTask.new(task, 20, 40) ) 
       
       log "crossvalidation"
       cv = Validation::Crossvalidation.new({ :dataset_uri => data_uri, :algorithm_uri => @@alg, :num_folds => 5, :stratified => false })
-      cv.perform_cv( URI.decode(@@feature), @@alg_params )
-      task.progress(40)
+      cv.perform_cv( URI.decode(@@feature), @@alg_params, OpenTox::SubTask.new(task, 40, 70) )
       
       log "create validation report"
       rep = Reports::ReportService.instance(File.join(@@config[:services]["opentox-validation"],"report"))
       rep.delete_all_reports("validation")
       rep.create_report("validation",v.validation_uri)
-      task.progress(50)
+      task.progress(80)
       
       log "create crossvalidation report"
       rep.delete_all_reports("crossvalidation")
       rep.create_report("crossvalidation",cv.crossvalidation_uri)
-      task.progress(60)
+      task.progress(90)
       
       log "build qmrf"
-      task = ReachReports.create_report("QMRF",{:model_uri=>@@model})
-      log Lib::TestUtil.wait_for_task(task)
+      t = ReachReports.create_report("QMRF",{:model_uri=>@@model})
+      log Lib::TestUtil.wait_for_task(t)
       #qmrf = OpenTox::RestClientWrapper.post(File.join(@@config[:services]["opentox-validation"],"reach_report/QMRF"),{:model_uri=>@@model})
       task.progress(100)
       
