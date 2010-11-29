@@ -53,58 +53,66 @@ class Example
   
   # creates the resources that are requested by the examples
   def self.prepare_example_resources
-    
-    @@summary = ""
-    #delete validations
-    log "delete validations"
-    ActiveRecord::Base.logger = Logger.new("/dev/null")
-    ActiveRecord::Migrator.migrate('db/migrate', 0 )
-    ActiveRecord::Migrator.migrate('db/migrate', 1 )
-    ActiveRecord::Migrator.migrate('db/migrate', 2 )
-    
-    #delete all qmrf reports
-    ReachReports::QmrfReport.auto_migrate!
-    
-    #delete_all(@@config[:services]["opentox-dataset"])
-    log OpenTox::RestClientWrapper.delete @@config[:services]["opentox-dataset"]
-    
-    log "upload dataset"
-    halt 400,"File not found: "+@@file.path.to_s unless File.exist?(@@file.path)
-    data = File.read(@@file.path)
-    data_uri = OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],{:content_type => @@file_type},data).chomp("\n")
-    
-    log "train-test-validation"
-    #delete_all(@@config[:services]["opentox-model"])
-    OpenTox::RestClientWrapper.delete @@config[:services]["opentox-model"]
-    
-    split_params = Validation::Util.train_test_dataset_split(data_uri, URI.decode(@@feature), 0.9, 1)
-    v = Validation::Validation.new :training_dataset_uri => split_params[:training_dataset_uri], 
-                   :test_dataset_uri => split_params[:test_dataset_uri],
-                   :test_target_dataset_uri => data_uri,
-                   :prediction_feature => URI.decode(@@feature),
-                   :algorithm_uri => @@alg
-    v.validate_algorithm( @@alg_params ) 
-    
-    log "crossvalidation"
-    cv = Validation::Crossvalidation.new({ :dataset_uri => data_uri, :algorithm_uri => @@alg, :num_folds => 5, :stratified => false })
-    cv.perform_cv( URI.decode(@@feature), @@alg_params )
-    
-    log "create validation report"
-    rep = Reports::ReportService.instance(File.join(@@config[:services]["opentox-validation"],"report"))
-    rep.delete_all_reports("validation")
-    rep.create_report("validation",v.validation_uri)
-    
-    log "create crossvalidation report"
-    rep.delete_all_reports("crossvalidation")
-    rep.create_report("crossvalidation",cv.crossvalidation_uri)
-    
-    log "build qmrf"
-    task = ReachReports.create_report("QMRF",{:model_uri=>@@model})
-    log Lib::TestUtil.wait_for_task(task)
-    #qmrf = OpenTox::RestClientWrapper.post(File.join(@@config[:services]["opentox-validation"],"reach_report/QMRF"),{:model_uri=>@@model})
-    
-    log "done"
-    @@summary
+    OpenTox::Task.as_task("prepare examples", "n/a") do task
+      @@summary = ""
+      #delete validations
+      log "delete validations"
+      ActiveRecord::Base.logger = Logger.new("/dev/null")
+      ActiveRecord::Migrator.migrate('db/migrate', 0 )
+      ActiveRecord::Migrator.migrate('db/migrate', 1 )
+      ActiveRecord::Migrator.migrate('db/migrate', 2 )
+      
+      #delete all qmrf reports
+      ReachReports::QmrfReport.auto_migrate!
+      
+      #delete_all(@@config[:services]["opentox-dataset"])
+      log OpenTox::RestClientWrapper.delete @@config[:services]["opentox-dataset"]
+      task.progress(10)
+      
+      log "upload dataset"
+      halt 400,"File not found: "+@@file.path.to_s unless File.exist?(@@file.path)
+      data = File.read(@@file.path)
+      data_uri = OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],{:content_type => @@file_type},data).chomp("\n")
+      task.progress(20)
+      
+      log "train-test-validation"
+      #delete_all(@@config[:services]["opentox-model"])
+      OpenTox::RestClientWrapper.delete @@config[:services]["opentox-model"]
+      
+      split_params = Validation::Util.train_test_dataset_split(data_uri, URI.decode(@@feature), 0.9, 1)
+      v = Validation::Validation.new :training_dataset_uri => split_params[:training_dataset_uri], 
+                     :test_dataset_uri => split_params[:test_dataset_uri],
+                     :test_target_dataset_uri => data_uri,
+                     :prediction_feature => URI.decode(@@feature),
+                     :algorithm_uri => @@alg
+      v.validate_algorithm( @@alg_params ) 
+      task.progress(30)
+      
+      log "crossvalidation"
+      cv = Validation::Crossvalidation.new({ :dataset_uri => data_uri, :algorithm_uri => @@alg, :num_folds => 5, :stratified => false })
+      cv.perform_cv( URI.decode(@@feature), @@alg_params )
+      task.progress(40)
+      
+      log "create validation report"
+      rep = Reports::ReportService.instance(File.join(@@config[:services]["opentox-validation"],"report"))
+      rep.delete_all_reports("validation")
+      rep.create_report("validation",v.validation_uri)
+      task.progress(50)
+      
+      log "create crossvalidation report"
+      rep.delete_all_reports("crossvalidation")
+      rep.create_report("crossvalidation",cv.crossvalidation_uri)
+      task.progress(60)
+      
+      log "build qmrf"
+      task = ReachReports.create_report("QMRF",{:model_uri=>@@model})
+      log Lib::TestUtil.wait_for_task(task)
+      #qmrf = OpenTox::RestClientWrapper.post(File.join(@@config[:services]["opentox-validation"],"reach_report/QMRF"),{:model_uri=>@@model})
+      task.progress(100)
+      
+      log "done"
+      @@summary
+    end
   end
   
   # performs all curl calls listed in examples after ">>>", next line is added if line ends with "\"
