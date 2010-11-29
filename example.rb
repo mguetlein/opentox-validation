@@ -86,7 +86,7 @@ class Example
     cv.perform_cv( URI.decode(@@feature), @@alg_params )
     
     log "create validation report"
-    rep = Reports::ReportService.new(File.join(@@config[:services]["opentox-validation"],"report"))
+    rep = Reports::ReportService.instance(File.join(@@config[:services]["opentox-validation"],"report"))
     rep.delete_all_reports("validation")
     rep.create_report("validation",v.validation_uri)
     

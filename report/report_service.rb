@@ -12,17 +12,25 @@ module Reports
       @@persistance
     end
     
-    def self.instance
+    def self.instance( home_uri=nil )
+      if !defined?@@instance
+        @@instance = ReportService.new(home_uri)
+      elsif home_uri && @@instance.home_uri != home_uri
+        raise "already initialized with different home_uri!!!" 
+      end
       @@instance
     end
     
+    private
     def initialize(home_uri)
       raise "supposed to be a singleton" if defined?@@instance
+      raise "plz specify home_uri" unless home_uri
       LOGGER.info "init report service"
       @home_uri = home_uri
       @@instance = self
     end
   
+    public
     # lists all available report types, returns list of uris
     #
     # call-seq:
@@ -139,6 +147,10 @@ module Reports
       id = report_uri.squeeze("/").split("/")[-1]
       @@persistance.check_report_id_format(id)
       return id
+    end
+    
+    def home_uri
+      @home_uri
     end
     
     def get_uri(type, id=nil)

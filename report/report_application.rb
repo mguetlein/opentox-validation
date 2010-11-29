@@ -2,8 +2,8 @@ require "report/environment.rb"
 
 def perform
   begin
-    $rep = Reports::ReportService.new(url_for("/report", :full)) unless $rep
-    yield( $rep )
+    @@report_service = Reports::ReportService.instance( url_for("/report", :full) ) unless defined?@@report_service  
+    yield( @@report_service )
   rescue Reports::NotFound => ex
     halt 404, ex.message
   rescue Reports::BadRequest => ex
@@ -79,10 +79,11 @@ get '/report/:report_type' do
 end
 
 post '/report/:type/:id/format_html' do
-  
-  rs.get_report(params[:type],params[:id],"text/html",true,params)
-  content_type "text/uri-list"
-  rs.get_uri(params[:type],params[:id])+"\n"
+  perform do |rs| 
+    rs.get_report(params[:type],params[:id],"text/html",true,params)
+    content_type "text/uri-list"
+    rs.get_uri(params[:type],params[:id])+"\n"
+  end
 end
 
 

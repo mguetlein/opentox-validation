@@ -80,14 +80,14 @@ class ValidationTest < Test::Unit::TestCase
 #      #:classification=>"true"}
 #    puts last_response.body
     
-    #run_test("1b","http://localhost/validation/20")#,"http://localhost/validation/394");
+    run_test("1b","http://localhost/validation/28")#,"http://localhost/validation/394");
     
     #run_test("7b","http://localhost/validation/21")
     
     #run_test("3a","http://localhost/validation/crossvalidation/4")
     #run_test("3b","http://localhost/validation/crossvalidation/3")
     
-    run_test("8a", "http://localhost/validation/crossvalidation/6")
+    #run_test("8a", "http://localhost/validation/crossvalidation/6")
     #run_test("8b", "http://localhost/validation/crossvalidation/5")
 
     #run_test("11b", "http://localhost/validation/crossvalidation/2" )# //localhost/validation/42")#, "http://localhost/validation/report/validation/8") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
