@@ -43,6 +43,13 @@ module Validation
       raise "internal error, validation-id not set "+to_yaml if self.id==nil
     end
     
+    def save!
+      # make sure that non-temporary validation objects have a valiation_type
+      # (a temporary validation object is created for crossvaldiation/statistics) 
+      $sinatra.halt 500,"validation_type missing" unless self.validation_type
+      super
+    end
+    
     # deletes a validation
     # PENDING: model and referenced datasets are deleted as well, keep it that way?
     def delete

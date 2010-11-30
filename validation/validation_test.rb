@@ -80,7 +80,7 @@ class ValidationTest < Test::Unit::TestCase
 #      #:classification=>"true"}
 #    puts last_response.body
     
-    run_test("1b","http://localhost/validation/28")#,"http://localhost/validation/394");
+    #run_test("1b","http://localhost/validation/28")#,"http://localhost/validation/394");
     
     #run_test("7b","http://localhost/validation/21")
     
@@ -96,7 +96,7 @@ class ValidationTest < Test::Unit::TestCase
  
     #puts Nightly.build_nightly("1")
     
-  # prepare_examples
+   prepare_examples
     #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
     #do_test_examples_ortona
   end

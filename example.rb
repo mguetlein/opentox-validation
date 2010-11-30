@@ -81,6 +81,7 @@ class Example
       
       split_params = Validation::Util.train_test_dataset_split(data_uri, URI.decode(@@feature), 0.9, 1)
       v = Validation::Validation.new :training_dataset_uri => split_params[:training_dataset_uri], 
+                     :validation_type => "test_set_validation",
                      :test_dataset_uri => split_params[:test_dataset_uri],
                      :test_target_dataset_uri => data_uri,
                      :prediction_feature => URI.decode(@@feature),
@@ -104,8 +105,7 @@ class Example
       
       log "build qmrf"
       t = ReachReports.create_report("QMRF",{:model_uri=>@@model})
-      log Lib::TestUtil.wait_for_task(t)
-      #qmrf = OpenTox::RestClientWrapper.post(File.join(@@config[:services]["opentox-validation"],"reach_report/QMRF"),{:model_uri=>@@model})
+      Lib::TestUtil.wait_for_task(t)
       task.progress(100)
       
       log "done"
