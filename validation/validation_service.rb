@@ -39,13 +39,10 @@ module Validation
       $sinatra.halt 500,"do not set id manually" if params[:id]
       params[:finished] = false
       super params
-      self.save!
-      raise "internal error, validation-id not set "+to_yaml if self.id==nil
     end
     
     def save!
-      # make sure that non-temporary validation objects have a valiation_type
-      # (a temporary validation object is created for crossvaldiation/statistics) 
+      # make sure that validation objects have a valiation_type
       $sinatra.halt 500,"validation_type missing" unless self.validation_type
       super
     end
@@ -182,8 +179,6 @@ module Validation
       params[:stratified] = false if params[:stratified]==nil
       params[:finished] = false
       super params
-      self.save!
-      raise "internal error, crossvalidation-id not set" if self.id==nil
     end
     
     def perform_cv ( prediction_feature, algorithm_params=nil, task=nil )

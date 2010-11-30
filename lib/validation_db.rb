@@ -56,6 +56,8 @@ module Lib
     alias_attribute :date, :created_at
     
     def validation_uri
+      self.save! if self.id==nil
+      raise "internal error, validation-id not set "+to_yaml if self.id==nil
       $sinatra.url_for("/"+self.id.to_s, :full)
     end
     
@@ -81,6 +83,8 @@ module Lib
     alias_attribute :date, :created_at
     
     def crossvalidation_uri
+      self.save! if self.id==nil
+      raise "internal error, crossvalidation-id not set" if self.id==nil
       $sinatra.url_for("/crossvalidation/"+self.id.to_s, :full) if self.id
     end
     
