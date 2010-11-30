@@ -39,12 +39,8 @@ module Validation
       $sinatra.halt 500,"do not set id manually" if params[:id]
       params[:finished] = false
       super params
-    end
-    
-    def save!
-      # make sure that validation objects have a valiation_type
-      $sinatra.halt 500,"validation_type missing" unless self.validation_type
-      super
+      self.save!
+      raise "internal error, validation-id not set "+to_yaml if self.id==nil
     end
     
     # deletes a validation
@@ -66,6 +62,7 @@ module Validation
     # validates an algorithm by building a model and validating this model
     def validate_algorithm( algorithm_params=nil, task=nil )
       
+      $sinatra.halt 500,"validation_type missing" unless self.validation_type
       $sinatra.halt 404, "no algorithm uri: '"+self.algorithm_uri.to_s+"'" if self.algorithm_uri==nil or self.algorithm_uri.to_s.size<1
       
       params = { :dataset_uri => self.training_dataset_uri, :prediction_feature => self.prediction_feature }
@@ -95,6 +92,7 @@ module Validation
     # PENDING: a new dataset is created to store the predictions, this should be optional: delete predictions afterwards yes/no
     def validate_model( task=nil )
       
+      $sinatra.halt 500,"validation_type missing" unless self.validation_type
       LOGGER.debug "validating model '"+self.model_uri+"'"
       
       model = OpenTox::Model::PredictionModel.find(self.model_uri)
@@ -179,6 +177,8 @@ module Validation
       params[:stratified] = false if params[:stratified]==nil
       params[:finished] = false
       super params
+      self.save!
+      raise "internal error, crossvalidation-id not set" if self.id==nil
     end
     
     def perform_cv ( prediction_feature, algorithm_params=nil, task=nil )
