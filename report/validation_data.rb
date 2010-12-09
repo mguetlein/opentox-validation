@@ -302,6 +302,12 @@ module Reports
       col_values = get_values(attribute_col)
       #puts col_values.inspect
       
+      # get domain for classification attribute, i.e. ["true","false"]
+      class_domain = get_domain_for_attr(attribute_val)
+      # or the attribute has a complementary value, i.e. true_positive_rate
+      # -> domain is reduced to one class value
+      first_value_elem = (class_domain.size==1 && class_domain[0]!=nil)
+      
       cell_values = {}
       row_values.each do |row|
         col_values.each do |col|
@@ -309,7 +315,9 @@ module Reports
           @validations.each do |v|
             if v.send(attribute_row)==row and v.send(attribute_col)==col
               raise "two validation have equal row and column values"if val!=nil
-              val = v.send(attribute_val).to_nice_s
+              val = v.send(attribute_val)
+              val = val[class_domain[0]] if first_value_elem
+              val = val.to_nice_s
             end
           end
           cell_values[row] = [] if cell_values[row]==nil

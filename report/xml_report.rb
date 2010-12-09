@@ -140,15 +140,17 @@ module Reports
     # adds a table to a REXML:Element, _table_values_ should be a multi-dimensional-array, returns the table as element
     # 
     # call-seq:
-    #   add_table( element, title, table_values, first_row_is_table_header=true ) => REXML::Element
+    #   add_table( element, title, table_values, first_row_header=true ) => REXML::Element
     #
-    def add_table( element, title, table_values, first_row_is_table_header=true, transpose=false, auto_link_urls=true )
+    def add_table( element, title, table_values, first_row_header=true, first_col_header=false, transpose=false, auto_link_urls=true )
       
       raise "table_values is not mulit-dimensional-array" unless table_values && table_values.is_a?(Array) && table_values[0].is_a?(Array) 
       
       values = transpose ? table_values.transpose : table_values
       
-      table = Reports::XMLReportUtil.attribute_element("table",{"frame" => "none", "colsep" => 1, "rowsep" => 1 })
+      params = {"frame" => "none", "colsep" => 1, "rowsep" => 1 }
+      params["rowheader"] = "firstcol" if first_col_header
+      table = Reports::XMLReportUtil.attribute_element("table",params)
       
       table << Reports::XMLReportUtil.text_element("title", title)
       
@@ -158,7 +160,7 @@ module Reports
       
       table_body_values = values
       
-      if first_row_is_table_header
+      if first_row_header
         table_head_values = values[0];
         table_body_values = values[1..-1];
         

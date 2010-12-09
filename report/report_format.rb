@@ -1,5 +1,5 @@
 
-ENV['REPORT_XSL'] = "docbook-xsl-1.75.2/html/docbook.xsl" unless ENV['REPORT_XSL'] 
+ENV['REPORT_XSL'] = "docbook-xsl-1.76.1/html/docbook.xsl" unless ENV['REPORT_XSL'] 
 ENV['JAVA_HOME'] = "/usr/bin" unless ENV['JAVA_HOME']
 ENV['PATH'] = ENV['JAVA_HOME']+":"+ENV['PATH'] unless ENV['PATH'].split(":").index(ENV['JAVA_HOME'])
 ENV['SAXON_JAR'] = "saxonhe9-2-0-3j/saxon9he.jar" unless ENV['SAXON_JAR']

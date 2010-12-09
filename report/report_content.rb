@@ -10,9 +10,43 @@ class Reports::ReportContent
   def initialize(title)
     @xml_report = Reports::XMLReport.new(title, Time.now.strftime("Created at %m.%d.%Y - %H:%M"))
     @tmp_file_count = 0
+    @current_section = @xml_report.get_root_element
   end
   
-  def add_section_predictions( validation_set, 
+  def add_section( section_title, section_text=nil )
+    @current_section = @xml_report.add_section(@xml_report.get_root_element, section_title)
+    @xml_report.add_paragraph(@current_section, section_text) if section_text
+  end
+  
+  def end_section()
+    @current_section = @xml_report.get_root_element
+  end
+  
+  def add_paired_ttest_table( validation_set,
+                       group_attribute, 
+                       test_attribute,
+                       section_title = "Paired t-test",
+                       section_text = nil)
+                       
+    level = 0.90                       
+    test_matrix = Reports::ReportStatisticalTest.test_matrix( validation_set.validations, 
+      group_attribute, test_attribute, "paired_ttest", level )
+    puts test_matrix.inspect
+    titles = test_matrix[:titles]
+    matrix = test_matrix[:matrix]
+    table = []
+    puts titles.inspect
+    table << [""] + titles
+    titles.size.times do |i|
+      table << [titles[i]] + matrix[i].collect{|v| (v==nil || v==0) ? "" : (v<0 ? "-" : "+") }
+    end
+    
+    section_test = @xml_report.add_section(@current_section, section_title)
+    @xml_report.add_paragraph(section_test, section_text) if section_text
+    @xml_report.add_table(section_test, test_attribute.to_s+", significance-level: "+level.to_s, table, true, true)  
+  end
+  
+  def add_predictions( validation_set, 
                               validation_attributes=[],
                               section_title="Predictions",
                               section_text=nil,
@@ -21,17 +55,18 @@ class Reports::ReportContent
     #PENING
     raise "validation attributes not implemented in get prediction array" if  validation_attributes.size>0
     
-    section_table = @xml_report.add_section(@xml_report.get_root_element, section_title)
+    section_table = @xml_report.add_section(@current_section, section_title)
     if validation_set.validations[0].get_predictions
       @xml_report.add_paragraph(section_table, section_text) if section_text
-      @xml_report.add_table(section_table, table_title, Lib::OTPredictions.to_array(validation_set.validations.collect{|v| v.get_predictions}, true, true))
+      @xml_report.add_table(section_table, table_title, Lib::OTPredictions.to_array(validation_set.validations.collect{|v| v.get_predictions}, 
+        true, false, true))
     else
       @xml_report.add_paragraph(section_table, "No prediction info available.")
     end
   end
 
 
-  def add_section_result_overview( validation_set,
+  def add_result_overview( validation_set,
                         attribute_col,
                         attribute_row, 
                         attribute_values,
@@ -40,14 +75,14 @@ class Reports::ReportContent
                         section_text=nil )
     
     
-    section_table = @xml_report.add_section(xml_report.get_root_element, section_title)
+    section_table = @xml_report.add_section(@current_section, section_title)
     @xml_report.add_paragraph(section_table, section_text) if section_text
     
     attribute_values.size.times do |i|
       attribute_val = attribute_values[i]
       table_title = table_titles ? table_titles[i] : "Result overview for "+attribute_val.to_s
       vals = validation_set.to_table( attribute_col, attribute_row, attribute_val)
-      @xml_report.add_table(section_table, table_title, vals)  
+      @xml_report.add_table(section_table, table_title, vals, true, true)  
     end
   end
 
@@ -59,7 +94,7 @@ class Reports::ReportContent
   #  val2-attr1 |val2-attr2 |val2-attr3
   #  val3-attr1 |val3-attr2 |val3-attr3
   #
-  def add_section_result( validation_set, 
+  def add_result( validation_set, 
                         validation_attributes,
                         table_title,
                         section_title="Results",
@@ -67,7 +102,7 @@ class Reports::ReportContent
                         #rem_equal_vals_attr=[],
                         search_for_existing_report_type=nil)
 
-    section_table = @xml_report.add_section(xml_report.get_root_element, section_title)
+    section_table = @xml_report.add_section(@current_section, section_title)
     @xml_report.add_paragraph(section_table, section_text) if section_text
     vals = validation_set.to_array(validation_attributes, true)
     vals = vals.collect{|a| a.collect{|v| v.to_s }}
@@ -91,20 +126,20 @@ class Reports::ReportContent
     end
     #PENDING transpose values if there more than 4 columns, and there are more than columns than rows
     transpose = vals[0].size>4 && vals[0].size>vals.size
-    @xml_report.add_table(section_table, table_title, vals, !transpose, transpose)
+    @xml_report.add_table(section_table, table_title, vals, !transpose, transpose, transpose)
   end
   
-  def add_section_confusion_matrix(  validation, 
+  def add_confusion_matrix(  validation, 
                                 section_title="Confusion Matrix",
                                 section_text=nil,
                                 table_title="Confusion Matrix")
-    section_confusion = @xml_report.add_section(xml_report.get_root_element, section_title)
+    section_confusion = @xml_report.add_section(@current_section, section_title)
     @xml_report.add_paragraph(section_confusion, section_text) if section_text
     @xml_report.add_table(section_confusion, table_title, 
-      Reports::XMLReportUtil::create_confusion_matrix( validation.confusion_matrix ), false)
+      Reports::XMLReportUtil::create_confusion_matrix( validation.confusion_matrix ), true, true)
   end
   
-  def add_section_regression_plot( validation_set,
+  def add_regression_plot( validation_set,
                             name_attribute,
                             section_title="Regression Plot",
                             section_text=nil,
@@ -113,7 +148,7 @@ class Reports::ReportContent
                             
     image_title = "Regression plot" unless image_title
     
-    section_regr = @xml_report.add_section(@xml_report.get_root_element, section_title)
+    section_regr = @xml_report.add_section(@current_section, section_title)
     prediction_set = validation_set.collect{ |v| v.get_predictions }
         
     if prediction_set.size>0
@@ -136,14 +171,14 @@ class Reports::ReportContent
     end
   end
 
-  def add_section_roc_plot( validation_set,
+  def add_roc_plot( validation_set,
                             split_set_attribute = nil,
                             section_title="ROC Plots",
                             section_text=nil,
                             image_titles=nil,
                             image_captions=nil)
                             
-    section_roc = @xml_report.add_section(@xml_report.get_root_element, section_title)
+    section_roc = @xml_report.add_section(@current_section, section_title)
     prediction_set = validation_set.collect{ |v| v.get_predictions && v.get_predictions.confidence_values_available? }
         
     if prediction_set.size>0
@@ -178,14 +213,14 @@ class Reports::ReportContent
     
   end
   
-  def add_section_ranking_plots( validation_set,
+  def add_ranking_plots( validation_set,
                             compare_attribute,
                             equal_attribute,
                             rank_attributes,
                             section_title="Ranking Plots",
                             section_text="This section contains the ranking plots.")
     
-    section_rank = @xml_report.add_section(@xml_report.get_root_element, section_title)
+    section_rank = @xml_report.add_section(@current_section, section_title)
     @xml_report.add_paragraph(section_rank, section_text) if section_text
     
     rank_attributes.each do |a|
@@ -224,7 +259,7 @@ class Reports::ReportContent
     end
   end
   
-  def add_section_bar_plot(validation_set,
+  def add_bar_plot(validation_set,
                             title_attribute,
                             value_attributes,
                             section_title="Bar Plot",
@@ -232,7 +267,7 @@ class Reports::ReportContent
                             image_title="Bar Plot",
                             image_caption=nil)
     
-    section_bar = @xml_report.add_section(@xml_report.get_root_element, section_title)
+    section_bar = @xml_report.add_section(@current_section, section_title)
     @xml_report.add_paragraph(section_bar, section_text) if section_text
     
     plot_file_name = "bar_plot"+@tmp_file_count.to_s+".svg"

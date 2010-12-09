@@ -66,17 +66,17 @@ module Reports::ReportFactory
     report = Reports::ReportContent.new("Validation report")
     
     if (val.classification?)
-      report.add_section_result(validation_set, [:validation_uri] + VAL_ATTR_TRAIN_TEST + VAL_ATTR_CLASS, "Results", "Results")
-      report.add_section_roc_plot(validation_set)
-      report.add_section_confusion_matrix(val)
+      report.add_result(validation_set, [:validation_uri] + VAL_ATTR_TRAIN_TEST + VAL_ATTR_CLASS, "Results", "Results")
+      report.add_roc_plot(validation_set)
+      report.add_confusion_matrix(val)
     else #regression
-      report.add_section_result(validation_set, [:validation_uri] + VAL_ATTR_TRAIN_TEST + VAL_ATTR_REGR, "Results", "Results")
-      report.add_section_regression_plot(validation_set, :model_uri)
+      report.add_result(validation_set, [:validation_uri] + VAL_ATTR_TRAIN_TEST + VAL_ATTR_REGR, "Results", "Results")
+      report.add_regression_plot(validation_set, :model_uri)
     end
     task.progress(90) if task
     
-    report.add_section_result(validation_set, Lib::ALL_PROPS, "All Results", "All Results")
-    report.add_section_predictions( validation_set )
+    report.add_result(validation_set, Lib::ALL_PROPS, "All Results", "All Results")
+    report.add_predictions( validation_set )
     task.progress(100) if task
     report
   end
@@ -101,21 +101,21 @@ module Reports::ReportFactory
     report = Reports::ReportContent.new("Crossvalidation report")
     
     if (validation_set.all_classification?)
-      report.add_section_result(merged, [:crossvalidation_uri]+VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold],"Mean Results","Mean Results")
-      report.add_section_roc_plot(validation_set, nil, "ROC Plots over all folds")
-      report.add_section_roc_plot(validation_set, :crossvalidation_fold)
-      report.add_section_confusion_matrix(merged.validations[0])
-      report.add_section_result(validation_set, VAL_ATTR_CV+VAL_ATTR_CLASS-[:num_folds],
+      report.add_result(merged, [:crossvalidation_uri]+VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold],"Mean Results","Mean Results")
+      report.add_roc_plot(validation_set, nil, "ROC Plots over all folds")
+      report.add_roc_plot(validation_set, :crossvalidation_fold)
+      report.add_confusion_matrix(merged.validations[0])
+      report.add_result(validation_set, VAL_ATTR_CV+VAL_ATTR_CLASS-[:num_folds],
         "Results","Results",nil,"validation")
     else #regression
-      report.add_section_result(merged, [:crossvalidation_uri]+VAL_ATTR_CV+VAL_ATTR_REGR-[:crossvalidation_fold],"Mean Results","Mean Results")
-      report.add_section_regression_plot(validation_set, :crossvalidation_fold)
-      report.add_section_result(validation_set, VAL_ATTR_CV+VAL_ATTR_REGR-[:num_folds], "Results","Results")
+      report.add_result(merged, [:crossvalidation_uri]+VAL_ATTR_CV+VAL_ATTR_REGR-[:crossvalidation_fold],"Mean Results","Mean Results")
+      report.add_regression_plot(validation_set, :crossvalidation_fold)
+      report.add_result(validation_set, VAL_ATTR_CV+VAL_ATTR_REGR-[:num_folds], "Results","Results")
     end
     task.progress(90) if task
       
-    report.add_section_result(validation_set, Lib::ALL_PROPS, "All Results", "All Results")
-    report.add_section_predictions( validation_set ) #, [:crossvalidation_fold] )
+    report.add_result(validation_set, Lib::ALL_PROPS, "All Results", "All Results")
+    report.add_predictions( validation_set ) #, [:crossvalidation_fold] )
     task.progress(100) if task
     report
   end
@@ -162,9 +162,10 @@ module Reports::ReportFactory
     
     if (validation_set.num_different_values(:dataset_uri)>1)
       all_merged = validation_set.merge([:algorithm_uri, :dataset_uri, :crossvalidation_id, :crossvalidation_uri])
-      report.add_section_ranking_plots(all_merged, :algorithm_uri, :dataset_uri,
+      report.add_ranking_plots(all_merged, :algorithm_uri, :dataset_uri,
         [:percent_correct, :weighted_area_under_roc, :true_positive_rate, :true_negative_rate] )
-      report.add_section_result_overview(all_merged, :algorithm_uri, :dataset_uri, [:percent_correct, :weighted_area_under_roc])
+      report.add_result_overview(all_merged, :algorithm_uri, :dataset_uri, [:percent_correct, :weighted_area_under_roc, :true_positive_rate, :true_negative_rate])
+      
     end
 
     if (validation_set.all_classification?)
@@ -179,10 +180,14 @@ module Reports::ReportFactory
         merged.sort(:algorithm_uri)
         merged.sort(:dataset_uri)
         
-        report.add_section_result(merged,attributes,
-          "Mean Results","Dataset: "+dataset,nil,"crossvalidation")
-        report.add_section_bar_plot(merged, :algorithm_uri, VAL_ATTR_BAR_PLOT_CLASS)
-        report.add_section_roc_plot(set, :algorithm_uri)
+        report.add_section("Dataset: "+dataset)
+        report.add_result(merged,attributes,
+          "Mean Results","Mean Results",nil,"crossvalidation")
+        report.add_paired_ttest_table(set, :algorithm_uri, :percent_correct)
+        
+        report.add_bar_plot(merged, :algorithm_uri, VAL_ATTR_BAR_PLOT_CLASS)
+        report.add_roc_plot(set, :algorithm_uri)
+        report.end_section
       end
       
     else # regression
