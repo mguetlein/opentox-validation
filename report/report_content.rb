@@ -59,7 +59,7 @@ class Reports::ReportContent
     if validation_set.validations[0].get_predictions
       @xml_report.add_paragraph(section_table, section_text) if section_text
       @xml_report.add_table(section_table, table_title, Lib::OTPredictions.to_array(validation_set.validations.collect{|v| v.get_predictions}, 
-        true, false, true))
+        true, true))
     else
       @xml_report.add_paragraph(section_table, "No prediction info available.")
     end
@@ -160,7 +160,7 @@ class Reports::ReportContent
       begin
         plot_file_path = add_tmp_file(plot_file_name)
         Reports::PlotFactory.create_regression_plot( plot_file_path, prediction_set, name_attribute )
-        @xml_report.add_imagefigure(section_regr, image_title, plot_file_name, "SVG", image_caption)
+        @xml_report.add_imagefigure(section_regr, image_title, plot_file_name, "SVG", 120, image_caption)
       rescue RuntimeError => ex
         LOGGER.error("Could not create regression plot: "+ex.message)
         rm_tmp_file(plot_file_name)
@@ -199,7 +199,7 @@ class Reports::ReportContent
         begin
           plot_file_path = add_tmp_file(plot_file_name)
           Reports::PlotFactory.create_roc_plot( plot_file_path, prediction_set, class_value, split_set_attribute, false )#prediction_set.size>1 )
-          @xml_report.add_imagefigure(section_roc, image_title, plot_file_name, "SVG", image_caption)
+          @xml_report.add_imagefigure(section_roc, image_title, plot_file_name, "SVG", 120, image_caption)
         rescue RuntimeError => ex
           msg = "WARNING could not create roc plot for class value '"+class_value+"': "+ex.message
           LOGGER.error(msg)
@@ -255,7 +255,7 @@ class Reports::ReportContent
       @tmp_file_count += 1
       plot_file_path = add_tmp_file(plot_file_name)
       Reports::PlotFactory::create_ranking_plot(plot_file_path, validation_set, compare_attribute, equal_attribute, rank_attribute, class_value)
-      @xml_report.add_imagefigure(report_section, image_title, plot_file_name, "SVG", image_caption)
+      @xml_report.add_imagefigure(report_section, image_title, plot_file_name, "SVG", 75, image_caption)
     end
   end
   
@@ -274,7 +274,7 @@ class Reports::ReportContent
     @tmp_file_count += 1
     plot_file_path = add_tmp_file(plot_file_name)
     Reports::PlotFactory.create_bar_plot(plot_file_path, validation_set, title_attribute, value_attributes )
-    @xml_report.add_imagefigure(section_bar, image_title, plot_file_name, "SVG", image_caption)
+    @xml_report.add_imagefigure(section_bar, image_title, plot_file_name, "SVG", 120, image_caption)
   end  
   
   private

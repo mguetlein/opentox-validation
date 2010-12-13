@@ -100,14 +100,14 @@ module Reports
     # call-seq:
     #   add_imagefigure( element, title, path, filetype, caption = nil ) => REXML::Element
     #
-    def add_imagefigure( element, title, path, filetype, caption = nil )
+    def add_imagefigure( element, title, path, filetype, size_pct=100, caption = nil )
       
       figure = Reports::XMLReportUtil.attribute_element("figure", {"float" => 0})
       figure << Reports::XMLReportUtil.text_element("title", title)
       media = Element.new("mediaobject")
       image = Element.new("imageobject")
       imagedata = Reports::XMLReportUtil.attribute_element("imagedata",
-        {"fileref" => path, "format"=>filetype, "contentwidth" => "100%",
+        {"fileref" => path, "format"=>filetype, "contentwidth" => size_pct.to_s+"%",
         #"contentdepth"=> "4in" 
         })#"width" => "6in", "height" => "5in"}) #"contentwidth" => "100%"})
       #imagedata = Reports::XMLReportUtil.attribute_element("imagedata",{"width" => "6in", "fileref" => path, "format"=>filetype})
@@ -254,7 +254,7 @@ module Reports
       section1 = rep.add_section(rep.get_root_element, "First Section")
       rep.add_paragraph(section1, "some text")
       rep.add_paragraph(section1, "even more text")
-      rep.add_imagefigure(section1, "Figure", "http://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Siegel_der_Albert-Ludwigs-Universit%C3%A4t_Freiburg.svg/354px-Siegel_der_Albert-Ludwigs-Universit%C3%A4t_Freiburg.svg", "SVG", "this is the logo of freiburg university")
+      rep.add_imagefigure(section1, "Figure", "http://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Siegel_der_Albert-Ludwigs-Universit%C3%A4t_Freiburg.svg/354px-Siegel_der_Albert-Ludwigs-Universit%C3%A4t_Freiburg.svg", "SVG", 100, "this is the logo of freiburg university")
       section2 = rep.add_section(rep.get_root_element,"Second Section")
       rep.add_section(section2,"A Subsection")
       rep.add_section(section2,"Another Subsection")

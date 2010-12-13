@@ -173,11 +173,11 @@ module Reports::ReportFactory
       attributes = ([ :dataset_uri ] + attributes).uniq
       
       dataset_grouping.each do |validations|
-        
+      
         set = Reports::ValidationSet.create(validations)
+        
         dataset = validations[0].dataset_uri
         merged = set.merge([:algorithm_uri, :dataset_uri, :crossvalidation_id, :crossvalidation_uri])
-        merged.sort(:algorithm_uri)
         merged.sort(:dataset_uri)
         
         report.add_section("Dataset: "+dataset)
