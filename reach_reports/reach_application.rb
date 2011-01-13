@@ -1,5 +1,5 @@
 
-[ 'rubygems', 'sinatra', 'sinatra/url_for', 'opentox-ruby-api-wrapper' ].each do |lib|
+[ 'rubygems', 'sinatra', 'sinatra/url_for', 'opentox-ruby' ].each do |lib|
   require lib
 end
 
@@ -67,7 +67,7 @@ post '/reach_report/:type' do
   #puts "creating "+type+" report "+params.inspect
   result_uri = ReachReports.create_report(type,params,request.env["rack.input"])
   
-  if OpenTox::Utils.task_uri?(result_uri)
+  if result_uri and result_uri.task_uri?
     halt 202,result_uri+"\n"   
   else
     result_uri+"\n"

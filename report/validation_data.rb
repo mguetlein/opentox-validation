@@ -107,11 +107,11 @@ module Reports
       @class_domain
     end
     
-    # is classification validation? cache to save resr-calls
+    # is classification/regression validation? cache to save rest-calls
     #
-    def classification?
-      return @is_classification if @is_classification!=nil
-      @is_classification = @@validation_access.classification?(self) 
+    def feature_type
+      return @feature_type if @feature_type!=nil
+      @feature_type = @@validation_access.feature_type(self) 
     end
     
     def predicted_variable
@@ -130,7 +130,7 @@ module Reports
     def validation_report_uri
       #puts "searching for validation report: "+self.validation_uri.to_s
       return @validation_report_uri if @validation_report_uri!=nil
-      ids = @@persistance.list_reports("validation",{:validation=>validation_uri })
+      ids = @@persistance.list_reports("validation",{:validation_uris=>validation_uri })
       @validation_report_uri = Reports::ReportService.instance.get_uri("validation",ids[-1]) if ids and ids.size>0
     end
     
@@ -259,19 +259,12 @@ module Reports
       end
     end
     
-    # checks weather all validations are classification validations
+    # checks weather all validations are classification/regression validations
     #
-    def all_classification?
-      return unique_value("classification?")
+    def unique_feature_type
+      return unique_value("feature_type")
     end
 
-    # checks weather all validations are regression validations
-    #
-    def all_regression?
-      # WARNING, NOT TRUE: !all_classification == all_regression? 
-      return unique_value("classification?")==false
-    end
-    
     # returns a new set with all validation that have values as specified in the map
     #
     # call-seq:
@@ -348,39 +341,42 @@ module Reports
       array.push(attributes.collect{|a| a.to_s.nice_attr})
       attribute_not_nil = Array.new(attributes.size)
       @validations.each do |v|
-        index = 0
+        index = -1
         array.push(attributes.collect do |a|
+          index += 1
           if VAL_ATTR_VARIANCE.index(a)
             variance = v.send( (a.to_s+"_variance").to_sym )
           end
           
           #variance = " +- "+variance.to_nice_s if variance
-          attribute_not_nil[index] = true if remove_nil_attributes and v.send(a)!=nil
-          index += 1
           val = v.send(a)
-          
-          class_domain = get_domain_for_attr(a)
-          # get domain for classification attribute, i.e. ["true","false"]
-          if class_domain.size==1 && class_domain[0]!=nil
-            # or the attribute has a complementary value, i.e. true_positive_rate
-            # -> domain is reduced to one class value
-            raise "illegal state" unless (val.is_a?(Hash))
-            val = val[class_domain[0]]
-          end
-          
-          if variance
-            if (val.is_a?(Array))
-              raise "not implemented"
-            elsif (val.is_a?(Hash))
-              val.collect{ |i,j| i.to_nice_s+": "+j.to_nice_s + " +- " +
-                variance[i].to_nice_s  }.join(", ")
-            else
-              val.to_nice_s + " +- " + variance.to_nice_s
-            end
+          if val==nil || val.to_s.chomp.size==0
+            ''
           else
-            val.to_nice_s
+            attribute_not_nil[index] = true if remove_nil_attributes
+            
+            class_domain = get_domain_for_attr(a)
+            # get domain for classification attribute, i.e. ["true","false"]
+            if class_domain.size==1 && class_domain[0]!=nil
+              # or the attribute has a complementary value, i.e. true_positive_rate
+              # -> domain is reduced to one class value
+              raise "illegal state, value for "+a.to_s+" is no hash: '"+val.to_s+"'" unless (val.is_a?(Hash))
+              val = val[class_domain[0]]
+            end
+            
+            if variance
+              if (val.is_a?(Array))
+                raise "not implemented"
+              elsif (val.is_a?(Hash))
+                val.collect{ |i,j| i.to_nice_s+": "+j.to_nice_s + " +- " +
+                  variance[i].to_nice_s  }.join(", ")
+              else
+                val.to_nice_s + " +- " + variance.to_nice_s
+              end
+            else
+              val.to_nice_s
+            end
           end
-          
         end)
       end
 

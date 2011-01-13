@@ -49,11 +49,40 @@ module Lib
   VAL_MERGE_AVG = VAL_PROPS_AVG + VAL_CLASS_PROPS_SINGLE_AVG + VAL_CLASS_PROPS_PER_CLASS_AVG + VAL_REGR_PROPS
   
 
-  class Validation < ActiveRecord::Base
-    serialize :classification_statistics
-    serialize :regression_statistics
+#  class Validation < ActiveRecord::Base
+#    serialize :classification_statistics
+#    serialize :regression_statistics
+#    
+#    alias_attribute :date, :created_at
     
-    alias_attribute :date, :created_at
+  class Validation 
+    include DataMapper::Resource
+  
+    property :id, Serial
+    property :validation_type, String, :length => 255
+    property :model_uri, String, :length => 255
+    property :algorithm_uri, String, :length => 255
+    property :training_dataset_uri, String, :length => 255
+    property :test_target_dataset_uri, String, :length => 255
+    property :test_dataset_uri, String, :length => 255
+    property :prediction_dataset_uri, String, :length => 255
+    property :prediction_feature, String, :length => 255
+    property :created_at, DateTime
+    property :num_instances, Integer
+    property :num_without_class, Integer
+    property :num_unpredicted, Integer
+    property :crossvalidation_id, Integer
+    property :crossvalidation_fold, Integer
+    property :real_runtime, Float
+    property :percent_without_class, Float
+    property :percent_unpredicted, Float
+    property :classification_statistics, Object
+    property :regression_statistics, Object
+    property :finished, Boolean, :default => false
+    
+    def date
+      created_at
+    end
     
     def validation_uri
       $sinatra.url_for("/"+self.id.to_s, :full)
@@ -77,8 +106,23 @@ module Lib
     
   end
   
-  class Crossvalidation < ActiveRecord::Base
-    alias_attribute :date, :created_at
+#  class Crossvalidation < ActiveRecord::Base
+#    alias_attribute :date, :created_at
+  class Crossvalidation 
+    include DataMapper::Resource
+  
+    property :id, Serial
+    property :algorithm_uri, String, :length => 255
+    property :dataset_uri, String, :length => 255
+    property :created_at, DateTime
+    property :num_folds, Integer, :default => 10
+    property :random_seed, Integer, :default => 1
+    property :finished, Boolean, :default => false
+    property :stratified, Boolean, :default => false
+    
+    def date
+      created_at
+    end
     
     def crossvalidation_uri
       $sinatra.url_for("/crossvalidation/"+self.id.to_s, :full) if self.id
@@ -88,7 +132,8 @@ module Lib
     # in terms of dataset_uri,num_folds,stratified,random_seed
     # further conditions can be specified in __conditions__
     def self.find_all_uniq(conditions={})
-      cvs = Lib::Crossvalidation.find(:all, :conditions => conditions)
+      #cvs = Lib::Crossvalidation.find(:all, :conditions => conditions)
+      cvs = Lib::Crossvalidation.all(:conditions => conditions)
       uniq = []
       cvs.each do |cv|
         match = false
@@ -105,3 +150,9 @@ module Lib
     end
   end
 end
+
+
+Lib::Validation.auto_upgrade!
+Lib::Validation.raise_on_save_failure = true
+Lib::Crossvalidation.auto_upgrade!
+Lib::Crossvalidation.raise_on_save_failure = true

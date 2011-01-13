@@ -33,7 +33,10 @@ class Reports::ApplicationTest < Test::Unit::TestCase
     #puts uri
     #get uri
     
-    get '/report/validation/117',nil,'HTTP_ACCEPT' => "text/html"     
+    get '/report/crossvalidation',:model=>"http://localhost/majority/class/model/101"
+    puts last_response.body.to_s
+     
+    #get '/report/validation/117',nil,'HTTP_ACCEPT' => "text/html"     
     #post '/report/validation/1/format_html',:css_style_sheet=>"http://apps.ideaconsult.net:8180/ToxPredict/style/global.css"
     
     #post 'http://ot.validation.de/report/validation',:validation_uris=>"http://ot.validation.de/1"
@@ -119,12 +122,12 @@ end
 #class Reports::ReportServiceTest < Test::Unit::TestCase
 #  include Lib::TestUtil
 #
-#  WS_VAL = @@config[:services]["opentox-validation"]
-#  WS_DATA=@@config[:services]["opentox-dataset"]
+#  WS_VAL = CONFIG[:services]["opentox-validation"]
+#  WS_DATA=CONFIG[:services]["opentox-dataset"]
 #  FILE=File.new("data/hamster_carcinogenicity.owl","r")
 #  
-#  WS_CLASS_ALG=File.join(@@config[:services]["opentox-algorithm"],"lazar")
-#  WS_FEATURE_ALG=File.join(@@config[:services]["opentox-algorithm"],"fminer")
+#  WS_CLASS_ALG=File.join(CONFIG[:services]["opentox-algorithm"],"lazar")
+#  WS_FEATURE_ALG=File.join(CONFIG[:services]["opentox-algorithm"],"fminer")
 #  
 #  #WS_CLASS_ALG_2="localhost:4008/algorithm"
 #  #WS_FEATURE_ALG_2=nil

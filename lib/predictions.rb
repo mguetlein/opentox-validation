@@ -22,13 +22,13 @@ module Lib
     def initialize( predicted_values, 
                     actual_values, 
                     confidence_values, 
-                    is_classification, 
+                    feature_type, 
                     class_domain=nil )
                     
       @predicted_values = predicted_values
       @actual_values = actual_values
       @confidence_values = confidence_values
-      @is_classification = is_classification
+      @feature_type = feature_type
       @class_domain = class_domain
       @num_classes = 1
       
@@ -36,6 +36,8 @@ module Lib
       #puts "actual:     "+actual_values.inspect
       #puts "confidence: "+confidence_values.inspect
       
+      raise "unknown feature_type: "+@feature_type.to_s unless 
+        @feature_type=="classification" || @feature_type=="regression"
       raise "no predictions" if @predicted_values.size == 0
       num_info = "predicted:"+@predicted_values.size.to_s+
         " confidence:"+@confidence_values.size.to_s+" actual:"+@actual_values.size.to_s
@@ -54,15 +56,16 @@ module Lib
       #  @confidence_values=nil
       #end
       
-      if @is_classification
+      case @feature_type
+      when "classification"
         raise "class_domain missing while performing classification" unless @class_domain
         @num_classes = @class_domain.size
         raise "num classes < 2" if @num_classes<2
         { "predicted"=>@predicted_values, "actual"=>@actual_values }.each do |s,values|
           values.each{ |v| raise "illegal "+s+" classification-value ("+v.to_s+"),"+
-            "has to be either nil or index of predicted-values" if v!=nil and (v<0 or v>@num_classes)}
+            "has to be either nil or index of predicted-values" if v!=nil and (!v.is_a?(Numeric) or v<0 or v>@num_classes)}
         end
-      else
+      when "regresssion"
         raise "class_domain != nil while performing regression" if @class_domain
         { "predicted"=>@predicted_values, "actual"=>@actual_values }.each do |s,values|
           values.each{ |v| raise "illegal "+s+" regression-value ("+v.to_s+"),"+
@@ -83,7 +86,8 @@ module Lib
       @num_predicted = 0
       @num_unpredicted = 0
       
-      if @is_classification
+      case @feature_type
+      when "classification"
         @confusion_matrix = []
         @class_domain.each do |v|
           @confusion_matrix.push( Array.new( @num_classes, 0 ) )
@@ -91,7 +95,7 @@ module Lib
         
         @num_correct = 0
         @num_incorrect = 0
-      else
+      when "regression"
         @sum_error = 0
         @sum_abs_error = 0
         @sum_squared_error = 0
@@ -122,14 +126,15 @@ module Lib
         else
           @num_predicted += 1
           
-          if @is_classification
+          case @feature_type
+          when "classification"
             @confusion_matrix[actual_value][predicted_value] += 1
             if (predicted_value == actual_value)
               @num_correct += 1
             else
               @num_incorrect += 1
             end
-          else
+          when "regression"
             delta = predicted_value - actual_value
             @sum_error += delta
             @sum_abs_error += delta.abs
@@ -156,13 +161,13 @@ module Lib
     end
     
     def percent_correct
-      raise "no classification" unless @is_classification
+      raise "no classification" unless @feature_type=="classification"
       return 0 if @num_with_actual_value==0
       return 100 * @num_correct / @num_with_actual_value.to_f
     end
     
     def percent_incorrect
-      raise "no classification" unless @is_classification
+      raise "no classification" unless @feature_type=="classification"
       return 0 if @num_with_actual_value==0
       return 100 * @num_incorrect / @num_with_actual_value.to_f
     end
@@ -190,17 +195,17 @@ module Lib
     end
 
     def num_correct
-      raise "no classification" unless @is_classification
+      raise "no classification" unless @feature_type=="classification"
       return @num_correct
     end
 
     def num_incorrect
-      raise "no classification" unless @is_classification
+      raise "no classification" unless @feature_type=="classification"
       return @num_incorrect
     end
     
     def num_unclassified
-      raise "no classification" unless @is_classification
+      raise "no classification" unless @feature_type=="classification"
       return @num_unpredicted
     end
     
@@ -209,7 +214,7 @@ module Lib
     #     and values: <int-value>
     def confusion_matrix
       
-      raise "no classification" unless @is_classification
+      raise "no classification" unless @feature_type=="classification"
       res = {}
       (0..@num_classes-1).each do |actual|
           (0..@num_classes-1).each do |predicted|
@@ -505,9 +510,10 @@ module Lib
     end
   
     def predicted_value(instance_index)
-      if @is_classification
+      case @feature_type 
+      when "classification"
         @predicted_values[instance_index]==nil ? nil : @class_domain[@predicted_values[instance_index]]
-      else
+      when "regression"
         @predicted_values[instance_index]
       end
     end
@@ -517,9 +523,10 @@ module Lib
     end
     
     def actual_value(instance_index)
-      if @is_classification
+      case @feature_type 
+      when "classification"
         @actual_values[instance_index]==nil ? nil : @class_domain[@actual_values[instance_index]]
-      else
+      when "regression"
         @actual_values[instance_index]
       end
     end
@@ -529,13 +536,13 @@ module Lib
     end      
     
     def classification_miss?(instance_index)
-      raise "no classification" unless @is_classification
+      raise "no classification" unless @feature_type=="classification"
       return false if predicted_value(instance_index)==nil or actual_value(instance_index)==nil
       return predicted_value(instance_index) != actual_value(instance_index)
     end
     
-    def classification?
-      @is_classification
+    def feature_type
+      @feature_type
     end
     
     def confidence_values_available?

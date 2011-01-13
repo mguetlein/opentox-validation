@@ -184,7 +184,7 @@ module Reports
         row = Element.new("row")
         r.each do |v|
           entry = Element.new("entry")
-          if auto_link_urls && v.to_s =~ /depict/ #PENDING
+          if auto_link_urls && v.to_s =~ /depict/ || v.to_s =~ /image$/ #PENDING 
             add_image(entry, v.to_s)
           elsif auto_link_urls && v.to_s =~ /^http:\/\//
            add_url(entry, v.to_s, v.to_s)
@@ -241,7 +241,7 @@ module Reports
         end
       end
       
-      @doc.write(out,2, true, true)
+      @doc.write(out) #,2, true, true)
       out.flush
     end
   

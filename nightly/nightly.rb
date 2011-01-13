@@ -21,7 +21,7 @@ class Nightly
     validationExamples = ValidationExamples.select(select)
     return "please \"select\" validation examples:\n"+ValidationExamples.list if validationExamples.size==0
     
-    task_uri = OpenTox::Task.as_task("Build nightly","nightly-validation-test-service",{:select => select, :dry_run => dry_run}) do |task|
+    task = OpenTox::Task.create("Build nightly","nightly-validation-test-service") do |task| #,{:select => select, :dry_run => dry_run})
       LOGGER.info("Building nightly report")
       
       benchmarks = validationExamples.collect{ |e| ValidationBenchmark.new(e) }
@@ -98,12 +98,12 @@ class Nightly
       end
       
       #benchmarks.collect{|b| b.uris}.join(",")
-      File.join(@@config[:services]["opentox-validation"],"nightly")
+      File.join(CONFIG[:services]["opentox-validation"],"nightly")
     end
     if defined?(halt)
-      halt 202,task_uri+"\n"
+      halt 202,task.uri+"\n"
     else
-      return task_uri+"\n"
+      return task.uri+"\n"
     end
   end
   

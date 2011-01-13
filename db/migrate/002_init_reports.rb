@@ -22,9 +22,9 @@ class InitReports < ActiveRecord::Migration
 
   def self.down
     drop_table :report_datum if table_exists? :report_datum
-    if @@config[:reports] and @@config[:reports][:report_dir]
+    if CONFIG[:reports] and CONFIG[:reports][:report_dir]
       ["validation", "crossvalidation", "algorithm_comparison"].each do |t|
-        dir = File.join(@@config[:reports][:report_dir],t)
+        dir = File.join(CONFIG[:reports][:report_dir],t)
         if File.exist?(dir)
           puts "deleting dir "+dir.to_s
           FileUtils.rm_rf(dir)

@@ -35,21 +35,22 @@ module Reports
       end
       
       confusion = []
-      confusion.push( [ "", "", "actual" ] + [""] * num_classes )
-      confusion.push( [ "", "" ] + class_values +  [ "total"])
+      confusion.push( [ " ", " ", "actual" ] + [" "] * num_classes )
+      confusion.push( [ " ", " " ] + class_values +  [ "total"])
       
       class_values.each do |predicted|
-        row =  [ (confusion.size==2 ? "predicted" : ""), predicted ]
+        row =  [ (confusion.size==2 ? "predicted" : " "), predicted ]
         class_values.each do |actual|
           row.push( confusion_matrix[{:confusion_matrix_actual => actual, :confusion_matrix_predicted => predicted}].to_nice_s )   
         end
         row.push( sum_predicted[predicted].to_nice_s )
         confusion.push( row )  
       end
-      last_row = [ "", "total" ] 
+      last_row = [ " ", "total" ] 
       class_values.each do |actual|
           last_row.push( sum_actual[actual].to_nice_s )  
       end
+      last_row.push(" ")
       confusion.push( last_row )
       
       return confusion

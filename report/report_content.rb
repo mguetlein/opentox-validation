@@ -192,7 +192,7 @@ class Reports::ReportContent
       class_domain = validation_set.get_class_domain
       class_domain.size.times do |i|
         class_value = class_domain[i]
-        image_title = image_titles ? image_titles[i] : "ROC Plot for class-value '"+class_value+"'"
+        image_title = image_titles ? image_titles[i] : "ROC Plot for class-value '"+class_value.to_s+"'"
         image_caption = image_captions ? image_captions[i] : nil
         plot_file_name = "roc_plot"+@tmp_file_count.to_s+".svg"
         @tmp_file_count += 1
@@ -201,7 +201,7 @@ class Reports::ReportContent
           Reports::PlotFactory.create_roc_plot( plot_file_path, prediction_set, class_value, split_set_attribute, false )#prediction_set.size>1 )
           @xml_report.add_imagefigure(section_roc, image_title, plot_file_name, "SVG", 120, image_caption)
         rescue RuntimeError => ex
-          msg = "WARNING could not create roc plot for class value '"+class_value+"': "+ex.message
+          msg = "WARNING could not create roc plot for class value '"+class_value.to_s+"': "+ex.message
           LOGGER.error(msg)
           rm_tmp_file(plot_file_name)
           @xml_report.add_paragraph(section_roc, msg)
@@ -245,7 +245,7 @@ class Reports::ReportContent
         image_title = image_titles[i]
       else
         if class_value!=nil
-          image_title = rank_attribute.to_s+" Ranking Plot for class-value '"+class_value+"'"
+          image_title = rank_attribute.to_s+" Ranking Plot for class-value '"+class_value.to_s+"'"
         else 
           image_title = rank_attribute.to_s+" Ranking Plot"
         end

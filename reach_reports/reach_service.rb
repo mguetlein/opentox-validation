@@ -26,13 +26,14 @@ module ReachReports
     case type
     when /(?i)QMRF/
       if params[:model_uri]
-        result_uri = OpenTox::Task.as_task( "Create "+type+" report", 
-          $sinatra.url_for("/reach_report/"+type, :full), params ) do |task|
+        task = OpenTox::Task.create( "Create "+type+" report", 
+          $sinatra.url_for("/reach_report/"+type, :full) ) do |task| #, params
             
           report = ReachReports::QmrfReport.new :model_uri => params[:model_uri]
           build_qmrf_report(report, task)
           report.report_uri
         end
+        result_uri = task.uri
       elsif xml_data and (input = xml_data.read).to_s.size>0
         report = ReachReports::QmrfReport.new
         ReachReports::QmrfReport.from_xml(report,input)
@@ -61,17 +62,18 @@ module ReachReports
   def self.build_qmrf_report(r, task=nil)
     
     #puts r.model_uri
-    model = OpenTox::Model::PredictionModel.find(r.model_uri)
-    classification = model.classification?
+    model = OpenTox::Model::Generic.find(r.model_uri)
+    raise "model not found "+r.model_uri.to_s unless model
+    feature_type = model.feature_type
     
     # chapter 1
     r.qsar_identifier = QsarIdentifier.new
-    r.qsar_identifier.qsar_title = model.title
+    r.qsar_identifier.qsar_title = model.metadata[DC.title]
     # TODO QSAR_models -> sparql same endpoint     
     r.qsar_identifier.qsar_software << QsarSoftware.new( :url => model.uri, 
-      :name => model.title, :contact => model.creator )
-    algorithm = OpenTox::Algorithm::Generic.find(model.algorithm) if model.algorithm
-    r.qsar_identifier.qsar_software << QsarSoftware.new( :url => algorithm.uri, :name => algorithm.title )
+      :name => model.metadata[DC.title], :contact => model.metadata[DC.creator] )
+    algorithm = OpenTox::Algorithm::Generic.find(model.metadata[OT.algorithm]) if model.metadata[OT.algorithm]
+    r.qsar_identifier.qsar_software << QsarSoftware.new( :url => algorithm.uri, :name => algorithm.metadata[DC.title] )
     task.progress(10) if task
 
     #chpater 2
@@ -79,7 +81,7 @@ module ReachReports
     r.qsar_general_information.qmrf_date = DateTime.now.to_s
     # EMPTY: qmrf_authors, qmrf_date_revision, qmrf_revision
     # TODO: model_authors ?
-    r.qsar_general_information.model_date = model.date.to_s
+    r.qsar_general_information.model_date = model.metadata[DC.date].to_s
     # TODO: references?
     # EMPTY: info_availablity
     # TODO: related_models = find qmrf reports for QSAR_models 
@@ -88,11 +90,11 @@ module ReachReports
     # chapter 3
     # TODO "model_species" ?
     r.qsar_endpoint = QsarEndpoint.new
-    model.predictedVariables.each do |p|
+    model.metadata[OT.predictedVariables].each do |p|
       r.qsar_endpoint.model_endpoint << ModelEndpoint.new( :name => p )
-    end
+    end if model.metadata[OT.predictedVariables]
     # TODO "endpoint_comments" => "3.3", "endpoint_units" => "3.4",
-    r.qsar_endpoint.endpoint_variable =  model.dependentVariables if model.dependentVariables
+    r.qsar_endpoint.endpoint_variable =  model.metadata[OT.dependentVariables] if model.metadata[OT.dependentVariables]
     # TODO "endpoint_protocol" => "3.6", "endpoint_data_quality" => "3.7",
     task.progress(30) if task
     
@@ -108,9 +110,9 @@ module ReachReports
 
     #training_dataset = model.trainingDataset ? OpenTox::Dataset.find(model.trainingDataset+"/metadata") : nil
     begin
-      training_dataset = model.trainingDataset ? OpenTox::Dataset.find(model.trainingDataset) : nil
+      training_dataset = model.metadata[OT.trainingDataset] ? OpenTox::Dataset.find(model.metadata[OT.trainingDataset]) : nil
     rescue
-      LOGGER.warn "build qmrf: training_dataset not found "+model.trainingDataset.to_s
+      LOGGER.warn "build qmrf: training_dataset not found "+model.metadata[OT.trainingDataset].to_s
     end
     task.progress(50) if task
 
@@ -129,27 +131,27 @@ module ReachReports
     
     val_datasets = []
     
-    if model.algorithm
-      cvs = Lib::Crossvalidation.find_all_uniq({:algorithm_uri => model.algorithm})
+    if algorithm
+      cvs = Lib::Crossvalidation.find_all_uniq({:algorithm_uri => algorithm.uri})
       # PENDING: cv classification/regression hack
       cvs = cvs.delete_if do |cv|
         val = Validation::Validation.first( :all, :conditions => { :crossvalidation_id => cv.id } )
-        (val.classification_statistics!=nil) != classification
+        (val.classification_statistics!=nil) != (feature_type=="classification")
       end
       
-      lmo = [ "found "+cvs.size.to_s+" crossvalidation/s for algorithm '"+model.algorithm+"'" ]
+      lmo = [ "found "+cvs.size.to_s+" crossvalidation/s for algorithm '"+algorithm.uri.to_s+"'" ]
       if cvs.size>0
         cvs_same_data = []
         cvs_other_data = []
         cvs.each do |cv|
-          if cv.dataset_uri == model.trainingDataset
+          if cv.dataset_uri == model.metadata[OT.trainingDataset]
             cvs_same_data << cv
           else
             cvs_other_data << cv
           end
         end
         lmo << cvs_same_data.size.to_s+" crossvalidations/s where performed on the training dataset of the model ("+
-          model.trainingDataset.to_s+")"
+          model.metadata[OT.trainingDataset].to_s+")"
         lmo << cvs_other_data.size.to_s+" crossvalidations/s where performed on the other datasets"        
         lmo << ""
         
@@ -162,15 +164,16 @@ module ReachReports
             val_datasets << cv.dataset_uri
             lmo << "settings: num-folds="+cv.num_folds.to_s+", random-seed="+cv.random_seed.to_s+", stratified:"+cv.stratified.to_s
             val  = YAML.load( OpenTox::RestClientWrapper.get File.join(cv.crossvalidation_uri,"statistics") )
-            if classification
+            case feature_type
+            when "classification"
               lmo << "percent_correct: "+val[:classification_statistics][:percent_correct].to_s
               lmo << "weighted AUC: "+val[:classification_statistics][:weighted_area_under_roc].to_s
-            else
+            when "regression"
               lmo << "root_mean_squared_error: "+val[:regression_statistics][:root_mean_squared_error].to_s
               lmo << "r_square "+val[:regression_statistics][:r_square].to_s
             end
             reports = OpenTox::RestClientWrapper.get File.join(CONFIG[:services]["opentox-validation"],"report/crossvalidation?crossvalidation_uris="+cv.crossvalidation_uri)
-            if reports and reports.size>0
+            if reports and reports.chomp.size>0
               lmo << "for more info see report: "+reports.split("\n")[0]
             else
               lmo << "for more info see report: not yet created for '"+cv.crossvalidation_uri+"'"
@@ -187,7 +190,8 @@ module ReachReports
     # "lmo" => "6.9", "yscrambling" => "6.10", "bootstrap" => "6.11", "other_statistics" => "6.12",
 
     LOGGER.debug "looking for validations with "+{:model_uri => model.uri}.inspect
-    vals = Lib::Validation.find(:all, :conditions => {:model_uri => model.uri})
+    #vals = Lib::Validation.find(:all, :conditions => {:model_uri => model.uri})
+    vals = Lib::Validation.all({:model_uri => model.uri})
     uniq_vals = []
     vals.each do |val|
       match = false
@@ -212,10 +216,11 @@ module ReachReports
         v << "validation: "+validation.validation_uri
         v << "dataset (see 9.3 Validation data): "+validation.test_dataset_uri
         val_datasets << validation.test_dataset_uri
-        if classification
+        case feature_type
+        when "classification"
           v << "percent_correct: "+validation.classification_statistics[:percent_correct].to_s
           v << "weighted AUC: "+validation.classification_statistics[:weighted_area_under_roc].to_s
-        else
+        when "regression"
           v << "root_mean_squared_error: "+validation.regression_statistics[:root_mean_squared_error].to_s
           v << "r_square "+validation.regression_statistics[:r_square].to_s
         end
@@ -252,7 +257,7 @@ module ReachReports
     r.qsar_miscellaneous.attachment_training_data << AttachmentTrainingData.new( 
       { :description => training_dataset.title, 
         :filetype => "owl-dl", 
-        :url => model.trainingDataset} ) if training_dataset
+        :url => training_dataset.uri} ) if training_dataset
         
     val_datasets.each do |data_uri|
       begin

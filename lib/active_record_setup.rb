@@ -1,17 +1,17 @@
 
-gem "activerecord", "= 2.3.8"
-gem "ar-extensions", "= 0.9.2"
-['rubygems', 'logger', 'active_record', 'ar-extensions', 'opentox-ruby-api-wrapper' ].each do |g|
+#gem "activerecord", "= 2.3.8"
+#gem "ar-extensions", "= 0.9.2"
+['rubygems', 'logger', 'active_record', 'opentox-ruby' ].each do |g| #'ar-extensions',
     require g
 end
 
 unless ActiveRecord::Base.connected?
   ActiveRecord::Base.establish_connection(  
-     :adapter => @@config[:database][:adapter],
-     :host => @@config[:database][:host],
-     :database => @@config[:database][:database],
-     :username => @@config[:database][:username],
-     :password => @@config[:database][:password]
+     :adapter => CONFIG[:database][:adapter],
+     :host => CONFIG[:database][:host],
+     :database => CONFIG[:database][:database],
+     :username => CONFIG[:database][:username],
+     :password => CONFIG[:database][:password]
   )
   ActiveRecord::Base.logger = Logger.new("/dev/null")
 end
@@ -19,6 +19,9 @@ end
 class ActiveRecord::Base
   
   def self.find_like(filter_params)
+    
+    raise "find like removed"
+    
     #puts "params before "+filter_params.inspect
     filter_params.keys.each do |k|
       key = k.to_s

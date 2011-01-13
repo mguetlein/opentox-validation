@@ -65,11 +65,12 @@ module Reports::ReportFactory
 
     report = Reports::ReportContent.new("Validation report")
     
-    if (val.classification?)
+    case val.feature_type
+    when "classification"
       report.add_result(validation_set, [:validation_uri] + VAL_ATTR_TRAIN_TEST + VAL_ATTR_CLASS, "Results", "Results")
       report.add_roc_plot(validation_set)
       report.add_confusion_matrix(val)
-    else #regression
+    when "regression"
       report.add_result(validation_set, [:validation_uri] + VAL_ATTR_TRAIN_TEST + VAL_ATTR_REGR, "Results", "Results")
       report.add_regression_plot(validation_set, :model_uri)
     end
@@ -90,8 +91,8 @@ module Reports::ReportFactory
     raise Reports::BadRequest.new("num validations ("+validation_set.size.to_s+") is not equal to num folds ("+
       validation_set.unique_value(:num_folds).to_s+")") unless validation_set.unique_value(:num_folds)==validation_set.size
     raise Reports::BadRequest.new("num different folds is not equal to num validations") unless validation_set.num_different_values(:crossvalidation_fold)==validation_set.size
-    raise Reports::BadRequest.new("validations must be either all regression, "+
-      +"or all classification validations") unless validation_set.all_classification? or validation_set.all_regression?  
+    raise Reports::BadRequest.new("validations must have unique feature type, i.e. must be either all regression, "+
+      +"or all classification validations") unless validation_set.unique_feature_type  
     pre_load_predictions( validation_set, OpenTox::SubTask.create(task,0,80) )
     
     merged = validation_set.merge([:crossvalidation_id])
@@ -100,14 +101,15 @@ module Reports::ReportFactory
     #puts merged.get_values(:percent_correct_variance, false).inspect
     report = Reports::ReportContent.new("Crossvalidation report")
     
-    if (validation_set.all_classification?)
+    case validation_set.unique_feature_type
+    when "classification"
       report.add_result(merged, [:crossvalidation_uri]+VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold],"Mean Results","Mean Results")
       report.add_roc_plot(validation_set, nil, "ROC Plots over all folds")
       report.add_roc_plot(validation_set, :crossvalidation_fold)
       report.add_confusion_matrix(merged.validations[0])
       report.add_result(validation_set, VAL_ATTR_CV+VAL_ATTR_CLASS-[:num_folds],
         "Results","Results",nil,"validation")
-    else #regression
+    when "regression"
       report.add_result(merged, [:crossvalidation_uri]+VAL_ATTR_CV+VAL_ATTR_REGR-[:crossvalidation_fold],"Mean Results","Mean Results")
       report.add_regression_plot(validation_set, :crossvalidation_fold)
       report.add_result(validation_set, VAL_ATTR_CV+VAL_ATTR_REGR-[:num_folds], "Results","Results")
@@ -124,8 +126,8 @@ module Reports::ReportFactory
     
     #validation_set.to_array([:test_dataset_uri, :model_uri, :algorithm_uri], false).each{|a| puts a.inspect}
     raise Reports::BadRequest.new("num validations is not >1") unless validation_set.size>1
-    raise Reports::BadRequest.new("validations must be either all regression, "+
-      "or all classification validations") unless validation_set.all_classification? or validation_set.all_regression?
+    raise Reports::BadRequest.new("validations must have unique feature type, i.e. must be either all regression, "+
+      +"or all classification validations") unless validation_set.unique_feature_type
     raise Reports::BadRequest.new("number of different algorithms <2: "+
       validation_set.get_values(:algorithm_uri).inspect) if validation_set.num_different_values(:algorithm_uri)<2
       
@@ -168,7 +170,8 @@ module Reports::ReportFactory
       
     end
 
-    if (validation_set.all_classification?)
+    case validation_set.unique_feature_type
+    when "classification"
       attributes = VAL_ATTR_CV+VAL_ATTR_CLASS-[:crossvalidation_fold]
       attributes = ([ :dataset_uri ] + attributes).uniq
       
@@ -190,7 +193,7 @@ module Reports::ReportFactory
         report.end_section
       end
       
-    else # regression
+    when "regression"
       raise Reports::BadRequest.new("algorithm comparison for regression not yet implemented")
     end
     task.progress(100) if task

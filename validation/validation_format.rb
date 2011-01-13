@@ -24,13 +24,14 @@ module Validation
         h[:crossvalidation_info] = cv
       end
       if classification_statistics 
+        raise "classification_statistics is no has: "+classification_statistics.class.to_s unless classification_statistics.is_a?(Hash)
         clazz = {}
         Lib::VAL_CLASS_PROPS_SINGLE.each{ |p| clazz[p] = classification_statistics[p] }
         
         # transpose results per class
         class_values = {}
         Lib::VAL_CLASS_PROPS_PER_CLASS.each do |p|
-          $sinatra.halt 500, "missing classification statitstics: "+p.to_s+" "+classification_statistics.inspect unless classification_statistics[p]
+          $sinatra.halt 500, "missing classification statitstics: "+p.to_s+" "+classification_statistics.inspect if classification_statistics[p]==nil
           classification_statistics[p].each do |class_value, property_value|
             class_values[class_value] = {:class_value => class_value} unless class_values.has_key?(class_value)
             map = class_values[class_value]
@@ -82,7 +83,8 @@ module Validation
         h[p] = self.send(p)
       end
       v = []
-      Validation.find( :all, :conditions => { :crossvalidation_id => self.id } ).each do |val|
+      #Validation.find( :all, :conditions => { :crossvalidation_id => self.id } ).each do |val|
+      Validation.all( :crossvalidation_id => self.id ).each do |val|
         v.push( val.validation_uri.to_s )
       end
       h[:validation_uris] = v

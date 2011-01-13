@@ -123,11 +123,11 @@ delete '/report/:type/:id' do
 end
 
 post '/report/:type' do
-  task_uri = OpenTox::Task.as_task("Create report",url_for("/report/"+params[:type], :full), params) do |task|
+  task = OpenTox::Task.create("Create report",url_for("/report/"+params[:type], :full)) do |task| #,params
     perform do |rs|
       rs.create_report(params[:type],params[:validation_uris]?params[:validation_uris].split(/\n|,/):nil,task)
     end
   end
   content_type "text/uri-list"
-  halt 202,task_uri+"\n"
+  halt 202,task.uri+"\n"
 end

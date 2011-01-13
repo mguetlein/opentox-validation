@@ -10,11 +10,11 @@ module Lib
     end
     
     def self.wait_for_task(uri)
-      if OpenTox::Utils.task_uri?(uri)
+      if uri.task_uri?
         task = OpenTox::Task.find(uri)
         task.wait_for_completion
         raise "task failed: "+uri.to_s+", error is:\n"+task.description if task.error?
-        uri = task.resultURI
+        uri = task.result_uri
       end
       return uri
     end

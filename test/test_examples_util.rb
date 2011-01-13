@@ -4,18 +4,38 @@ module ValidationExamples
   class Util
 
     @@dataset_uris = {}
+    @@prediction_features = {}
 
-    def self.upload_dataset(file, dataset_service=@@config[:services]["opentox-dataset"], file_type="application/x-yaml")
+    def self.upload_dataset(file, dataset_service=CONFIG[:services]["opentox-dataset"]) #, file_type="application/x-yaml")
       raise "File not found: "+file.path.to_s unless File.exist?(file.path)
       if @@dataset_uris[file.path.to_s]==nil
-        data = File.read(file.path)
-        data_uri = OpenTox::RestClientWrapper.post(dataset_service,{:content_type => file_type},data).to_s.chomp
-        @@dataset_uris[file.path.to_s] = data_uri
-        LOGGER.debug "uploaded dataset: "+data_uri
+        LOGGER.debug "uploading file: "+file.path.to_s
+        if (file.path =~ /yaml$/)
+          data = File.read(file.path)
+          #data_uri = OpenTox::RestClientWrapper.post(dataset_service,{:content_type => file_type},data).to_s.chomp
+          #@@dataset_uris[file.path.to_s] = data_uri
+          #LOGGER.debug "uploaded dataset: "+data_uri
+          d = OpenTox::Dataset.create
+          d.load_yaml(data)
+          d.save
+          @@dataset_uris[file.path.to_s] = d.uri
+        elsif (file.path =~ /csv$/)
+          d = OpenTox::Dataset.create_from_csv_file(file.path)
+          raise "num features not 1 (="+d.features.keys.size.to_s+"), what to predict??" if d.features.keys.size != 1
+          @@prediction_features[file.path.to_s] = d.features.keys[0]
+          @@dataset_uris[file.path.to_s] = d.uri
+        else
+          raise "unknown file type: "+file.path.to_s
+        end
+        LOGGER.debug "uploaded dataset: "+d.uri
       else
         LOGGER.debug "file already uploaded: "+@@dataset_uris[file.path.to_s]
       end
       return @@dataset_uris[file.path.to_s]
+    end
+    
+    def self.prediction_feature_for_file(file)
+      @@prediction_features[file.path.to_s]
     end
     
     def self.build_compare_report(validation_examples)
@@ -35,12 +55,12 @@ module ValidationExamples
     end
     
     def self.validation_post(uri, params)
+      
       if $test_case
-        #puts "posting: "+uri+","+params.inspect
-        $test_case.post uri,params 
+        $test_case.post uri,params
         return wait($test_case.last_response.body)
       else
-        return OpenTox::RestClientWrapper.post(File.join(@@config[:services]["opentox-validation"],uri),params).to_s
+        return OpenTox::RestClientWrapper.post(File.join(CONFIG[:services]["opentox-validation"],uri),params).to_s
       end
     end
     
@@ -50,16 +70,27 @@ module ValidationExamples
         $test_case.get uri,nil,'HTTP_ACCEPT' => accept_header 
         return wait($test_case.last_response.body)
       else
-        return OpenTox::RestClientWrapper.get(File.join(@@config[:services]["opentox-validation"],uri),{:accept => accept_header})
+        return OpenTox::RestClientWrapper.get(File.join(CONFIG[:services]["opentox-validation"],uri),{:accept => accept_header})
+      end
+    end
+
+    def self.validation_delete(uri, accept_header='application/rdf+xml')
+      
+      if $test_case
+        $test_case.delete uri,nil,'HTTP_ACCEPT' => accept_header 
+        return wait($test_case.last_response.body)
+      else
+        return OpenTox::RestClientWrapper.delete(File.join(CONFIG[:services]["opentox-validation"],uri),{:accept => accept_header})
       end
     end
     
+    
     def self.wait(uri)
-      if OpenTox::Utils.task_uri?(uri)
-        task = OpenTox::Task.find(uri)
+      if uri.task_uri?
+        task = OpenTox::Task.find(uri.to_s.chomp)
         task.wait_for_completion
-        raise "task failed: "+uri.to_s+", error is:\n"+task.description if task.error?
-        uri = task.resultURI
+        raise "task failed: "+uri.to_s+", error is:\n"+task.description.to_s if task.error?
+        uri = task.result_uri
       end
       uri
     end
@@ -214,6 +245,10 @@ module ValidationExamples
             send("#{uri.to_s}=".to_sym, Util.upload_dataset(send(file)))
          end
       end
+     
+      if (params.include?(:prediction_feature) and @prediction_feature==nil and @dataset_uri and @dataset_file)
+        @prediction_feature = Util.prediction_feature_for_file(@dataset_file)
+      end
     end
       
     def check_requirements
@@ -222,21 +257,42 @@ module ValidationExamples
       end
     end
     
+    def delete
+      begin
+        if @validation_uri =~ /crossvalidation/
+          cv = "crossvalidation/"
+        else
+          cv = ""
+        end
+        Util.validation_delete '/'+cv+@validation_uri.split('/')[-1] if @validation_uri
+      rescue => ex
+        puts "Could not delete validation: "+ex.message
+      end
+      begin
+        Util.validation_delete '/report/'+report_type+'/'+@report_uri.split('/')[-1] if @report_uri
+      rescue => ex
+        puts "Could not delete report:' "+@report_uri+" "+ex.message
+      end
+    end
+    
     def report
       begin
         @report_uri = Util.validation_post '/report/'+report_type,{:validation_uris => @validation_uri}
       rescue => ex
+        puts "could not create report: "+ex.message
+        raise ex
         @report_error = ex.message
       end
     end
     
     def validate
-      #begin
+      begin
         @validation_uri = Util.validation_post '/'+validation_type, get_params
-      #rescue => ex
-      #  @validation_error = ex.message
-      #  LOGGER.error ex.message
-      #end
+      rescue => ex
+        puts "could not validate: "+ex.message
+        @validation_error = ex.message
+        LOGGER.error ex.message
+      end
     end
     
     def compare_yaml_vs_rdf
@@ -307,6 +363,10 @@ module ValidationExamples
     
     def opt_params
       [ :algorithm_params, :test_target_dataset_uri ]
+    end
+    
+    def validation_type
+      "training_test_validation"
     end
   end
   

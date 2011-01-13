@@ -5,15 +5,16 @@ class Example
   
   @@file=File.new("data/hamster_carcinogenicity.yaml","r")
   @@file_type="text/x-yaml"
-  @@model=File.join @@config[:services]["opentox-model"],"1"
-  @@feature= URI.encode("http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)")
-  @@predicted_feature= URI.encode("http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)_lazar_classification")
-  @@alg = File.join @@config[:services]["opentox-algorithm"],"lazar"
-  @@alg_params = "feature_generation_uri="+File.join(@@config[:services]["opentox-algorithm"],"fminer")
-  @@data=File.join @@config[:services]["opentox-dataset"],"1"
-  @@train_data=File.join @@config[:services]["opentox-dataset"],"2"
-  @@test_data=File.join @@config[:services]["opentox-dataset"],"3"
-  @@prediction_data=File.join @@config[:services]["opentox-dataset"],"5"
+  @@model=File.join CONFIG[:services]["opentox-model"],"1"
+  #@@feature= URI.encode("http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)")
+  @@feature= File.join CONFIG[:services]["opentox-dataset"],"1/feature/hamster_carcinogenicity"
+  #@@predicted_feature= URI.encode("http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)_lazar_classification")
+  @@alg = File.join CONFIG[:services]["opentox-algorithm"],"lazar"
+  @@alg_params = "feature_generation_uri="+File.join(CONFIG[:services]["opentox-algorithm"],"fminer/bbrc")
+  @@data=File.join CONFIG[:services]["opentox-dataset"],"1"
+  @@train_data=File.join CONFIG[:services]["opentox-dataset"],"2"
+  @@test_data=File.join CONFIG[:services]["opentox-dataset"],"3"
+  @@prediction_data=File.join CONFIG[:services]["opentox-dataset"],"5"
   @@css_file="http://apps.ideaconsult.net:8080/ToxPredict/style/global.css"
   
   @@summary=""
@@ -28,7 +29,7 @@ class Example
     end
     file.close
     
-    sub = { "validation_service" => @@config[:services]["opentox-validation"].chomp("/"), 
+    sub = { "validation_service" => CONFIG[:services]["opentox-validation"].chomp("/"), 
             "validation_id" => "1",
             "model_uri" => @@model,
             "dataset_uri" => @@data,
@@ -42,7 +43,7 @@ class Example
             "crossvalidation_report_id" => "2",
             "css_file" => @@css_file,
             "prediction_dataset_uri" => @@prediction_data,
-            "predicted_feature" => @@predicted_feature,
+            #"predicted_feature" => @@predicted_feature,
             "qmrf_id" => "1"}
     
     sub.each do |k,v|
@@ -53,31 +54,39 @@ class Example
   
   # creates the resources that are requested by the examples
   def self.prepare_example_resources
-    OpenTox::Task.as_task("prepare examples", "n/a") do |task|
+    task = OpenTox::Task.create("prepare examples", "n/a") do |task|
       @@summary = ""
       #delete validations
       log "delete validations"
-      ActiveRecord::Base.logger = Logger.new("/dev/null")
-      ActiveRecord::Migrator.migrate('db/migrate', 0 )
-      ActiveRecord::Migrator.migrate('db/migrate', 1 )
-      ActiveRecord::Migrator.migrate('db/migrate', 2 )
+      Lib::Validation.auto_migrate!
+      Lib::Crossvalidation.auto_migrate!
+      #ActiveRecord::Base.logger = Logger.new("/dev/null")
+      #ActiveRecord::Migrator.migrate('db/migrate', 0 )
+      #ActiveRecord::Migrator.migrate('db/migrate', 1 )
+      #ActiveRecord::Migrator.migrate('db/migrate', 2 )
       
       #delete all qmrf reports
       ReachReports::QmrfReport.auto_migrate!
       
-      #delete_all(@@config[:services]["opentox-dataset"])
-      log OpenTox::RestClientWrapper.delete @@config[:services]["opentox-dataset"]
+      #delete_all(CONFIG[:services]["opentox-dataset"])
+      log OpenTox::RestClientWrapper.delete CONFIG[:services]["opentox-dataset"]
       task.progress(10)
       
       log "upload dataset"
       halt 400,"File not found: "+@@file.path.to_s unless File.exist?(@@file.path)
+      #data = File.read(@@file.path)
+      #data_uri = OpenTox::RestClientWrapper.post(CONFIG[:services]["opentox-dataset"],{:content_type => @@file_type},data).chomp("\n")
       data = File.read(@@file.path)
-      data_uri = OpenTox::RestClientWrapper.post(@@config[:services]["opentox-dataset"],{:content_type => @@file_type},data).chomp("\n")
+      dataset = OpenTox::Dataset.create
+      dataset.load_yaml(data)
+      dataset.save
+      data_uri = dataset.uri
+      log "-> "+data_uri
       task.progress(20)
       
       log "train-test-validation"
-      #delete_all(@@config[:services]["opentox-model"])
-      OpenTox::RestClientWrapper.delete @@config[:services]["opentox-model"]
+      #delete_all(CONFIG[:services]["opentox-model"])
+      OpenTox::RestClientWrapper.delete CONFIG[:services]["opentox-model"]
       
       split_params = Validation::Util.train_test_dataset_split(data_uri, URI.decode(@@feature), 0.9, 1)
       v = Validation::Validation.new :training_dataset_uri => split_params[:training_dataset_uri], 
@@ -93,7 +102,7 @@ class Example
       cv.perform_cv( URI.decode(@@feature), @@alg_params, OpenTox::SubTask.new(task, 40, 70) )
       
       log "create validation report"
-      rep = Reports::ReportService.instance(File.join(@@config[:services]["opentox-validation"],"report"))
+      rep = Reports::ReportService.instance(File.join(CONFIG[:services]["opentox-validation"],"report"))
       rep.delete_all_reports("validation")
       rep.create_report("validation",v.validation_uri)
       task.progress(80)
@@ -111,6 +120,7 @@ class Example
       log "done"
       @@summary
     end
+    task.uri
   end
   
   # performs all curl calls listed in examples after ">>>", next line is added if line ends with "\"
@@ -163,7 +173,7 @@ class Example
         result.chomp!
         result.gsub!(/\n/, " \\n ")
         if ($?==0)
-          if OpenTox::Utils.task_uri?(result)
+          if result.task_uri?
             log "wait for task: "+result
             result = Lib::TestUtil.wait_for_task(result)
           end

@@ -36,8 +36,8 @@ class Reports::ValidationAccess
     raise "not implemented"
   end
   
-  # is validation classification?
-  def classification?(validation)
+  # is validation classification/regression?
+  def feature_type(validation)
     raise "not implemented"
   end
   
@@ -49,9 +49,9 @@ end
 
 class Reports::ValidationDB < Reports::ValidationAccess
   
-  def initialize()
-    @model_store = {}
-  end
+#  def initialize()
+#    @model_store = {}
+#  end
   
   def resolve_cv_uris(validation_uris)
     res = []
@@ -60,13 +60,15 @@ class Reports::ValidationDB < Reports::ValidationAccess
         cv_id = u.split("/")[-1].to_i
         cv = nil
         begin
-          cv = Lib::Crossvalidation.find( cv_id )
+          #cv = Lib::Crossvalidation.find( cv_id )
+          cv = Lib::Crossvalidation.get( cv_id )
         rescue => ex
           raise "could not access crossvalidation with id "+validation_id.to_s+", error-msg: "+ex.message
         end
         raise Reports::BadRequest.new("crossvalidation with id '"+cv_id.to_s+"' not found") unless cv
         raise Reports::BadRequest.new("crossvalidation with id '"+cv_id.to_s+"' not finished") unless cv.finished
-        res += Lib::Validation.find( :all, :conditions => { :crossvalidation_id => cv_id } ).collect{|v| v.validation_uri.to_s}
+        #res += Lib::Validation.find( :all, :conditions => { :crossvalidation_id => cv_id } ).collect{|v| v.validation_uri.to_s}
+        res += Lib::Validation.all( :crossvalidation_id => cv_id ).collect{|v| v.validation_uri.to_s }
       else
         res += [u.to_s]
       end
@@ -82,7 +84,8 @@ class Reports::ValidationDB < Reports::ValidationAccess
       (validation_id.to_i > 0 || validation_id.to_s=="0" )
     v = nil
     begin
-      v = Lib::Validation.find(validation_id)
+      #v = Lib::Validation.find(validation_id)
+      v = Lib::Validation.get(validation_id)
     rescue => ex
       raise "could not access validation with id "+validation_id.to_s+", error-msg: "+ex.message
     end
@@ -102,7 +105,8 @@ class Reports::ValidationDB < Reports::ValidationAccess
     
   def init_cv(validation)
     
-    cv = Lib::Crossvalidation.find(validation.crossvalidation_id)
+    #cv = Lib::Crossvalidation.find(validation.crossvalidation_id)
+    cv = Lib::Crossvalidation.get(validation.crossvalidation_id)
     raise Reports::BadRequest.new "no crossvalidation found with id "+validation.crossvalidation_id.to_s unless cv
     
     Lib::CROSS_VAL_PROPS.each do |p|
@@ -111,35 +115,39 @@ class Reports::ValidationDB < Reports::ValidationAccess
   end
 
   def get_predictions(validation, task=nil)
-    Lib::OTPredictions.new( validation.classification?, validation.test_dataset_uri, 
+    Lib::OTPredictions.new( validation.feature_type, validation.test_dataset_uri, 
       validation.test_target_dataset_uri, validation.prediction_feature, validation.prediction_dataset_uri, 
       validation.predicted_variable, task)
   end
   
   def get_class_domain( validation )
-    OpenTox::Feature.domain( validation.prediction_feature )
+    OpenTox::Feature.new( validation.prediction_feature ).domain
   end
   
-  def classification?( validation )
-    get_model(validation).classification?
+  def feature_type( validation )
+    OpenTox::Model::Generic.new(validation.model_uri).feature_type
+    #get_model(validation).classification?
   end
   
   def predicted_variable(validation)
-    get_model(validation).predictedVariables
-  end
-  
-  private
-  def get_model(validation)
     raise "cannot derive model depended props for merged validations" if Lib::MergeObjects.merged?(validation)
-    model = @model_store[validation.model_uri]
-    unless model
-      model = OpenTox::Model::PredictionModel.find(validation.model_uri)
-      raise "model not found '"+validation.model_uri+"'" unless validation.model_uri && model
-      @model_store[validation.model_uri] = model
-    end
-    return model
+    model = OpenTox::Model::Generic.find(validation.model_uri)
+    raise Reports::NotFound.new "model not found '"+validation.model_uri+"'" unless model
+    model.metadata[OT.predictedVariables]
+    #get_model(validation).predictedVariables
   end
   
+#  private
+#  def get_model(validation)
+#    raise "cannot derive model depended props for merged validations" if Lib::MergeObjects.merged?(validation)
+#    model = @model_store[validation.model_uri]
+#    unless model
+#      model = OpenTox::Model::PredictionModel.find(validation.model_uri)
+#      raise "model not found '"+validation.model_uri+"'" unless validation.model_uri && model
+#      @model_store[validation.model_uri] = model
+#    end
+#    return model
+#  end
   
 end
 

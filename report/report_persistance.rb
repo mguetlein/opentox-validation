@@ -181,14 +181,28 @@ end
 
 module Reports
   
-  class ReportData < ActiveRecord::Base
+  #class ReportData < ActiveRecord::Base
+#    serialize :validation_uris
+#    serialize :crossvalidation_uris
+#    serialize :algorithm_uris
+#    serialize :model_uris
+#    alias_attribute :date, :created_at
+
+  class ReportData 
+    include DataMapper::Resource 
   
-    serialize :validation_uris
-    serialize :crossvalidation_uris
-    serialize :algorithm_uris
-    serialize :model_uris
+    property :id, Serial
+    property :report_uri, String, :length => 255
+    property :report_type, String, :length => 255
+    property :created_at, DateTime
+    property :validation_uris, Object 
+    property :crossvalidation_uris, Object
+    property :model_uris, Object
+    property :algorithm_uris, Object
     
-    alias_attribute :date, :created_at
+    def date
+      created_at
+    end
     
     def get_content_as_hash
       map = {}
@@ -216,23 +230,40 @@ module Reports
       raise "report meta data missing" unless meta_data
       report = ReportData.new(meta_data)
       report.save #to set id
-      report.attributes = { :report_type => type, :report_uri => uri_provider.get_uri(type, report.id) }
-      report.save
+#      report.attributes = { :report_type => type, :report_uri => uri_provider.get_uri(type, report.id) }
+#      report.save
+      report.update :report_type => type, :report_uri => uri_provider.get_uri(type, report.id)
       new_report_with_id(report_content, type, report.id)
     end
     
     def list_reports(type, filter_params={})
       filter_params["report_type"]=type unless filter_params.has_key?("report_type")
-      ReportData.find_like(filter_params).delete_if{|r| r.report_type!=type}.collect{ |r| r.id }
+      #ReportData.find_like(filter_params).delete_if{|r| r.report_type!=type}.collect{ |r| r.id }
+      
+      filter_params = Lib::DataMapperUtil.check_params(ReportData, filter_params)
+      # unfortunately, datamapper does not allow searching in Objects
+      # do filtering for list = Object params manually
+      list_params = {}
+      [:validation_uris, :crossvalidation_uris, :algorithm_uris, :model_uris].each do |l|
+        list_params[l] = filter_params.delete(l) if filter_params.has_key?(l)
+      end
+      
+      reports = ReportData.all(filter_params).delete_if{|r| r.report_type!=type}
+      list_params.each do |k,v|
+        reports = reports.delete_if{ |r| !r.send(k).include?(v) }
+      end
+      reports.collect{ |r| r.id }
     end
     
     def get_report(type, id, format, force_formating, params)
       
-      begin
-        report = ReportData.find(:first, :conditions => {:id => id, :report_type => type})
-      rescue ActiveRecord::RecordNotFound
-        raise Reports::NotFound.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.")
-      end
+      report = ReportData.first({:id => id, :report_type => type})
+      raise Reports::NotFound.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.") unless report
+#      begin
+#        report = ReportData.find(:first, :conditions => {:id => id, :report_type => type})
+#      rescue ActiveRecord::RecordNotFound
+#        raise Reports::NotFound.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.")
+#      end
   
       case format
       when "application/rdf+xml"
@@ -245,13 +276,51 @@ module Reports
     end
     
     def delete_report(type, id)
-      begin
-        report = ReportData.find(:first, :conditions => {:id => id, :report_type => type})
-      rescue ActiveRecord::RecordNotFound
-        raise Reports::NotFound.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.")
-      end
-      ReportData.delete(id)
+#      begin
+#        report = ReportData.find(:first, :conditions => {:id => id, :report_type => type})
+#      rescue ActiveRecord::RecordNotFound
+#        raise Reports::NotFound.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.")
+#      end
+#      ReportData.delete(id)
+      report = ReportData.first({:id => id, :report_type => type})
+      raise Reports::NotFound.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.") unless report
+      report.destroy
       super      
     end
   end
 end
+
+Reports::ReportData.auto_upgrade!
+Reports::ReportData.raise_on_save_failure = true
+
+#module Reports
+#  def self.check_filter_params(model, filter_params)
+#    prop_names = model.properties.collect{|p| p.name.to_s}
+#    filter_params.keys.each do |k|
+#      key = k.to_s
+#      unless prop_names.include?(key)
+#        key = key.from_rdf_format
+#        unless prop_names.include?(key)
+#          key = key+"_uri"
+#          unless prop_names.include?(key)
+#            key = key+"s"
+#            unless prop_names.include?(key)
+#              err = "no attribute found: '"+k.to_s+"'"
+#              if $sinatra
+#                $sinatra.halt 400,err
+#              else
+#                raise err
+#              end
+#            end
+#          end
+#        end
+#      end
+#      filter_params[key] = filter_params.delete(k)
+#    end
+#    filter_params
+#  end
+#  
+#  def ReportData.all( params )
+#    super Reports.check_filter_params( ReportData, params )
+#  end
+#end

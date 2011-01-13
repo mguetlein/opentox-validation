@@ -2,7 +2,7 @@
 post '/test_validation/?' do
   validationExamples = ValidationExamples.select(params[:select])
   return "please \"select\" a single validation example:\n"+ValidationExamples.list if validationExamples.size!=1 or validationExamples[0].size!=1
-  OpenTox::Task.as_task("Test validation",url_for("/test_validation",:full), params) do
+  task = OpenTox::Task.create("Test validation",url_for("/test_validation",:full)) do #,params
     v = validationExamples[0][0]
     ex = v.new
     ex.upload_files
@@ -13,5 +13,6 @@ post '/test_validation/?' do
     raise ex.report_error if ex.report_error
     ex.validation_uri + (params[:report] ? ","+ex.report_uri : "")
   end
+  task.uri
 end
 

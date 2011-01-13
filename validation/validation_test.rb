@@ -7,7 +7,7 @@ require 'rack/test'
 require 'lib/test_util.rb'
 require 'test/test_examples.rb'
 
-LOGGER = MyLogger.new(STDOUT)
+LOGGER = OTLogger.new(STDOUT)
 LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 LOGGER.formatter = Logger::Formatter.new
 
@@ -15,7 +15,7 @@ LOGGER.formatter = Logger::Formatter.new
 module Sinatra
   module UrlForHelper
     BASE = "http://localhost/validation"
-   def url_for url_fragment, mode=:path_only
+    def url_for url_fragment, mode=:path_only
       case mode
       when :path_only
         raise "not impl"
@@ -35,8 +35,9 @@ class ValidationTest < Test::Unit::TestCase
     $test_case = self
     
     #get "/1",nil,'HTTP_ACCEPT' => "text/html" 
-#    get "/",nil,'HTTP_ACCEPT' => "text/html" 
+    #get "/2",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
     #puts last_response.body
+    #exit
     
 #    d = OpenTox::Dataset.find("http://ot-dev.in-silico.ch/dataset/307")
 #    puts d.compounds.inspect
@@ -59,12 +60,13 @@ class ValidationTest < Test::Unit::TestCase
     #post "/crossvalidation/cleanup"
     #puts last_response.body
 
-    #get "/crossvalidation/4/statistics"
+    #get "/crossvalidation/19/predictions",nil,'HTTP_ACCEPT' => "application/x-yaml" #/statistics"
 #    post "",:model_uri=>"http://localhost/model/1",:test_dataset_uri=>"http://localhost/dataset/3",
 #      :test_target_dataset_uri=>"http://localhost/dataset/1"
 
 #    get "/crossvalidation/2",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
-    #puts last_response.body
+   #puts last_response.body
+   #exit
     
     #get "/crossvalidation?model_uri=lazar"
 #    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
@@ -79,8 +81,32 @@ class ValidationTest < Test::Unit::TestCase
 #      :regression=>"true"}
 #      #:classification=>"true"}
 #    puts last_response.body
-    
-    #run_test("1b","http://localhost/validation/28")#,"http://localhost/validation/394");
+
+#     post "/validate_datasets",{
+#      :test_dataset_uri=>"http://localhost/dataset/89",
+#       :prediction_dataset_uri=>"http://localhost/dataset/91",
+#       :test_target_dataset_uri=>"http://localhost/dataset/87",
+#       :prediction_feature=>"http://localhost/dataset/1/feature/hamster_carcinogenicity",
+#       :predicted_feature=>"",
+##      :regression=>"true"}
+#       :classification=>"true"}
+#    puts last_response.body
+
+    # m = OpenTox::Model::Generic.find("http://localhost/model/1323333")
+    # puts m.to_yaml
+
+#     post "/validate_datasets",{
+#      :test_dataset_uri=>"http://localhost/dataset/150",
+#       :prediction_dataset_uri=>"http://localhost/dataset/152",
+#       :test_target_dataset_uri=>"http://localhost/dataset/148",
+#       :prediction_feature=>"http://localhost/dataset/148/feature/LC50_mmol",
+#       :model_uri=>"http://localhost/model/13"}
+#      #:regression=>"true"}
+##       :classification=>"true"}
+#    puts last_response.body
+
+    #run_test("13a","http://localhost/validation/39",nil,false) #,"http://localhost/validation/28")#,"http://localhost/validation/394");
+    run_test("1b",nil,nil,false)
     
     #run_test("7b","http://localhost/validation/21")
     
@@ -96,7 +122,7 @@ class ValidationTest < Test::Unit::TestCase
  
     #puts Nightly.build_nightly("1")
     
-   prepare_examples
+    #prepare_examples
     #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
     #do_test_examples_ortona
   end
@@ -105,7 +131,7 @@ class ValidationTest < Test::Unit::TestCase
     Sinatra::Application
   end
   
-  def run_test(select=nil, validation_uri=nil, report_uri=nil)
+  def run_test(select=nil, validation_uri=nil, report_uri=nil, delete=false)
     puts ValidationExamples.list unless select
     validationExamples = ValidationExamples.select(select)
     validationExamples.each do |vv|
@@ -122,8 +148,9 @@ class ValidationTest < Test::Unit::TestCase
         unless ex.report_uri
           ex.report
         end
-        ex.verify_yaml
-        ex.compare_yaml_vs_rdf
+        #ex.verify_yaml
+        #ex.compare_yaml_vs_rdf
+        ex.delete if delete
       end
     end
   end

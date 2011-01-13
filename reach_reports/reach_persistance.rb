@@ -1188,41 +1188,11 @@ module ReachReports
 #    end
 #  end
 
-  QsarSoftware.auto_upgrade!  
-  QsarIdentifier.auto_upgrade!
-  
-  QmrfAuthor.auto_upgrade!
-  ModelAuthor.auto_upgrade!
-  Reference.auto_upgrade!
-  QsarGeneralInformation.auto_upgrade!
-  
-  ModelEndpoint.auto_upgrade!
-  QsarEndpoint.auto_upgrade!
-  
-  AlgorithmExplicit.auto_upgrade!
-  AlgorithmsDescriptor.auto_upgrade!
-  DescriptorsGenerationSoftware.auto_upgrade!
-  QsarAlgorithm.auto_upgrade!
-  
-  AppDomainSoftware.auto_upgrade!
-  QsarApplicabilityDomain.auto_upgrade!
-  
-  TrainingSetData.auto_upgrade!
-  QsarRobustness.auto_upgrade!
-  
-  ValidationSetData.auto_upgrade!
-  QsarPredictivity.auto_upgrade!
-  
-  QsarInterpretation.auto_upgrade!
-  
-  Bibliography.auto_upgrade!
-  AttachmentTrainingData.auto_upgrade!
-  AttachmentValidationData.auto_upgrade!
-  AttachmentDocument.auto_upgrade!
-  QsarMiscellaneous.auto_upgrade!
-  
-  QmrfSummary.auto_upgrade!
-  
-  QmrfReport.auto_upgrade!
-  
+  [ QsarSoftware, QsarIdentifier, QmrfAuthor, ModelAuthor, Reference, QsarGeneralInformation, ModelEndpoint, QsarEndpoint, AlgorithmExplicit, 
+    AlgorithmsDescriptor, DescriptorsGenerationSoftware, QsarAlgorithm, AppDomainSoftware, QsarApplicabilityDomain, TrainingSetData, 
+    QsarRobustness, ValidationSetData, QsarPredictivity, QsarInterpretation, Bibliography, AttachmentTrainingData, AttachmentValidationData, 
+    AttachmentDocument, QsarMiscellaneous, QmrfSummary, QmrfReport ].each do |model|
+    model.auto_upgrade!
+    model.raise_on_save_failure = true
+  end
 end
