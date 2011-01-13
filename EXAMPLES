@@ -73,26 +73,7 @@ result example (accept-header: application/rdf-xml)
 result example (accept-header: text/uri-list)
 <<< <validation_service>/id_i
 
-
-create a validation by comparing feature values
------------------------------------------------------
-
->>> curl -X POST -d test_dataset_uri="<test_dataset_uri>" \
- -d test_target_dataset_uri="<dataset_uri>" \
- -d prediction_dataset_uri="<prediction_dataset_uri>" \
- -d prediction_feature="<prediction_feature>" \
- -d predicted_feature="<predicted_feature>" \
- -d classification="true" \
- <validation_service>/validate_datasets
-
-optional params:
-test_target_dataset_uri, default is test_dataset_uri
-regression or classification has to be specified
  
-result example (accept-header: text/uri-list)
-<<< <validation_service>/id_i
- 
-
 validate an algorithm on a dataset via training-test-split
 -------------------------------------------------------------------
 

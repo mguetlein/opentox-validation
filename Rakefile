@@ -1,11 +1,15 @@
 require 'rubygems'
 require 'rake'
 
-REPORT_GEMS = [  'opentox-ruby-api-wrapper', 'mime-types', 'activerecord', 'activesupport', 'ar-extensions', 'ruby-plot']
-VALIDATION_GEMS = [  'opentox-ruby-api-wrapper', 'activerecord', 'activesupport', 'ar-extensions', 'ruby-plot']
-GEM_VERSIONS = { "activerecord" => "= 2.3.8", "activesupport" => "= 2.3.8", "ar-extensions" => "= 0.9.2", "ruby-plot" => "= 0.0.2" }
-# this is needed because otherwihse ar-extensions adds activesupport 3.0.0 which confuses things
-GEM_INSTALL_OPTIONS = { "ar-extensions" => "--ignore-dependencies" }
+REPORT_GEMS = [  'opentox-ruby', 'mime-types', 'ruby-plot', 'rinruby'] #'ar-extensions', 'activerecord', 'activesupport',
+VALIDATION_GEMS = [  'opentox-ruby', 'ruby-plot'] #'ar-extensions', 'activerecord', 'activesupport',
+
+GEM_VERSIONS = { "ruby-plot" => "= 0.0.2" }
+GEM_INSTALL_OPTIONS = {}
+
+#GEM_VERSIONS = { "activerecord" => "= 2.3.8", "activesupport" => "= 2.3.8", "ar-extensions" => "= 0.9.2", "ruby-plot" => "= 0.0.2" }
+## this is needed because otherwihse ar-extensions adds activesupport 3.0.0 which confuses things
+#GEM_INSTALL_OPTIONS = { "ar-extensions" => "--ignore-dependencies" }
 
 
 desc "Install required gems"
@@ -33,6 +37,7 @@ task :install_gems do
   end
 end
 
+=begin
 
 desc "Installs gems and inits db migration"
 task :init => [:install_gems, :migrate] do
@@ -71,6 +76,7 @@ end
 desc "Migrate the database through scripts in db/migrate. Target specific version with VERSION=x"
 task :migrate => :load_config do
   [ 'rubygems', 'active_record', 'logger' ].each{ |l| require l }
+  puts "database config: "+@@config[:database].inspect.to_s
   ActiveRecord::Base.establish_connection(  
        :adapter => @@config[:database][:adapter],
        :host => @@config[:database][:host],
@@ -82,5 +88,5 @@ task :migrate => :load_config do
   ActiveRecord::Migrator.migrate('db/migrate', ENV["VERSION"] ? ENV["VERSION"].to_i : 2 )
 end
 
-
+=end
 
