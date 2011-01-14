@@ -76,8 +76,7 @@ module Validation
       LOGGER.debug "building model '"+algorithm_uri.to_s+"' "+params.inspect
       
       algorithm = OpenTox::Algorithm::Generic.new(algorithm_uri)
-      self.model_uri = algorithm.run(params)
-      task.progress(33)
+      self.model_uri = algorithm.run(params, OpenTox::SubTask.create(task, 0, 33))
       
       #model = OpenTox::Model::PredictionModel.build(algorithm_uri, params, 
       #  OpenTox::SubTask.create(task, 0, 33) )
@@ -129,8 +128,7 @@ module Validation
       prediction_dataset_uri = ""
       benchmark = Benchmark.measure do 
         #prediction_dataset_uri = model.predict_dataset(self.test_dataset_uri, OpenTox::SubTask.create(task, 0, 50))
-        prediction_dataset_uri = model.run(:dataset_uri => self.test_dataset_uri)
-        task.progress(50)
+        prediction_dataset_uri = model.run( {:dataset_uri => self.test_dataset_uri}, OpenTox::SubTask.create(task, 0, 50))
       end
 #      self.attributes = { :prediction_dataset_uri => prediction_dataset_uri,
 #             :real_runtime => benchmark.real }
@@ -223,8 +221,8 @@ module Validation
     
     def perform_cv ( prediction_feature, algorithm_params=nil, task=nil )
       
-      create_cv_datasets( prediction_feature, OpenTox::SubTask.create(task, 0, 0.33) )
-      perform_cv_validations( algorithm_params, OpenTox::SubTask.create(task, 0.33, 1) )
+      create_cv_datasets( prediction_feature, OpenTox::SubTask.create(task, 0, 33) )
+      perform_cv_validations( algorithm_params, OpenTox::SubTask.create(task, 33, 100) )
     end
     
     # deletes a crossvalidation, all validations are deleted as well

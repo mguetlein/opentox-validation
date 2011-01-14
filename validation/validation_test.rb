@@ -96,15 +96,15 @@ class ValidationTest < Test::Unit::TestCase
     # puts m.to_yaml
 
 #     post "/validate_datasets",{
-#      :test_dataset_uri=>"http://localhost/dataset/150",
-#       :prediction_dataset_uri=>"http://localhost/dataset/152",
-#       :test_target_dataset_uri=>"http://localhost/dataset/148",
-#       :prediction_feature=>"http://localhost/dataset/148/feature/LC50_mmol",
-#       :model_uri=>"http://localhost/model/13"}
+#      :test_dataset_uri=>"http://localhost/dataset/506",
+#       :prediction_dataset_uri=>"http://localhost/dataset/526",
+#       :test_target_dataset_uri=>"http://localhost/dataset/504",
+#       :prediction_feature=>"http://localhost/dataset/504/feature/LC50_mmol",
+#       :model_uri=>"http://localhost/model/48"}
 #      #:regression=>"true"}
 ##       :classification=>"true"}
 #    puts last_response.body
-
+    
     #run_test("13a","http://localhost/validation/39",nil,false) #,"http://localhost/validation/28")#,"http://localhost/validation/394");
     run_test("1b",nil,nil,false)
     

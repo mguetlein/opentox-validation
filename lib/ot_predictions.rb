@@ -79,9 +79,9 @@ module Lib
         # TODO: remove LAZAR_PREDICTION_DATASET_HACK
         no_prediction_feature = prediction_dataset.features.keys.index(predicted_variable)==nil
         if no_prediction_feature
-          one_entry_per_compound = prediction_dataset.data_entries.keys.size == @compounds.size
+          one_entry_per_compound = true
           @compounds.each do |c|
-            if prediction_dataset.data_entries[c].size != 1
+            if prediction_dataset.data_entries[c] and prediction_dataset.data_entries[c].size != 1
               one_entry_per_compound = false
               break
             end
