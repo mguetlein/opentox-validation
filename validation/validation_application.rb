@@ -5,7 +5,6 @@ end
 
 require 'lib/merge.rb'
 #require 'lib/active_record_setup.rb'
-
 require 'validation/validation_service.rb'
 
 get '/crossvalidation/?' do
@@ -14,8 +13,8 @@ get '/crossvalidation/?' do
   #uri_list = Validation::Crossvalidation.find_like(params).collect{ |cv| cv.crossvalidation_uri }.join("\n")+"\n"
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     related_links = 
-      "Single validations:      "+$sinatra.url_for("/",:full)+"\n"+
-      "Crossvalidation reports: "+$sinatra.url_for("/report/crossvalidation",:full)
+      "Single validations:      "+url_for("/",:full)+"\n"+
+      "Crossvalidation reports: "+url_for("/report/crossvalidation",:full)
     description = 
       "A list of all crossvalidations.\n"+
       "Use the POST method to perform a crossvalidation."
@@ -41,6 +40,7 @@ post '/crossvalidation/?' do
                   :algorithm_uri => params[:algorithm_uri] }
     [ :num_folds, :random_seed, :stratified ].each{ |sym| cv_params[sym] = params[sym] if params[sym] }
     cv = Validation::Crossvalidation.new cv_params
+    cv.subjectid = @subjectid
     cv.perform_cv( params[:prediction_feature], params[:algorithm_params], task )
     cv.crossvalidation_uri
   end
@@ -61,6 +61,7 @@ post '/crossvalidation/cleanup/?' do
       LOGGER.debug "delete cv with id:"+cv.id.to_s+", finished is false"
       deleted << cv.crossvalidation_uri
       #Validation::Crossvalidation.delete(cv.id)
+      cv.subjectid = @subjectid
       cv.delete
     #end
   end
@@ -92,11 +93,11 @@ get '/crossvalidation/:id' do
     crossvalidation.to_rdf
   when /text\/html/
     related_links = 
-      "Search for corresponding cv report:  "+$sinatra.url_for("/report/crossvalidation?crossvalidation="+crossvalidation.crossvalidation_uri,:full)+"\n"+
-      "Statistics for this crossvalidation: "+$sinatra.url_for("/crossvalidation/"+params[:id]+"/statistics",:full)+"\n"+
-      "Predictions of this crossvalidation: "+$sinatra.url_for("/crossvalidation/"+params[:id]+"/predictions",:full)+"\n"+
-      "All crossvalidations:                "+$sinatra.url_for("/crossvalidation",:full)+"\n"+
-      "All crossvalidation reports:         "+$sinatra.url_for("/report/crossvalidation",:full)
+      "Search for corresponding cv report:  "+url_for("/report/crossvalidation?crossvalidation="+crossvalidation.crossvalidation_uri,:full)+"\n"+
+      "Statistics for this crossvalidation: "+url_for("/crossvalidation/"+params[:id]+"/statistics",:full)+"\n"+
+      "Predictions of this crossvalidation: "+url_for("/crossvalidation/"+params[:id]+"/predictions",:full)+"\n"+
+      "All crossvalidations:                "+url_for("/crossvalidation",:full)+"\n"+
+      "All crossvalidation reports:         "+url_for("/report/crossvalidation",:full)
     description = 
         "A crossvalidation resource."
     content_type "text/html"
@@ -134,7 +135,7 @@ get '/crossvalidation/:id/statistics' do
   case request.env['HTTP_ACCEPT'].to_s
   when /text\/html/
     related_links = 
-       "The corresponding crossvalidation resource: "+$sinatra.url_for("/crossvalidation/"+params[:id],:full)
+       "The corresponding crossvalidation resource: "+url_for("/crossvalidation/"+params[:id],:full)
     description = 
        "The averaged statistics for the crossvalidation."
     content_type "text/html"
@@ -156,6 +157,7 @@ delete '/crossvalidation/:id/?' do
 #  Validation::Crossvalidation.delete(params[:id])
   
   cv = Validation::Crossvalidation.get(params[:id])
+  cv.subjectid = @subjectid
   halt 404,"Crossvalidation '#{params[:id]}' not found." unless cv
   cv.delete
 end
@@ -192,8 +194,8 @@ get '/crossvalidation/:id/predictions' do
     description = 
       "The crossvalidation predictions as (yaml-)array."
     related_links = 
-      "All crossvalidations:         "+$sinatra.url_for("/crossvalidation",:full)+"\n"+
-      "Correspoding crossvalidation: "+$sinatra.url_for("/crossvalidation/"+params[:id],:full)
+      "All crossvalidations:         "+url_for("/crossvalidation",:full)+"\n"+
+      "Correspoding crossvalidation: "+url_for("/crossvalidation/"+params[:id],:full)
     OpenTox.text_to_html p, related_links, description
   else
     content_type "text/x-yaml"
@@ -210,14 +212,14 @@ get '/?' do
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     related_links = 
       "To perform a validation:\n"+
-      "* "+$sinatra.url_for("/test_set_validation",:full)+"\n"+
-      "* "+$sinatra.url_for("/training_test_validation",:full)+"\n"+
-      "* "+$sinatra.url_for("/bootstrapping",:full)+"\n"+
-      "* "+$sinatra.url_for("/training_test_split",:full)+"\n"+
-      "* "+$sinatra.url_for("/crossvalidation",:full)+"\n"+
-      "Validation reporting:            "+$sinatra.url_for("/report",:full)+"\n"+
-      "REACH relevant reporting:        "+$sinatra.url_for("/reach_report",:full)+"\n"+
-      "Examples for using this service: "+$sinatra.url_for("/examples",:full)+"\n"
+      "* "+url_for("/test_set_validation",:full)+"\n"+
+      "* "+url_for("/training_test_validation",:full)+"\n"+
+      "* "+url_for("/bootstrapping",:full)+"\n"+
+      "* "+url_for("/training_test_split",:full)+"\n"+
+      "* "+url_for("/crossvalidation",:full)+"\n"+
+      "Validation reporting:            "+url_for("/report",:full)+"\n"+
+      "REACH relevant reporting:        "+url_for("/reach_report",:full)+"\n"+
+      "Examples for using this service: "+url_for("/examples",:full)+"\n"
     description = 
         "A validation web service for the OpenTox project ( http://opentox.org ).\n"+
         "In the root directory (this is where you are now), a list of all validation resources is returned."
@@ -243,6 +245,7 @@ post '/test_set_validation' do
                        :test_dataset_uri => params[:test_dataset_uri],
                        :test_target_dataset_uri => params[:test_target_dataset_uri],
                        :prediction_feature => params[:prediction_feature]
+      v.subjectid = @subjectid
       v.validate_model( task )
       v.validation_uri
     end
@@ -261,8 +264,8 @@ get '/test_set_validation' do
   
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     related_links = 
-      "All validations:    "+$sinatra.url_for("/",:full)+"\n"+
-      "Validation reports: "+$sinatra.url_for("/report/validation",:full)
+      "All validations:    "+url_for("/",:full)+"\n"+
+      "Validation reports: "+url_for("/report/validation",:full)
     description = 
         "A list of all test-set-validations.\n"+
         "To perform a test-set-validation use the POST method."
@@ -285,6 +288,7 @@ post '/training_test_validation/?' do
                         :test_dataset_uri => params[:test_dataset_uri],
                         :test_target_dataset_uri => params[:test_target_dataset_uri],
                         :prediction_feature => params[:prediction_feature]
+      v.subjectid = @subjectid
       v.validate_algorithm( params[:algorithm_params], task ) 
       v.validation_uri
     end
@@ -302,8 +306,8 @@ get '/training_test_validation' do
   uri_list = Validation::Validation.all( :validation_type => "training_test_validation" ).collect{ |v| v.validation_uri }.join("\n")+"\n"
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     related_links = 
-      "All validations:    "+$sinatra.url_for("/",:full)+"\n"+
-      "Validation reports: "+$sinatra.url_for("/report/validation",:full)
+      "All validations:    "+url_for("/",:full)+"\n"+
+      "Validation reports: "+url_for("/report/validation",:full)
     description = 
         "A list of all training-test-validations.\n"+
         "To perform a training-test-validation use the POST method."
@@ -330,13 +334,13 @@ post '/bootstrapping' do
     halt 400, "prediction_feature missing" unless params[:prediction_feature]
     
     params.merge!( Validation::Util.bootstrapping( params[:dataset_uri], 
-      params[:prediction_feature], params[:random_seed], OpenTox::SubTask.create(task,0,33)) )
+      params[:prediction_feature], @subjectid, 
+      params[:random_seed], OpenTox::SubTask.create(task,0,33)) )
     v = Validation::Validation.new :validation_type => "bootstrapping", 
-                     :training_dataset_uri => params[:training_dataset_uri], 
-                     :test_dataset_uri => params[:test_dataset_uri],
                      :test_target_dataset_uri => params[:dataset_uri],
                      :prediction_feature => params[:prediction_feature],
                      :algorithm_uri => params[:algorithm_uri]
+    v.subjectid = @subjectid
     v.validate_algorithm( params[:algorithm_params], OpenTox::SubTask.create(task,33,100))
     v.validation_uri
   end
@@ -349,8 +353,8 @@ get '/bootstrapping' do
   uri_list = Validation::Validation.all( :validation_type => "bootstrapping" ).collect{ |v| v.validation_uri }.join("\n")+"\n"
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     related_links = 
-      "All validations:    "+$sinatra.url_for("/",:full)+"\n"+
-      "Validation reports: "+$sinatra.url_for("/report/validation",:full)
+      "All validations:    "+url_for("/",:full)+"\n"+
+      "Validation reports: "+url_for("/report/validation",:full)
     description = 
         "A list of all bootstrapping-validations.\n"+
         "To perform a bootstrapping-validation use the POST method."
@@ -377,13 +381,14 @@ post '/training_test_split' do
     halt 400, "prediction_feature missing" unless params[:prediction_feature]
     
     params.merge!( Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:prediction_feature], 
-      params[:split_ratio], params[:random_seed], OpenTox::SubTask.create(task,0,33)))
+      @subjectid, params[:split_ratio], params[:random_seed], OpenTox::SubTask.create(task,0,33)))
     v = Validation::Validation.new  :validation_type => "training_test_split", 
                      :training_dataset_uri => params[:training_dataset_uri], 
                      :test_dataset_uri => params[:test_dataset_uri],
                      :test_target_dataset_uri => params[:dataset_uri],
                      :prediction_feature => params[:prediction_feature],
                      :algorithm_uri => params[:algorithm_uri]
+    v.subjectid = @subjectid
     v.validate_algorithm( params[:algorithm_params], OpenTox::SubTask.create(task,33,100))
     v.validation_uri
   end
@@ -399,8 +404,8 @@ get '/training_test_split' do
   uri_list = Validation::Validation.all( :validation_type => "training_test_split" ).collect{ |v| v.validation_uri }.join("\n")+"\n"
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     related_links = 
-      "All validations:    "+$sinatra.url_for("/",:full)+"\n"+
-      "Validation reports: "+$sinatra.url_for("/report/validation",:full)
+      "All validations:    "+url_for("/",:full)+"\n"+
+      "Validation reports: "+url_for("/report/validation",:full)
     description = 
         "A list of all training-test-split-validations.\n"+
         "To perform a training-test-split-validation use the POST method."
@@ -427,6 +432,7 @@ post '/cleanup/?' do
     LOGGER.debug "delete val with id:"+val.id.to_s+", finished is false"
     deleted << val.validation_uri
     #Validation::Validation.delete(val.id)
+    val.subjectid = @subjectid
     val.delete
   end
   LOGGER.info "validation cleanup, deleted "+deleted.size.to_s+" validations"
@@ -452,6 +458,7 @@ post '/validate_datasets' do
     
     if params[:model_uri]
       v = Validation::Validation.new params
+      v.subjectid = @subjectid
       v.compute_validation_stats_with_model(nil,false,task)
     else
       halt 400, "please specify 'model_uri' or 'prediction_feature'" unless params[:prediction_feature]
@@ -462,7 +469,8 @@ post '/validate_datasets' do
       predicted_feature = params.delete("predicted_feature")
       feature_type = "classification" if params.delete("classification")!=nil
       feature_type = "regression" if params.delete("regression")!=nil
-      v = Validation::Validation.new params            
+      v = Validation::Validation.new params  
+      v.subjectid = @subjectid
       v.compute_validation_stats(feature_type,predicted_feature,nil,nil,false,task)
     end
     v.validation_uri
@@ -486,8 +494,8 @@ get '/:id/predictions' do
     description = 
       "The validation predictions as (yaml-)array."
     related_links = 
-      "All validations:         "+$sinatra.url_for("/",:full)+"\n"+
-      "Correspoding validation: "+$sinatra.url_for("/"+params[:id],:full)
+      "All validations:         "+url_for("/",:full)+"\n"+
+      "Correspoding validation: "+url_for("/"+params[:id],:full)
     OpenTox.text_to_html p.to_array.to_yaml, related_links, description
   else
     content_type "text/x-yaml"
@@ -529,10 +537,10 @@ get '/:id' do
     description = 
       "A validation resource."
     related_links = 
-      "Search for corresponding report: "+$sinatra.url_for("/report/validation?validation="+validation.validation_uri,:full)+"\n"+
-      "Get validation predictions:      "+$sinatra.url_for("/"+params[:id]+"/predictions",:full)+"\n"+
-      "All validations:                 "+$sinatra.url_for("/",:full)+"\n"+
-      "All validation reports:          "+$sinatra.url_for("/report/validation",:full)
+      "Search for corresponding report: "+url_for("/report/validation?validation="+validation.validation_uri,:full)+"\n"+
+      "Get validation predictions:      "+url_for("/"+params[:id]+"/predictions",:full)+"\n"+
+      "All validations:                 "+url_for("/",:full)+"\n"+
+      "All validation reports:          "+url_for("/report/validation",:full)
     OpenTox.text_to_html validation.to_yaml,related_links,description
   when /application\/x-yaml|\*\/\*/ 
     content_type "application/x-yaml"
@@ -550,6 +558,7 @@ delete '/:id' do
 #    halt 404, "Validation '#{params[:id]}' not found."
 #  end
   validation = Validation::Validation.get(params[:id])
+  validation.subjectid = @subjectid
   halt 404, "Validation '#{params[:id]}' not found." unless validation
   content_type "text/plain"
   validation.delete

@@ -52,7 +52,7 @@ class Reports::ReportPersistance
   # call-seq:
   #   delete_report(type, id) => boolean
   #
-  def delete_report(type, id)
+  def delete_report(type, id, subjectid=nil)
     raise "not implemented"
   end
   
@@ -104,7 +104,7 @@ class Reports::FileReportPersistance < Reports::ReportPersistance
     return file_path
   end
   
-  def delete_report(type, id)
+  def delete_report(type, id, subjectid=nil)
     
     report_dir = report_directory(type, id)
     raise_report_not_found(type, id) unless File.directory?(report_dir)
@@ -192,7 +192,6 @@ module Reports
     include DataMapper::Resource 
   
     property :id, Serial
-    property :report_uri, String, :length => 255
     property :report_type, String, :length => 255
     property :created_at, DateTime
     property :validation_uris, Object 
@@ -200,8 +199,22 @@ module Reports
     property :model_uris, Object
     property :algorithm_uris, Object
     
+    attr_accessor :subjectid
+    
+    after :save, :check_policy
+    private
+    def check_policy
+      OpenTox::Authorization.check_policy(report_uri, subjectid)
+    end
+    
+    public
     def date
       created_at
+    end
+    
+    def report_uri
+      raise "no id" if self.id==nil
+      Reports::ReportService.instance.get_uri(self.report_type, self.id)
     end
     
     def get_content_as_hash
@@ -214,25 +227,24 @@ module Reports
     end
     
     def to_yaml
-      get_content_as_hash.to_yaml
+      get_content_as_hash.keys_to_rdf_format.keys_to_owl_uris.to_yaml
     end    
     
     def to_rdf
-      owl = OpenTox::Owl.create("ValidationReport",report_uri)
-      owl.set_data(get_content_as_hash.keys_to_rdf_format)
-      owl.rdf
+      s = OpenTox::Serializer::Owl.new
+      s.add_val(report_uri,OT.Report,get_content_as_hash.keys_to_rdf_format.keys_to_owl_uris)
+      s.to_rdfxml
     end
   end
   
   class ExtendedFileReportPersistance < FileReportPersistance
     
-    def new_report(report_content, type, meta_data, uri_provider)
+    def new_report(report_content, type, meta_data, uri_provider, subjectid=nil)
       raise "report meta data missing" unless meta_data
       report = ReportData.new(meta_data)
-      report.save #to set id
-#      report.attributes = { :report_type => type, :report_uri => uri_provider.get_uri(type, report.id) }
-#      report.save
-      report.update :report_type => type, :report_uri => uri_provider.get_uri(type, report.id)
+      report.subjectid = subjectid
+      report.report_type = type
+      report.save
       new_report_with_id(report_content, type, report.id)
     end
     
@@ -275,7 +287,7 @@ module Reports
       end
     end
     
-    def delete_report(type, id)
+    def delete_report(type, id, subjectid=nil)
 #      begin
 #        report = ReportData.find(:first, :conditions => {:id => id, :report_type => type})
 #      rescue ActiveRecord::RecordNotFound
@@ -285,6 +297,14 @@ module Reports
       report = ReportData.first({:id => id, :report_type => type})
       raise Reports::NotFound.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.") unless report
       report.destroy
+      if (subjectid)
+        begin
+          res = OpenTox::Authorization.delete_policies_from_uri(report.report_uri, subjectid)
+          LOGGER.debug "Deleted validation policy: #{res}"
+        rescue
+          LOGGER.warn "Policy delete error for validation: #{report.report_uri}"
+        end
+      end
       super      
     end
   end

@@ -60,7 +60,7 @@ module Reports
     # call-seq:
     #   create_report(type, validation_uris) => string
     # 
-    def create_report(type, validation_uris, task=nil)
+    def create_report(type, validation_uris, subjectid=nil, task=nil)
       
       LOGGER.info "create report of type '"+type.to_s+"'"
       check_report_type(type)
@@ -79,7 +79,7 @@ module Reports
       LOGGER.debug "report created"
       
       #step 3: persist report if creation not failed
-      id = @@persistance.new_report(report_content, type, create_meta_data(type, validation_set, validation_uris), self)
+      id = @@persistance.new_report(report_content, type, create_meta_data(type, validation_set, validation_uris), self, subjectid)
       LOGGER.debug "report persisted with id: '"+id.to_s+"'"
       task.progress(100) if task
       
@@ -118,19 +118,19 @@ module Reports
     # call-seq:
     #   delete_report( type, id )
     # 
-    def delete_report( type, id )
+    def delete_report( type, id, subjectid=nil )
       
       LOGGER.info "delete report '"+id.to_s+"' of type '"+type.to_s+"'"
       check_report_type(type)
-      @@persistance.delete_report(type, id)
+      @@persistance.delete_report(type, id, subjectid)
     end
     
     # no api-access for this method
-    def delete_all_reports( type )
+    def delete_all_reports( type, subjectid=nil )
       
       LOGGER.info "deleting all reports of type '"+type.to_s+"'"
       check_report_type(type)
-      @@persistance.list_reports(type).each{ |id| @@persistance.delete_report(type, id) }
+      @@persistance.list_reports(type).each{ |id| @@persistance.delete_report(type, id, subjectid) }
     end
     
     def parse_type( report_uri )

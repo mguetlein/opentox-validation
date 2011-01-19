@@ -80,16 +80,26 @@ module Lib
     property :regression_statistics, Object
     property :finished, Boolean, :default => false
     
+    attr_accessor :subjectid
+    
+    after :save, :check_policy
+    private
+    def check_policy
+      OpenTox::Authorization.check_policy(validation_uri, subjectid)
+    end
+    
+    public
     def date
       created_at
     end
     
     def validation_uri
-      $sinatra.url_for("/"+self.id.to_s, :full)
+      raise "no id" if self.id==nil
+      $url_provider.url_for("/"+self.id.to_s, :full)
     end
     
     def crossvalidation_uri
-      $sinatra.url_for("/crossvalidation/"+self.crossvalidation_id.to_s, :full) if self.crossvalidation_id
+      $url_provider.url_for("/crossvalidation/"+self.crossvalidation_id.to_s, :full) if self.crossvalidation_id
     end
     
     def self.classification_property?( property )
@@ -120,12 +130,22 @@ module Lib
     property :finished, Boolean, :default => false
     property :stratified, Boolean, :default => false
     
+    attr_accessor :subjectid
+        
+    after :save, :check_policy
+    private
+    def check_policy
+      OpenTox::Authorization.check_policy(crossvalidation_uri, subjectid)
+    end
+    
+    public
     def date
       created_at
     end
     
     def crossvalidation_uri
-      $sinatra.url_for("/crossvalidation/"+self.id.to_s, :full) if self.id
+      raise "no id" if self.id==nil
+      $url_provider.url_for("/crossvalidation/"+self.id.to_s, :full) if self.id
     end
     
     # convenience method to list all crossvalidations that are unique 

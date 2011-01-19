@@ -110,9 +110,11 @@ module ValidationExamples
   
   class HamsterSplit < SplitTestValidation
     def initialize
-      @dataset_file = File.new("data/hamster_carcinogenicity.yaml","r")
-      #@prediction_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
-      @prediction_feature = "http://localhost/dataset/1/feature/hamster_carcinogenicity"
+      #@dataset_file = File.new("data/hamster_carcinogenicity.yaml","r")
+      @dataset_file = File.new("data/hamster_carcinogenicity.csv","r")
+      
+      #@prediction_feature = "http://local-ot/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+      #@prediction_feature = "http://local-ot/dataset/1/feature/hamster_carcinogenicity"
     end
   end
   
@@ -135,9 +137,11 @@ module ValidationExamples
   
   class HamsterBootstrapping < BootstrappingValidation
     def initialize
-      @dataset_file = File.new("data/hamster_carcinogenicity.yaml","r")
-      #@prediction_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
-      @prediction_feature = "http://localhost/dataset/1/feature/hamster_carcinogenicity"
+      #@dataset_file = File.new("data/hamster_carcinogenicity.yaml","r")
+      @dataset_file = File.new("data/hamster_carcinogenicity.csv","r")
+      
+      #@prediction_feature = "http://local-ot/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+      #@prediction_feature = "http://local-ot/dataset/1/feature/hamster_carcinogenicity"
     end
   end
   
@@ -160,11 +164,17 @@ module ValidationExamples
 
   class HamsterTrainingTest < TrainingTestValidation
     def initialize
-      @test_target_dataset_file = File.new("data/hamster_carcinogenicity.yaml","r")
-      @training_dataset_file = File.new("data/hamster_carcinogenicity.train.yaml","r")
-      @test_dataset_file = File.new("data/hamster_carcinogenicity.test.yaml","r")
-      #@prediction_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
-      @prediction_feature = "http://localhost/dataset/1/feature/hamster_carcinogenicity"
+#      @test_target_dataset_file = File.new("data/hamster_carcinogenicity.yaml","r")
+#      @training_dataset_file = File.new("data/hamster_carcinogenicity.train.yaml","r")
+#      @test_dataset_file = File.new("data/hamster_carcinogenicity.test.yaml","r")
+      
+      @test_target_dataset_file = File.new("data/hamster_carcinogenicity.csv","r")
+      @training_dataset_file = File.new("data/hamster_carcinogenicity.train.csv","r")
+      @test_dataset_file = File.new("data/hamster_carcinogenicity.test.csv","r")
+      
+      
+      #@prediction_feature = "http://local-ot/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+      #@prediction_feature = "http://local-ot/dataset/1/feature/hamster_carcinogenicity"
     end
   end
   
@@ -187,9 +197,11 @@ module ValidationExamples
 
   class HamsterCrossvalidation < CrossValidation
     def initialize
-      @dataset_file = File.new("data/hamster_carcinogenicity.yaml","r")
-      #@prediction_feature = "http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
-      @prediction_feature = "http://localhost/dataset/1/feature/hamster_carcinogenicity"
+      #@dataset_file = File.new("data/hamster_carcinogenicity.yaml","r")
+      @dataset_file = File.new("data/hamster_carcinogenicity.csv","r")
+      
+      #@prediction_feature = "http://local-ot/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+      #@prediction_feature = "http://local-ot/dataset/1/feature/hamster_carcinogenicity"
       @num_folds = 10
     end
   end

@@ -20,8 +20,8 @@ get '/reach_report' do
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     content_type "text/html"
     related_links = 
-      "All validations:      "+$sinatra.url_for("/",:full)+"\n"+
-      "Validation reporting: "+$sinatra.url_for("/report",:full)
+      "All validations:      "+url_for("/",:full)+"\n"+
+      "Validation reporting: "+url_for("/report",:full)
     description = 
         "A list of all suported REACH reporting types."
     OpenTox.text_to_html uri_list,related_links,description
@@ -37,7 +37,7 @@ get '/reach_report/:type' do
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     content_type "text/html"
     related_links = 
-        "All REACH reporting types:      "+$sinatra.url_for("/reach_report",:full)
+        "All REACH reporting types:      "+url_for("/reach_report",:full)
     description = 
         "A list of "+type+" reports."
     post_params = ""
@@ -95,7 +95,7 @@ get '/reach_report/:type/:id' do
     content_type "text/html"
     related_links =
         "Open report in QMRF editor: "+rep.report_uri+"/editor"+"\n"+
-        "All "+type+" reports:           "+$sinatra.url_for("/reach_report/"+type,:full)
+        "All "+type+" reports:           "+url_for("/reach_report/"+type,:full)
     description = 
         "A QMRF report."
     OpenTox.text_to_html rep.to_yaml,related_links,description

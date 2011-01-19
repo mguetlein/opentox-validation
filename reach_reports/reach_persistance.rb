@@ -400,7 +400,7 @@ module ReachReports
   
   def self.get_uri( report )
     raise "internal error, id not set "+to_yaml if report.id==nil
-    return $sinatra.url_for("/"+File.join(report.type,report.id.to_s), :full).to_s
+    return $url_provider.url_for("/"+File.join(report.type,report.id.to_s), :full).to_s
   end
   
   
@@ -1006,7 +1006,7 @@ module ReachReports
     end
     
     def report_uri
-      return $sinatra.url_for("/reach_report/QMRF/"+@id.to_s, :full).to_s
+      return $url_provider.url_for("/reach_report/QMRF/"+@id.to_s, :full).to_s
     end
     
     def self.from_xml(report, xml_data)

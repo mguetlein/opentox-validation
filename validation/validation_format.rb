@@ -17,7 +17,7 @@ module Validation
          h[p] = self.send(p)
       end
       if crossvalidation_id!=nil
-        cv = {}
+        cv = {:type => OT.CrossvalidationInfo}
         #skip crossvalidation_id
         cv[:crossvalidation_fold] = self.crossvalidation_fold
         cv[:crossvalidation_uri] = self.crossvalidation_uri
@@ -25,15 +25,15 @@ module Validation
       end
       if classification_statistics 
         raise "classification_statistics is no has: "+classification_statistics.class.to_s unless classification_statistics.is_a?(Hash)
-        clazz = {}
+        clazz = { :type => OT.ClassificationStatistics }
         Lib::VAL_CLASS_PROPS_SINGLE.each{ |p| clazz[p] = classification_statistics[p] }
         
         # transpose results per class
         class_values = {}
         Lib::VAL_CLASS_PROPS_PER_CLASS.each do |p|
-          $sinatra.halt 500, "missing classification statitstics: "+p.to_s+" "+classification_statistics.inspect if classification_statistics[p]==nil
+          raise "missing classification statitstics: "+p.to_s+" "+classification_statistics.inspect if classification_statistics[p]==nil
           classification_statistics[p].each do |class_value, property_value|
-            class_values[class_value] = {:class_value => class_value} unless class_values.has_key?(class_value)
+            class_values[class_value] = {:class_value => class_value, :type => OT.ClassValueStatistics} unless class_values.has_key?(class_value)
             map = class_values[class_value]
             map[p] = property_value
           end
@@ -42,20 +42,20 @@ module Validation
         
         #converting confusion matrix
         cells = []
-        $sinatra.halt 500,"confusion matrix missing" unless classification_statistics[:confusion_matrix]!=nil
+        raise "confusion matrix missing" unless classification_statistics[:confusion_matrix]!=nil
         classification_statistics[:confusion_matrix].each do |k,v|
-          cell = {}
+          cell = { :type => OT.ConfusionMatrixCell }
           # key in confusion matrix is map with predicted and actual attribute 
           k.each{ |kk,vv| cell[kk] = vv }
           cell[:confusion_matrix_value] = v
           cells.push cell
         end
-        cm = { :confusion_matrix_cell => cells }
+        cm = { :confusion_matrix_cell => cells, :type => OT.ConfusionMatrix }
         clazz[:confusion_matrix] = cm
         
         h[:classification_statistics] = clazz
       elsif regression_statistics
-        regr = {}
+        regr = {:type => OT.RegressionStatistics }
         Lib::VAL_REGR_PROPS.each{ |p| regr[p] = regression_statistics[p]}
         h[:regression_statistics] = regr
       end
@@ -63,13 +63,13 @@ module Validation
     end
     
     def to_rdf
-      owl = OpenTox::Owl.create("Validation",validation_uri)
-      owl.set_data(get_content_as_hash.keys_to_rdf_format)
-      owl.rdf
+      s = OpenTox::Serializer::Owl.new
+      s.add_val(validation_uri,OT.Validation,get_content_as_hash.keys_to_rdf_format.keys_to_owl_uris)
+      s.to_rdfxml
     end
     
     def to_yaml
-      get_content_as_hash.to_yaml
+      get_content_as_hash.keys_to_rdf_format.keys_to_owl_uris.to_yaml
     end
     
   end
@@ -92,13 +92,13 @@ module Validation
     end
 
     def to_rdf
-      owl = OpenTox::Owl.create("'Crossvalidation",crossvalidation_uri)
-      owl.set_data(get_content_as_hash.keys_to_rdf_format)
-      owl.rdf
+      s = OpenTox::Serializer::Owl.new
+      s.add_val(crossvalidation_uri,OT.Crossvalidation,get_content_as_hash.keys_to_rdf_format.keys_to_owl_uris)
+      s.to_rdfxml
     end
     
     def to_yaml
-      get_content_as_hash.to_yaml
+      get_content_as_hash.keys_to_rdf_format.keys_to_owl_uris.to_yaml
     end
   end
 end

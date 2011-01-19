@@ -6,9 +6,9 @@ class Example
   @@file=File.new("data/hamster_carcinogenicity.yaml","r")
   @@file_type="text/x-yaml"
   @@model=File.join CONFIG[:services]["opentox-model"],"1"
-  #@@feature= URI.encode("http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)")
+  #@@feature= URI.encode("http://local-ot/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)")
   @@feature= File.join CONFIG[:services]["opentox-dataset"],"1/feature/hamster_carcinogenicity"
-  #@@predicted_feature= URI.encode("http://localhost/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)_lazar_classification")
+  #@@predicted_feature= URI.encode("http://local-ot/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)_lazar_classification")
   @@alg = File.join CONFIG[:services]["opentox-algorithm"],"lazar"
   @@alg_params = "feature_generation_uri="+File.join(CONFIG[:services]["opentox-algorithm"],"fminer/bbrc")
   @@data=File.join CONFIG[:services]["opentox-dataset"],"1"
@@ -54,6 +54,10 @@ class Example
   
   # creates the resources that are requested by the examples
   def self.prepare_example_resources
+    
+    #TODO
+    subjectid = nil
+    
     task = OpenTox::Task.create("prepare examples", "n/a") do |task|
       @@summary = ""
       #delete validations
@@ -103,12 +107,12 @@ class Example
       
       log "create validation report"
       rep = Reports::ReportService.instance(File.join(CONFIG[:services]["opentox-validation"],"report"))
-      rep.delete_all_reports("validation")
+      rep.delete_all_reports("validation", subjectid)
       rep.create_report("validation",v.validation_uri)
       task.progress(80)
       
       log "create crossvalidation report"
-      rep.delete_all_reports("crossvalidation")
+      rep.delete_all_reports("crossvalidation", subjectid)
       rep.create_report("crossvalidation",cv.crossvalidation_uri)
       task.progress(90)
       

@@ -27,7 +27,7 @@ module ReachReports
     when /(?i)QMRF/
       if params[:model_uri]
         task = OpenTox::Task.create( "Create "+type+" report", 
-          $sinatra.url_for("/reach_report/"+type, :full) ) do |task| #, params
+          $url_provider.url_for("/reach_report/"+type, :full) ) do |task| #, params
             
           report = ReachReports::QmrfReport.new :model_uri => params[:model_uri]
           build_qmrf_report(report, task)
@@ -39,17 +39,17 @@ module ReachReports
         ReachReports::QmrfReport.from_xml(report,input)
         result_uri = report.report_uri
       else
-        $sinatra.halt 400, "illegal parameters for qmrf-report creation, either\n"+
+        raise OpenTox::BadRequestError.new "illegal parameters for qmrf-report creation, either\n"+
           "* give 'model_uri' as param\n"+
           "* provide xml file\n"+
           "params given: "+params.inspect
       end
     when /(?i)QPRF/
-      $sinatra.halt 400,"qprf report creation not yet implemented"
+      raise OpenTox::BadRequestError.new "qprf report creation not yet implemented"
       if params[:compound_uri]
         #report = ReachReports::QprfReport.new :compound_uri => params[:compound_uri]
       else
-        $sinatra.halt 400, "illegal parameters for qprf-report, use either\n"+
+        raise OpenTox::BadRequestError.new "illegal parameters for qprf-report, use either\n"+
           "* compound-uri\n"+ 
           "params given: "+params.inspect
       end
@@ -294,7 +294,7 @@ module ReachReports
     when /(?i)QPRF/
       report = ReachReports::QprfReport.get(id)
     end
-    $sinatra.halt 404, type+" report with id '#{id}' not found." unless report
+    raise OpenTox::NotFoundError.new type+" report with id '#{id}' not found." unless report
     return report
   end
 end 

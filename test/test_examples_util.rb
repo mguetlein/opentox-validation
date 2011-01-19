@@ -15,12 +15,12 @@ module ValidationExamples
           #data_uri = OpenTox::RestClientWrapper.post(dataset_service,{:content_type => file_type},data).to_s.chomp
           #@@dataset_uris[file.path.to_s] = data_uri
           #LOGGER.debug "uploaded dataset: "+data_uri
-          d = OpenTox::Dataset.create
+          d = OpenTox::Dataset.create(CONFIG[:services]["opentox-dataset"], SUBJECTID)
           d.load_yaml(data)
-          d.save
+          d.save( SUBJECTID )
           @@dataset_uris[file.path.to_s] = d.uri
         elsif (file.path =~ /csv$/)
-          d = OpenTox::Dataset.create_from_csv_file(file.path)
+          d = OpenTox::Dataset.create_from_csv_file(file.path, SUBJECTID)
           raise "num features not 1 (="+d.features.keys.size.to_s+"), what to predict??" if d.features.keys.size != 1
           @@prediction_features[file.path.to_s] = d.features.keys[0]
           @@dataset_uris[file.path.to_s] = d.uri
@@ -56,6 +56,7 @@ module ValidationExamples
     
     def self.validation_post(uri, params)
       
+      params[:subjectid] = SUBJECTID if SUBJECTID and params[:subjectid]==nil
       if $test_case
         $test_case.post uri,params
         return wait($test_case.last_response.body)
@@ -77,10 +78,10 @@ module ValidationExamples
     def self.validation_delete(uri, accept_header='application/rdf+xml')
       
       if $test_case
-        $test_case.delete uri,nil,'HTTP_ACCEPT' => accept_header 
+        $test_case.delete uri,{:subjectid => SUBJECTID},'HTTP_ACCEPT' => accept_header 
         return wait($test_case.last_response.body)
       else
-        return OpenTox::RestClientWrapper.delete(File.join(CONFIG[:services]["opentox-validation"],uri),{:accept => accept_header})
+        return OpenTox::RestClientWrapper.delete(File.join(CONFIG[:services]["opentox-validation"],uri),{:accept => accept_header,:subjectid => SUBJECTID})
       end
     end
     
@@ -242,7 +243,10 @@ module ValidationExamples
          uri = a[0]
          file = a[1]
          if send(uri)==nil and send(file)!=nil
-            send("#{uri.to_s}=".to_sym, Util.upload_dataset(send(file)))
+            dataset_uri = Util.upload_dataset(send(file))
+            send("#{uri.to_s}=".to_sym, dataset_uri)
+            @uploaded_datasets = [] unless @uploaded_datasets
+            @uploaded_datasets << dataset_uri
          end
       end
      
@@ -272,6 +276,14 @@ module ValidationExamples
         Util.validation_delete '/report/'+report_type+'/'+@report_uri.split('/')[-1] if @report_uri
       rescue => ex
         puts "Could not delete report:' "+@report_uri+" "+ex.message
+      end
+      @uploaded_datasets.each do |d|
+        begin
+          puts "deleting dataset "+d
+          OpenTox::RestClientWrapper.delete(d,{:subjectid => SUBJECTID})
+        rescue => ex
+          puts "Could not delete dataset:' "+d+" "+ex.message
+        end
       end
     end
     

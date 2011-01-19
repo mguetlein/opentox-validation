@@ -11,10 +11,10 @@ LOGGER = OTLogger.new(STDOUT)
 LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 LOGGER.formatter = Logger::Formatter.new
 
-#Rack::Test::DEFAULT_HOST = "localhost/validation"
+#Rack::Test::DEFAULT_HOST = "local-ot/validation"
 module Sinatra
   module UrlForHelper
-    BASE = "http://localhost/validation"
+    BASE = "http://local-ot/validation"
    def url_for url_fragment, mode=:path_only
       case mode
       when :path_only
@@ -109,19 +109,19 @@ class ReachTest < Test::Unit::TestCase
 #    raise "File not found: "+file.path.to_s unless File.exist?(file.path)
 #    data = File.read(file.path)
 #    #puts "data found "+data.to_s[0..1000]
-#    puts OpenTox::RestClientWrapper.post("http://localhost/validation/reach_report/qmrf/20",{:content_type => "application/qmrf-xml"},data).to_s.chomp
+#    puts OpenTox::RestClientWrapper.post("http://local-ot/validation/reach_report/qmrf/20",{:content_type => "application/qmrf-xml"},data).to_s.chomp
 
 #    post "/reach_report/qmrf/8"
 #    puts last_response.body
     
     #model_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/model/173393"
-    model_uri = "http://localhost/model/1"
-    #http://localhost/majority/class/model/15
-    #model_uri = "http://localhost/majority/class/model/15"
-   # model_uri = "http://localhost/majority/class/model/91"
+    model_uri = "http://local-ot/model/1"
+    #http://local-ot/majority/class/model/15
+    #model_uri = "http://local-ot/majority/class/model/15"
+   # model_uri = "http://local-ot/majority/class/model/91"
     #model_uri = "http://apps.ideaconsult.net:8080/ambit2/model/2"
-    post '/reach_report/qmrf',:model_uri=>model_uri #http://localhost/model/1"
-    ##post '/reach_report/qprf',:compound_uri=>"http://localhost/compound/XYZ"
+    post '/reach_report/qmrf',:model_uri=>model_uri #http://local-ot/model/1"
+    ##post '/reach_report/qprf',:compound_uri=>"http://local-ot/compound/XYZ"
     uri = last_response.body
     puts "task: "+uri.to_s
     uri = Lib::TestUtil.wait_for_task(uri)

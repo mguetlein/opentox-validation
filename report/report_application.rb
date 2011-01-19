@@ -46,7 +46,7 @@ get '/report/?' do
     case request.env['HTTP_ACCEPT'].to_s
     when  /text\/html/
       related_links =
-        "All validations: "+$sinatra.url_for("/",:full)
+        "All validations: "+url_for("/",:full)
       description = 
         "A list of all report types."
       content_type "text/html"
@@ -63,9 +63,9 @@ get '/report/:report_type' do
     case request.env['HTTP_ACCEPT'].to_s
     when  /text\/html/
       related_links =
-        "Available report types: "+$sinatra.url_for("/report",:full)+"\n"+
-        "Single validations:     "+$sinatra.url_for("/",:full)+"\n"+
-        "Crossvalidations:       "+$sinatra.url_for("/crossvalidation",:full)
+        "Available report types: "+url_for("/report",:full)+"\n"+
+        "Single validations:     "+url_for("/",:full)+"\n"+
+        "Crossvalidations:       "+url_for("/crossvalidation",:full)
       description = 
         "A list of all "+params[:report_type]+" reports. To create a report, use the POST method."
       post_params = [[:validation_uris]]
@@ -118,14 +118,14 @@ end
 delete '/report/:type/:id' do
   perform do |rs|
     content_type "text/plain"
-    rs.delete_report(params[:type],params[:id])
+    rs.delete_report(params[:type],params[:id],@subjectid)
   end
 end
 
 post '/report/:type' do
   task = OpenTox::Task.create("Create report",url_for("/report/"+params[:type], :full)) do |task| #,params
     perform do |rs|
-      rs.create_report(params[:type],params[:validation_uris]?params[:validation_uris].split(/\n|,/):nil,task)
+      rs.create_report(params[:type],params[:validation_uris]?params[:validation_uris].split(/\n|,/):nil,@subjectid,task)
     end
   end
   content_type "text/uri-list"

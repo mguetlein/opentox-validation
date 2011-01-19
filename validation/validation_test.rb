@@ -1,3 +1,11 @@
+
+require "rubygems"
+require "sinatra"
+before {
+  request.env['HTTP_HOST']="local-ot/validation"
+  request.env["REQUEST_URI"]=request.env["PATH_INFO"]
+}
+
 require "uri"
 require "yaml"
 ENV['RACK_ENV'] = 'test'
@@ -11,10 +19,20 @@ LOGGER = OTLogger.new(STDOUT)
 LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 LOGGER.formatter = Logger::Formatter.new
 
-#Rack::Test::DEFAULT_HOST = "localhost" #"/validation"
+if AA_SERVER
+  TEST_USER = "mgtest"
+  TEST_PW = "mgpasswd"
+  SUBJECTID = OpenTox::Authorization.authenticate(TEST_USER,TEST_PW)
+  raise "could not log in" unless SUBJECTID
+  puts "logged in: "+SUBJECTID.to_s
+else
+  SUBJECTID = nil
+end
+
+#Rack::Test::DEFAULT_HOST = "local-ot" #"/validation"
 module Sinatra
   module UrlForHelper
-    BASE = "http://localhost/validation"
+    BASE = "http://local-ot/validation"
     def url_for url_fragment, mode=:path_only
       case mode
       when :path_only
@@ -32,99 +50,112 @@ class ValidationTest < Test::Unit::TestCase
   include Lib::TestUtil
   
   def test_it
-    $test_case = self
-    
-    #get "/1",nil,'HTTP_ACCEPT' => "text/html" 
-    #get "/2",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
-    #puts last_response.body
-    #exit
-    
-#    d = OpenTox::Dataset.find("http://ot-dev.in-silico.ch/dataset/307")
-#    puts d.compounds.inspect
-#    exit
-    
-    #get "?model=http://localhost/model/1" 
-#    get "/crossvalidation/3/predictions"
-#    puts last_response.body
+    begin
+      $test_case = self
+      
+      #get "/1",nil,'HTTP_ACCEPT' => "text/html" 
+       
+#      get "/crossvalidation/1",nil,'HTTP_ACCEPT' => "application/x-yaml"
+#      puts last_response.body
+##      
+#      get "/crossvalidation/1",nil,'HTTP_ACCEPT' => "application/rdf+xml"
+#      puts last_response.body
+#      exit
+      
+  #    d = OpenTox::Dataset.find("http://ot-dev.in-silico.ch/dataset/307")
+  #    puts d.compounds.inspect
+  #    exit
+      
+      #get "?model=http://local-ot/model/1" 
+  #    get "/crossvalidation/3/predictions"
+  #    puts last_response.body
+  
+  #    post "/validate_datasets",{
+  #      :test_dataset_uri=>"http://apps.deaconsult.net:8080/ambit2/dataset/R3924",
+  #      :prediction_dataset_uri=>"http://apps.ideaconsult.net:8080/ambit2/dataset/R3924?feature_uris[]=http%3A%2F%2Fapps.ideaconsult.net%3A8080%2Fambit2%2Fmodel%2F52%2Fpredicted",
+  #      #:test_target_dataset_uri=>"http://local-ot/dataset/202",
+  #      :prediction_feature=>"http://apps.ideaconsult.net:8080/ambit2/feature/21715",
+  #      :predicted_feature=>"http://apps.ideaconsult.net:8080/ambit2/feature/28944",
+  #      :regression=>"true"}
+  #      #:classification=>"true"}
+  #    puts last_response.body
+      
+      #post "/crossvalidation/cleanup"
+      #puts last_response.body
+  
+      #get "/crossvalidation/19/predictions",nil,'HTTP_ACCEPT' => "application/x-yaml" #/statistics"
+  #    post "",:model_uri=>"http://local-ot/model/1",:test_dataset_uri=>"http://local-ot/dataset/3",
+  #      :test_target_dataset_uri=>"http://local-ot/dataset/1"
+  
+  #    get "/crossvalidation/2",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
+     #puts last_response.body
+     #exit
+      
+      #get "/crossvalidation?model_uri=lazar"
+  #    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
+      #puts last_response.body
+      
+  #    post "/validate_datasets",{
+  #      :test_dataset_uri=>"http://local-ot/dataset/204",
+  #      :prediction_dataset_uri=>"http://local-ot/dataset/206",
+  #      :test_target_dataset_uri=>"http://local-ot/dataset/202",
+  #      :prediction_feature=>"http://ot-dev.in-silico.ch/toxcreate/feature#IRIS%20unit%20risk",
+  #      :predicted_feature=>"http://ot-dev.in-silico.ch/toxcreate/feature#IRIS%20unit%20risk_lazar_regression",
+  #      :regression=>"true"}
+  #      #:classification=>"true"}
+  #    puts last_response.body
+  
+  #     post "/validate_datasets",{
+  #      :test_dataset_uri=>"http://local-ot/dataset/89",
+  #       :prediction_dataset_uri=>"http://local-ot/dataset/91",
+  #       :test_target_dataset_uri=>"http://local-ot/dataset/87",
+  #       :prediction_feature=>"http://local-ot/dataset/1/feature/hamster_carcinogenicity",
+  #       :predicted_feature=>"",
+  ##      :regression=>"true"}
+  #       :classification=>"true"}
+  #    puts last_response.body
+  
+      # m = OpenTox::Model::Generic.find("http://local-ot/model/1323333")
+      # puts m.to_yaml
+  
+  #     post "/validate_datasets",{
+  #      :test_dataset_uri=>"http://local-ot/dataset/506",
+  #       :prediction_dataset_uri=>"http://local-ot/dataset/526",
+  #       :test_target_dataset_uri=>"http://local-ot/dataset/504",
+  #       :prediction_feature=>"http://local-ot/dataset/504/feature/LC50_mmol",
+  #       :model_uri=>"http://local-ot/model/48"}
+  #      #:regression=>"true"}
+  ##       :classification=>"true"}
+  #    puts last_response.body
+      
+      #run_test("13a","http://local-ot/validation/39",nil,false) #,"http://local-ot/validation/28")#,"http://local-ot/validation/394");
+      
+      #puts OpenTox::Authorization.list_policy_uris(SUBJECTID).inspect
 
-#    post "/validate_datasets",{
-#      :test_dataset_uri=>"http://apps.deaconsult.net:8080/ambit2/dataset/R3924",
-#      :prediction_dataset_uri=>"http://apps.ideaconsult.net:8080/ambit2/dataset/R3924?feature_uris[]=http%3A%2F%2Fapps.ideaconsult.net%3A8080%2Fambit2%2Fmodel%2F52%2Fpredicted",
-#      #:test_target_dataset_uri=>"http://localhost/dataset/202",
-#      :prediction_feature=>"http://apps.ideaconsult.net:8080/ambit2/feature/21715",
-#      :predicted_feature=>"http://apps.ideaconsult.net:8080/ambit2/feature/28944",
-#      :regression=>"true"}
-#      #:classification=>"true"}
-#    puts last_response.body
-    
-    #post "/crossvalidation/cleanup"
-    #puts last_response.body
-
-    #get "/crossvalidation/19/predictions",nil,'HTTP_ACCEPT' => "application/x-yaml" #/statistics"
-#    post "",:model_uri=>"http://localhost/model/1",:test_dataset_uri=>"http://localhost/dataset/3",
-#      :test_target_dataset_uri=>"http://localhost/dataset/1"
-
-#    get "/crossvalidation/2",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
-   #puts last_response.body
-   #exit
-    
-    #get "/crossvalidation?model_uri=lazar"
-#    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
-    #puts last_response.body
-    
-#    post "/validate_datasets",{
-#      :test_dataset_uri=>"http://localhost/dataset/204",
-#      :prediction_dataset_uri=>"http://localhost/dataset/206",
-#      :test_target_dataset_uri=>"http://localhost/dataset/202",
-#      :prediction_feature=>"http://ot-dev.in-silico.ch/toxcreate/feature#IRIS%20unit%20risk",
-#      :predicted_feature=>"http://ot-dev.in-silico.ch/toxcreate/feature#IRIS%20unit%20risk_lazar_regression",
-#      :regression=>"true"}
-#      #:classification=>"true"}
-#    puts last_response.body
-
-#     post "/validate_datasets",{
-#      :test_dataset_uri=>"http://localhost/dataset/89",
-#       :prediction_dataset_uri=>"http://localhost/dataset/91",
-#       :test_target_dataset_uri=>"http://localhost/dataset/87",
-#       :prediction_feature=>"http://localhost/dataset/1/feature/hamster_carcinogenicity",
-#       :predicted_feature=>"",
-##      :regression=>"true"}
-#       :classification=>"true"}
-#    puts last_response.body
-
-    # m = OpenTox::Model::Generic.find("http://localhost/model/1323333")
-    # puts m.to_yaml
-
-#     post "/validate_datasets",{
-#      :test_dataset_uri=>"http://localhost/dataset/506",
-#       :prediction_dataset_uri=>"http://localhost/dataset/526",
-#       :test_target_dataset_uri=>"http://localhost/dataset/504",
-#       :prediction_feature=>"http://localhost/dataset/504/feature/LC50_mmol",
-#       :model_uri=>"http://localhost/model/48"}
-#      #:regression=>"true"}
-##       :classification=>"true"}
-#    puts last_response.body
-    
-    #run_test("13a","http://localhost/validation/39",nil,false) #,"http://localhost/validation/28")#,"http://localhost/validation/394");
-    run_test("1b",nil,nil,false)
-    
-    #run_test("7b","http://localhost/validation/21")
-    
-    #run_test("3a","http://localhost/validation/crossvalidation/4")
-    #run_test("3b","http://localhost/validation/crossvalidation/3")
-    
-    #run_test("8a", "http://localhost/validation/crossvalidation/6")
-    #run_test("8b", "http://localhost/validation/crossvalidation/5")
-
-    #run_test("11b", "http://localhost/validation/crossvalidation/2" )# //localhost/validation/42")#, "http://localhost/validation/report/validation/8") #,"http://localhost/validation/report/validation/36") #, "http://localhost/validation/321")
-   # run_test("7a","http://localhost/validation/40") #,"http://localhost/validation/crossvalidation/10") #, "http://localhost/validation/321")
-    #run_test("8b", "http://localhost/validation/crossvalidation/4")
- 
-    #puts Nightly.build_nightly("1")
-    
-    #prepare_examples
-    #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
-    #do_test_examples_ortona
+      run_test("3b",nil,nil,true)
+      #delete "/1",:subjectid=>SUBJECTID
+      
+      #run_test("7b","http://local-ot/validation/21")
+      
+      #run_test("3a","http://local-ot/validation/crossvalidation/4")
+      #run_test("3b","http://local-ot/validation/crossvalidation/3")
+      
+      #run_test("8a", "http://local-ot/validation/crossvalidation/6")
+      #run_test("8b", "http://local-ot/validation/crossvalidation/5")
+  
+      #run_test("11b", "http://local-ot/validation/crossvalidation/2" )# //local-ot/validation/42")#, "http://local-ot/validation/report/validation/8") #,"http://local-ot/validation/report/validation/36") #, "http://local-ot/validation/321")
+     # run_test("7a","http://local-ot/validation/40") #,"http://local-ot/validation/crossvalidation/10") #, "http://local-ot/validation/321")
+      #run_test("8b", "http://local-ot/validation/crossvalidation/4")
+   
+      #puts Nightly.build_nightly("1")
+      
+      #prepare_examples
+      #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
+      #do_test_examples_ortona
+      
+    ensure
+      OpenTox::Authorization.logout(SUBJECTID) if AA_SERVER
+    end
   end
 
   def app
@@ -132,6 +163,11 @@ class ValidationTest < Test::Unit::TestCase
   end
   
   def run_test(select=nil, validation_uri=nil, report_uri=nil, delete=false)
+    
+    if AA_SERVER && delete
+      policies_before = OpenTox::Authorization.list_policy_uris(SUBJECTID)
+    end
+    
     puts ValidationExamples.list unless select
     validationExamples = ValidationExamples.select(select)
     validationExamples.each do |vv|
@@ -148,11 +184,24 @@ class ValidationTest < Test::Unit::TestCase
         unless ex.report_uri
           ex.report
         end
-        #ex.verify_yaml
-        #ex.compare_yaml_vs_rdf
+        ##ex.verify_yaml
+        ##ex.compare_yaml_vs_rdf
         ex.delete if delete
       end
     end
+    
+    if AA_SERVER && delete
+      policies_after= OpenTox::Authorization.list_policy_uris(SUBJECTID)
+      diff = policies_after.size - policies_before.size
+      if (diff != 0)
+        policies_before.each do |k,v|
+          policies_after.delete(k)
+        end
+        LOGGER.warn diff.to_s+" policies NOT deleted:\n"+policies_after.collect{|k,v| k.to_s+" => "+v.to_s}.join("\n")
+      else
+        LOGGER.debug "all policies deleted"
+      end
+    end      
   end
   
   def prepare_examples

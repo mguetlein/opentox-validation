@@ -22,8 +22,8 @@ module Reports
     include REXML
     
     def self.dtd_directory
-      if $sinatra
-        $sinatra.url_for('/'+ENV['DOCBOOK_DIRECTORY']+'/'+ENV['REPORT_DTD'], :full)
+      if $url_provider
+        $url_provider.url_for('/'+ENV['DOCBOOK_DIRECTORY']+'/'+ENV['REPORT_DTD'], :full)
       else
         f = File.expand_path(File.join(ENV['DOCBOOK_DIRECTORY'],ENV['REPORT_DTD']))
         raise "cannot find dtd" unless File.exist?(f)
