@@ -64,7 +64,7 @@ module Validation
     
     def to_rdf
       s = OpenTox::Serializer::Owl.new
-      s.add_val(validation_uri,OT.Validation,get_content_as_hash.keys_to_rdf_format.keys_to_owl_uris)
+      s.add_resource(validation_uri,OT.Validation,get_content_as_hash.keys_to_rdf_format.keys_to_owl_uris)
       s.to_rdfxml
     end
     
@@ -93,7 +93,7 @@ module Validation
 
     def to_rdf
       s = OpenTox::Serializer::Owl.new
-      s.add_val(crossvalidation_uri,OT.Crossvalidation,get_content_as_hash.keys_to_rdf_format.keys_to_owl_uris)
+      s.add_resource(crossvalidation_uri,OT.Crossvalidation,get_content_as_hash.keys_to_rdf_format.keys_to_owl_uris)
       s.to_rdfxml
     end
     

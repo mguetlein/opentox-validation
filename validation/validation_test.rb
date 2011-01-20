@@ -54,8 +54,8 @@ class ValidationTest < Test::Unit::TestCase
       $test_case = self
       
       #get "/1",nil,'HTTP_ACCEPT' => "text/html" 
-       
-#      get "/crossvalidation/1",nil,'HTTP_ACCEPT' => "application/x-yaml"
+#       
+#      get "/234234232341",nil,'HTTP_ACCEPT' => "application/x-yaml"
 #      puts last_response.body
 ##      
 #      get "/crossvalidation/1",nil,'HTTP_ACCEPT' => "application/rdf+xml"
@@ -132,7 +132,13 @@ class ValidationTest < Test::Unit::TestCase
       
       #puts OpenTox::Authorization.list_policy_uris(SUBJECTID).inspect
 
-      run_test("3b",nil,nil,true)
+      #run_test("1b",nil,nil,false,{:dataset_uri=>"http://local-ot/dataset/45", :prediction_feature => "http://local-ot/dataset/45/feature/Hamster%20Carcinogenicity"})
+      
+      #get "/12123123123123123"
+      get "/chain"
+      #get "/examples"
+      puts last_response.body
+
       #delete "/1",:subjectid=>SUBJECTID
       
       #run_test("7b","http://local-ot/validation/21")
@@ -162,7 +168,7 @@ class ValidationTest < Test::Unit::TestCase
     Sinatra::Application
   end
   
-  def run_test(select=nil, validation_uri=nil, report_uri=nil, delete=false)
+  def run_test(select=nil, validation_uri=nil, report_uri=nil, delete=false, overwrite={})
     
     if AA_SERVER && delete
       policies_before = OpenTox::Authorization.list_policy_uris(SUBJECTID)
@@ -173,17 +179,22 @@ class ValidationTest < Test::Unit::TestCase
     validationExamples.each do |vv|
       vv.each do |v| 
         ex = v.new
+        
         ex.validation_uri = validation_uri
+        overwrite.each do |k,v|
+          ex.send(k.to_s+"=",v)
+        end
+        
         unless ex.validation_uri
           ex.upload_files
           ex.check_requirements
           ex.validate
           LOGGER.debug "validation done '"+ex.validation_uri.to_s+"'"
         end
-        ex.report_uri = report_uri
-        unless ex.report_uri
-          ex.report
-        end
+#        ex.report_uri = report_uri
+#        unless ex.report_uri
+#          ex.report
+#        end
         ##ex.verify_yaml
         ##ex.compare_yaml_vs_rdf
         ex.delete if delete

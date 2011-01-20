@@ -521,13 +521,14 @@ end
 
 get '/:id' do
   LOGGER.info "get validation with id "+params[:id].to_s+" '"+request.env['HTTP_ACCEPT'].to_s+"'"
-  begin
+#  begin
     #validation = Validation::Validation.find(params[:id])
-    validation = Validation::Validation.get(params[:id])
-  rescue ActiveRecord::RecordNotFound => ex
-    halt 404, "Validation '#{params[:id]}' not found."
-  end
-
+#  rescue ActiveRecord::RecordNotFound => ex
+#    halt 404, "Validation '#{params[:id]}' not found."
+#  end
+  validation = Validation::Validation.get(params[:id])
+  raise OpenTox::NotFoundError.new "Validation '#{params[:id]}' not found." unless validation
+  
   case request.env['HTTP_ACCEPT'].to_s
   when "application/rdf+xml"
     content_type "application/rdf+xml"
