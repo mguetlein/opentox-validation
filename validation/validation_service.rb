@@ -129,7 +129,7 @@ module Validation
       
       #model = OpenTox::Model::PredictionModel.find(self.model_uri)
       #raise OpenTox::NotFoundError.new "model not found: "+self.model_uri.to_s unless model
-      model = OpenTox::Model::Generic.find(self.model_uri)
+      model = OpenTox::Model::Generic.find(self.model_uri, self.subjectid)
       raise OpenTox::NotFoundError.new "model not found: "+self.model_uri.to_s unless model
       
       unless self.algorithm_uri
@@ -173,7 +173,7 @@ module Validation
       
       #model = OpenTox::Model::PredictionModel.find(self.model_uri) if model==nil and self.model_uri
       #raise OpenTox::NotFoundError.new "model not found: "+self.model_uri.to_s unless model
-      model = OpenTox::Model::Generic.find(self.model_uri) if model==nil and self.model_uri
+      model = OpenTox::Model::Generic.find(self.model_uri, self.subjectid) if model==nil and self.model_uri
       raise OpenTox::NotFoundError.new "model not found: "+self.model_uri.to_s unless model
       
       dependentVariables = model.metadata[OT.dependentVariables]
@@ -198,7 +198,7 @@ module Validation
       LOGGER.debug "computing prediction stats"
       prediction = Lib::OTPredictions.new( feature_type, 
         self.test_dataset_uri, self.test_target_dataset_uri, self.prediction_feature, 
-        self.prediction_dataset_uri, predicted_feature, OpenTox::SubTask.create(task, 0, 80) )
+        self.prediction_dataset_uri, predicted_feature, self.subjectid, OpenTox::SubTask.create(task, 0, 80) )
       #reading datasets and computing the main stats is 80% the work 
       
       unless dry_run
@@ -338,7 +338,7 @@ module Validation
       
       raise "random seed not set "+self.inspect unless self.random_seed
       LOGGER.debug "creating datasets for crossvalidation"
-      orig_dataset = OpenTox::Dataset.find(self.dataset_uri)
+      orig_dataset = OpenTox::Dataset.find(self.dataset_uri,self.subjectid)
       raise OpenTox::NotFoundError.new "Dataset not found: "+self.dataset_uri.to_s unless orig_dataset
       
       shuffled_compounds = orig_dataset.compounds.shuffle( self.random_seed )
@@ -448,7 +448,7 @@ module Validation
       
       random_seed=1 unless random_seed
       
-      orig_dataset = OpenTox::Dataset.find orig_dataset_uri
+      orig_dataset = OpenTox::Dataset.find orig_dataset_uri,subjectid
       orig_dataset.load_all
       raise OpenTox::NotFoundError.new "Dataset not found: "+orig_dataset_uri.to_s unless orig_dataset
       if prediction_feature
@@ -513,7 +513,7 @@ module Validation
       task.progress(100) if task
       
       if ENV['RACK_ENV'] =~ /test|debug/
-        training_dataset = OpenTox::Dataset.find result[:training_dataset_uri]
+        training_dataset = OpenTox::Dataset.find result[:training_dataset_uri],subjectid
         raise OpenTox::NotFoundError.new "Training dataset not found: '"+result[:training_dataset_uri].to_s+"'" unless training_dataset
         training_dataset.load_all
         value_count = 0
@@ -521,7 +521,8 @@ module Validation
           value_count += training_dataset.data_entries[c][prediction_feature].size
         end
         raise  "training compounds error" unless value_count==training_compounds.size
-        raise OpenTox::NotFoundError.new "Test dataset not found: '"+result[:test_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:test_dataset_uri]
+        raise OpenTox::NotFoundError.new "Test dataset not found: '"+result[:test_dataset_uri].to_s+"'" unless 
+          OpenTox::Dataset.find result[:test_dataset_uri], subjectid
       end
       LOGGER.debug "bootstrapping done, training dataset: '"+result[:training_dataset_uri].to_s+"', test dataset: '"+result[:test_dataset_uri].to_s+"'"
       
@@ -535,8 +536,8 @@ module Validation
       split_ratio=0.67 unless split_ratio
       random_seed=1 unless random_seed
       
-      orig_dataset = OpenTox::Dataset.find orig_dataset_uri
-      orig_dataset.load_all
+      orig_dataset = OpenTox::Dataset.find orig_dataset_uri, subjectid
+      orig_dataset.load_all subjectid
       raise OpenTox::NotFoundError.new "Dataset not found: "+orig_dataset_uri.to_s unless orig_dataset
       raise OpenTox::NotFoundError.new "Split ratio invalid: "+split_ratio.to_s unless split_ratio and split_ratio=split_ratio.to_f
       raise OpenTox::NotFoundError.new "Split ratio not >0 and <1 :"+split_ratio.to_s unless split_ratio>0 && split_ratio<1
@@ -597,10 +598,11 @@ module Validation
       task.progress(100) if task  
       
       if ENV['RACK_ENV'] =~ /test|debug/
-        raise OpenTox::NotFoundError.new "Training dataset not found: '"+result[:training_dataset_uri].to_s+"'" unless OpenTox::Dataset.find result[:training_dataset_uri]
-        test_data = OpenTox::Dataset.find result[:test_dataset_uri]
+        raise OpenTox::NotFoundError.new "Training dataset not found: '"+result[:training_dataset_uri].to_s+"'" unless 
+          OpenTox::Dataset.find(result[:training_dataset_uri],subjectid)
+        test_data = OpenTox::Dataset.find result[:test_dataset_uri],subjectid
         raise OpenTox::NotFoundError.new "Test dataset not found: '"+result[:test_dataset_uri].to_s+"'" unless test_data 
-        test_data.load_compounds
+        test_data.load_compounds subjectid
         raise "Test dataset num coumpounds != "+(compounds.size-split-1).to_s+", instead: "+
           test_data.compounds.size.to_s+"\n"+test_data.to_yaml unless test_data.compounds.size==(compounds.size-1-split)
       end

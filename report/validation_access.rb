@@ -8,7 +8,7 @@ class Reports::ValidationAccess
 
   # initialize Reports::Validation object with data from Lib:Validation object
   #  
-  def init_validation(validation, uri)
+  def init_validation(validation, uri, subjectid=nil)
     raise "not implemented"
   end
   
@@ -20,13 +20,13 @@ class Reports::ValidationAccess
   
   # yields predictions (Lib::OTPredictions) if available 
   #
-  def get_predictions(validation, task=nil)
+  def get_predictions(validation, subjectid=nil, task=nil)
     raise "not implemented"
   end
   
   # replaces crossvalidations uris with corresponding validation uris, in-/output: array
   #
-  def resolve_cv_uris(validation_uris)
+  def resolve_cv_uris(validation_uris,subjectid=nil)
     raise "not implemented"
   end
   
@@ -37,11 +37,11 @@ class Reports::ValidationAccess
   end
   
   # is validation classification/regression?
-  def feature_type(validation)
+  def feature_type(validation, subjectid=nil)
     raise "not implemented"
   end
   
-  def predicted_variable(validation)
+  def predicted_variable(validation, subjectid=nil)
     raise "not implemented"
   end
   
@@ -53,20 +53,23 @@ class Reports::ValidationDB < Reports::ValidationAccess
 #    @model_store = {}
 #  end
   
-  def resolve_cv_uris(validation_uris)
+  def resolve_cv_uris(validation_uris, subjectid=nil)
     res = []
     validation_uris.each do |u|
       if u.to_s =~ /.*\/crossvalidation\/[0-9]+/
         cv_id = u.split("/")[-1].to_i
         cv = nil
-        begin
-          #cv = Lib::Crossvalidation.find( cv_id )
-          cv = Lib::Crossvalidation.get( cv_id )
-        rescue => ex
-          raise "could not access crossvalidation with id "+validation_id.to_s+", error-msg: "+ex.message
-        end
-        raise Reports::BadRequest.new("crossvalidation with id '"+cv_id.to_s+"' not found") unless cv
-        raise Reports::BadRequest.new("crossvalidation with id '"+cv_id.to_s+"' not finished") unless cv.finished
+        
+        raise OpenTox::NotAuthorizedError.new "Not authorized: GET "+u.to_s if
+          subjectid and !OpenTox::Authorization.authorized?(u,"GET",subjectid)
+#        begin
+#          #cv = Lib::Crossvalidation.find( cv_id )
+#        rescue => ex
+#          raise "could not access crossvalidation with id "+validation_id.to_s+", error-msg: "+ex.message
+#        end
+        cv = Lib::Crossvalidation.get( cv_id )
+        raise OpenTox::NotFoundError.new "crossvalidation with id "+cv_id.to_s+" not found" unless cv
+        raise OpenTox::BadRequestError.new("crossvalidation with id '"+cv_id.to_s+"' not finished") unless cv.finished
         #res += Lib::Validation.find( :all, :conditions => { :crossvalidation_id => cv_id } ).collect{|v| v.validation_uri.to_s}
         res += Lib::Validation.all( :crossvalidation_id => cv_id ).collect{|v| v.validation_uri.to_s }
       else
@@ -76,21 +79,18 @@ class Reports::ValidationDB < Reports::ValidationAccess
     res
   end
   
-  def init_validation(validation, uri)
+  def init_validation(validation, uri, subjectid=nil)
   
-    raise Reports::BadRequest.new "not a validation uri: "+uri.to_s unless uri =~ /.*\/[0-9]+/
+    raise OpenTox::BadRequestError.new "not a validation uri: "+uri.to_s unless uri =~ /.*\/[0-9]+/
     validation_id = uri.split("/")[-1]
-    raise Reports::BadRequest.new "invalid validation id "+validation_id.to_s unless validation_id!=nil and 
+    raise OpenTox::BadRequestError.new "invalid validation id "+validation_id.to_s unless validation_id!=nil and 
       (validation_id.to_i > 0 || validation_id.to_s=="0" )
     v = nil
-    begin
-      #v = Lib::Validation.find(validation_id)
-      v = Lib::Validation.get(validation_id)
-    rescue => ex
-      raise "could not access validation with id "+validation_id.to_s+", error-msg: "+ex.message
-    end
-    raise Reports::BadRequest.new "no validation found with id "+validation_id.to_s unless v #+" and uri "+uri.to_s unless v
-    raise Reports::BadRequest.new "validation with id "+validation_id.to_s+" is not finished yet" unless v.finished
+    raise OpenTox::NotAuthorizedError.new "Not authorized: GET "+uri.to_s if
+      subjectid and !OpenTox::Authorization.authorized?(uri,"GET",subjectid)
+    v = Lib::Validation.get(validation_id)
+    raise OpenTox::NotFoundError.new "validation with id "+validation_id.to_s+" not found" unless v
+    raise OpenTox::BadRequestError.new "validation with id "+validation_id.to_s+" is not finished yet" unless v.finished
     
     (Lib::VAL_PROPS + Lib::VAL_CV_PROPS).each do |p|
       validation.send("#{p.to_s}=".to_sym, v.send(p))
@@ -107,32 +107,33 @@ class Reports::ValidationDB < Reports::ValidationAccess
     
     #cv = Lib::Crossvalidation.find(validation.crossvalidation_id)
     cv = Lib::Crossvalidation.get(validation.crossvalidation_id)
-    raise Reports::BadRequest.new "no crossvalidation found with id "+validation.crossvalidation_id.to_s unless cv
+    raise OpenTox::BadRequestError.new "no crossvalidation found with id "+validation.crossvalidation_id.to_s unless cv
     
     Lib::CROSS_VAL_PROPS.each do |p|
       validation.send("#{p.to_s}=".to_sym, cv[p])        
     end
   end
 
-  def get_predictions(validation, task=nil)
+  def get_predictions(validation, subjectid=nil, task=nil)
     Lib::OTPredictions.new( validation.feature_type, validation.test_dataset_uri, 
       validation.test_target_dataset_uri, validation.prediction_feature, validation.prediction_dataset_uri, 
-      validation.predicted_variable, task)
+      validation.predicted_variable, subjectid, task)
   end
   
   def get_class_domain( validation )
     OpenTox::Feature.new( validation.prediction_feature ).domain
   end
   
-  def feature_type( validation )
-    OpenTox::Model::Generic.new(validation.model_uri).feature_type
+  def feature_type( validation, subjectid=nil )
+    raise "subjectid is nil" unless subjectid
+    OpenTox::Model::Generic.new(validation.model_uri).feature_type(subjectid)
     #get_model(validation).classification?
   end
   
-  def predicted_variable(validation)
+  def predicted_variable(validation, subjectid=nil)
     raise "cannot derive model depended props for merged validations" if Lib::MergeObjects.merged?(validation)
-    model = OpenTox::Model::Generic.find(validation.model_uri)
-    raise Reports::NotFound.new "model not found '"+validation.model_uri+"'" unless model
+    model = OpenTox::Model::Generic.find(validation.model_uri, subjectid)
+    raise OpenTox::NotFoundError.new "model not found '"+validation.model_uri+"'" unless model
     model.metadata[OT.predictedVariables]
     #get_model(validation).predictedVariables
   end
@@ -164,7 +165,7 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
         begin
           vali_uri_list = RestClientWrapper.get uri
         rescue => ex
-          raise Reports::BadRequest.new "cannot get validations for cv at '"+uri.to_s+"', error msg: "+ex.message
+          raise OpenTox::BadRequestError.new "cannot get validations for cv at '"+uri.to_s+"', error msg: "+ex.message
         end
         res += vali_uri_list.split("\n")
       else
@@ -180,7 +181,7 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
     begin
       data = YAML.load(RestClient.get uri)
     rescue => ex
-      raise Reports::BadRequest.new "cannot get validation at '"+uri.to_s+"', error msg: "+ex.message
+      raise OpenTox::BadRequestError.new "cannot get validation at '"+uri.to_s+"', error msg: "+ex.message
     end
   
     Lib::VAL_PROPS.each do |p|
@@ -205,7 +206,7 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
     begin
       data = YAML.load(RestClient.get validation.crossvalidation_uri)
     rescue => ex
-      raise Reports::BadRequest.new "cannot get crossvalidation at '"+validation.crossvalidation_uri.to_s+"', error msg: "+ex.message
+      raise OpenTox::BadRequestError.new "cannot get crossvalidation at '"+validation.crossvalidation_uri.to_s+"', error msg: "+ex.message
     end
     
     Lib::CROSS_VAL_PROPS.each do |p|
@@ -213,7 +214,7 @@ class Reports::ValidationWebservice < Reports::ValidationAccess
     end
   end
 
-  def get_predictions(validation, task=nil)
+  def get_predictions(validation, subjectid=nil, task=nil)
     Lib::Predictions.new( validation.prediction_feature, validation.test_dataset_uri, validation.prediction_dataset_uri)
   end
 end

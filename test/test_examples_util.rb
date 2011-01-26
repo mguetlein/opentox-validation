@@ -89,8 +89,9 @@ module ValidationExamples
     def self.wait(uri)
       if uri.task_uri?
         task = OpenTox::Task.find(uri.to_s.chomp)
-        task.wait_for_completion
-        raise "task failed: "+uri.to_s+", error is:\n"+task.description.to_s if task.error?
+        task.wait_for_completion nil,5
+        #raise "task failed: "+uri.to_s+", description: '"+task.description.to_s+"'" if task.error?
+        LOGGER.error "task failed:\n"+task.errorReport.to_yaml if task.error?
         uri = task.result_uri
       end
       uri
@@ -366,6 +367,10 @@ module ValidationExamples
     def opt_params
       [ :prediction_feature, :test_target_dataset_uri ]
     end
+    
+    def validation_type
+      "test_set_validation"
+    end    
   end
   
   class TrainingTestValidation < ValidationExample

@@ -100,7 +100,7 @@ class Reports::FileReportPersistance < Reports::ReportPersistance
     report_dir = report_directory(type, id)
     raise_report_not_found(type, id) unless File.directory?(report_dir)
     file_path = report_dir+"/"+resource.to_s
-    raise Reports::NotFound.new("resource not found, resource: '"+resource.to_s+"', type:'"+type.to_s+"', id:'"+id.to_s+"'") unless File.exist?(file_path)
+    raise OpenTox::NotFoundError.new("resource not found, resource: '"+resource.to_s+"', type:'"+type.to_s+"', id:'"+id.to_s+"'") unless File.exist?(file_path)
     return file_path
   end
   
@@ -162,7 +162,7 @@ class Reports::FileReportPersistance < Reports::ReportPersistance
   
   private
   def raise_report_not_found(type, id)
-    raise Reports::NotFound.new("report not found, type:'"+type.to_s+"', id:'"+id.to_s+"'")
+    raise OpenTox::NotFoundError.new("report not found, type:'"+type.to_s+"', id:'"+id.to_s+"'")
   end
   
   def type_directory(type)
@@ -270,11 +270,11 @@ module Reports
     def get_report(type, id, format, force_formating, params)
       
       report = ReportData.first({:id => id, :report_type => type})
-      raise Reports::NotFound.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.") unless report
+      raise OpenTox::NotFoundError.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.") unless report
 #      begin
 #        report = ReportData.find(:first, :conditions => {:id => id, :report_type => type})
 #      rescue ActiveRecord::RecordNotFound
-#        raise Reports::NotFound.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.")
+#        raise OpenTox::NotFoundError.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.")
 #      end
   
       case format
@@ -291,11 +291,11 @@ module Reports
 #      begin
 #        report = ReportData.find(:first, :conditions => {:id => id, :report_type => type})
 #      rescue ActiveRecord::RecordNotFound
-#        raise Reports::NotFound.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.")
+#        raise OpenTox::NotFoundError.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.")
 #      end
 #      ReportData.delete(id)
       report = ReportData.first({:id => id, :report_type => type})
-      raise Reports::NotFound.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.") unless report
+      raise OpenTox::NotFoundError.new("Report with id='"+id.to_s+"' and type='"+type.to_s+"' not found.") unless report
       report.destroy
       if (subjectid)
         begin

@@ -76,8 +76,10 @@ module Reports
   
     attr_reader :predictions
     
-    def initialize(uri = nil)
-      @@validation_access.init_validation(self, uri) if uri
+    def initialize(uri = nil, subjectid = nil)
+      @@validation_access.init_validation(self, uri, subjectid) if uri
+      @subjectid = subjectid
+      #raise "subjectid is nil" unless subjectid
     end
   
     # returns/creates predictions, cache to save rest-calls/computation time
@@ -95,7 +97,7 @@ module Reports
           task.progress(100) if task
           nil
         else
-          @predictions = @@validation_access.get_predictions( self, task )
+          @predictions = @@validation_access.get_predictions( self, @subjectid, task )
         end
       end
     end
@@ -111,12 +113,12 @@ module Reports
     #
     def feature_type
       return @feature_type if @feature_type!=nil
-      @feature_type = @@validation_access.feature_type(self) 
+      @feature_type = @@validation_access.feature_type(self, @subjectid) 
     end
     
     def predicted_variable
       return @predicted_variable if @predicted_variable!=nil
-      @predicted_variable = @@validation_access.predicted_variable(self) 
+      @predicted_variable = @@validation_access.predicted_variable(self, @subjectid) 
     end
     
     # loads all crossvalidation attributes, of the corresponding cv into this object 
@@ -156,11 +158,11 @@ module Reports
   #
   class ValidationSet
     
-    def initialize(validation_uris = nil)
+    def initialize(validation_uris=nil, subjectid=nil)
       @unique_values = {}
       validation_uris = Reports::Validation.resolve_cv_uris(validation_uris) if validation_uris
       @validations = Array.new
-      validation_uris.each{|u| @validations.push(Reports::Validation.new(u))} if validation_uris
+      validation_uris.each{|u| @validations.push(Reports::Validation.new(u, subjectid))} if validation_uris
     end
 
   

@@ -75,10 +75,10 @@ module Reports::Util
   #
   def self.check_group_matching( grouped_objects, match_attributes )
     
-    raise Reports::BadRequest.new("less then 2 groups, no matching possible") if grouped_objects.size<2
+    raise OpenTox::BadRequestError.new("less then 2 groups, no matching possible") if grouped_objects.size<2
     first_group = grouped_objects[0]
     other_groups = grouped_objects[1..-1].collect{ |g| g.collect{|o| o }} 
-    other_groups.each{ |g| raise Reports::BadRequest.new("groups are not equally sized, matching impossible") if g.size != first_group.size } 
+    other_groups.each{ |g| raise OpenTox::BadRequestError.new("groups are not equally sized, matching impossible") if g.size != first_group.size } 
     
     first_group.each do |o|
       
@@ -94,7 +94,7 @@ module Reports::Util
             break
           end
         end
-        raise Reports::BadRequest.new("no match found for "+inspect_attributes(o, match_attributes)) unless match
+        raise OpenTox::BadRequestError.new("no match found for "+inspect_attributes(o, match_attributes)) unless match
       end
     end
   end

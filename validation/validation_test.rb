@@ -26,11 +26,16 @@ if AA_SERVER
   raise "could not log in" unless SUBJECTID
   puts "logged in: "+SUBJECTID.to_s
 else
+  puts "AA disabled"
   SUBJECTID = nil
 end
 
 #Rack::Test::DEFAULT_HOST = "local-ot" #"/validation"
 module Sinatra
+  
+  set :raise_errors, false
+  set :show_exceptions, false
+
   module UrlForHelper
     BASE = "http://local-ot/validation"
     def url_for url_fragment, mode=:path_only
@@ -53,7 +58,8 @@ class ValidationTest < Test::Unit::TestCase
     begin
       $test_case = self
       
-      #get "/1",nil,'HTTP_ACCEPT' => "text/html" 
+#      get "/19999",nil,'HTTP_ACCEPT' => "text/html"
+#      exit
 #       
 #      get "/234234232341",nil,'HTTP_ACCEPT' => "application/x-yaml"
 #      puts last_response.body
@@ -131,13 +137,23 @@ class ValidationTest < Test::Unit::TestCase
       #run_test("13a","http://local-ot/validation/39",nil,false) #,"http://local-ot/validation/28")#,"http://local-ot/validation/394");
       
       #puts OpenTox::Authorization.list_policy_uris(SUBJECTID).inspect
+      
+      #puts OpenTox::Authorization.list_policy_uris(SUBJECTID).inspect
 
-      #run_test("1b",nil,nil,false,{:dataset_uri=>"http://local-ot/dataset/45", :prediction_feature => "http://local-ot/dataset/45/feature/Hamster%20Carcinogenicity"})
+      run_test("14a",nil,nil,false) #,{:dataset_uri=>"http://local-ot/dataset/45", :prediction_feature => "http://local-ot/dataset/45/feature/Hamster%20Carcinogenicity"})
       
       #get "/12123123123123123"
-      get "/chain"
-      #get "/examples"
-      puts last_response.body
+      #get "/chain"
+      
+      #OpenTox::RestClientWrapper.get("http://local-ot/validation/task-error")
+      #get "/error",nil,'HTTP_ACCEPT' => "application/rdf+xml"
+      #puts ""
+      #puts ""
+      #puts last_response.body 
+      #exit
+      
+#      get "/error"
+#      puts last_response.body
 
       #delete "/1",:subjectid=>SUBJECTID
       
@@ -170,7 +186,7 @@ class ValidationTest < Test::Unit::TestCase
   
   def run_test(select=nil, validation_uri=nil, report_uri=nil, delete=false, overwrite={})
     
-    if AA_SERVER && delete
+    if AA_SERVER && SUBJECTID && delete
       policies_before = OpenTox::Authorization.list_policy_uris(SUBJECTID)
     end
     
@@ -191,17 +207,17 @@ class ValidationTest < Test::Unit::TestCase
           ex.validate
           LOGGER.debug "validation done '"+ex.validation_uri.to_s+"'"
         end
-#        ex.report_uri = report_uri
-#        unless ex.report_uri
-#          ex.report
-#        end
+        ex.report_uri = report_uri
+        unless ex.report_uri
+          ex.report
+        end
         ##ex.verify_yaml
         ##ex.compare_yaml_vs_rdf
         ex.delete if delete
       end
     end
     
-    if AA_SERVER && delete
+    if AA_SERVER && SUBJECTID && delete
       policies_after= OpenTox::Authorization.list_policy_uris(SUBJECTID)
       diff = policies_after.size - policies_before.size
       if (diff != 0)

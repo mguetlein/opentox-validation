@@ -16,7 +16,7 @@ module Lib
     end
   
     def initialize(feature_type, test_dataset_uri, test_target_dataset_uri, 
-      prediction_feature, prediction_dataset_uri, predicted_variable, task=nil)
+      prediction_feature, prediction_dataset_uri, predicted_variable, subjectid=nil, task=nil)
       
         LOGGER.debug("loading prediciton via test-dataset:'"+test_dataset_uri.to_s+
           "', test-target-datset:'"+test_target_dataset_uri.to_s+
@@ -31,7 +31,7 @@ module Lib
          
         predicted_variable=prediction_feature if predicted_variable==nil
         
-        test_dataset = OpenTox::Dataset.find test_dataset_uri
+        test_dataset = OpenTox::Dataset.find test_dataset_uri,subjectid
         raise "test dataset not found: '"+test_dataset_uri.to_s+"'" unless test_dataset
         raise "prediction_feature missing" unless prediction_feature
         
@@ -43,7 +43,7 @@ module Lib
                 "test_dataset: '"+test_target_dataset_uri.to_s+"'\n"+
                 "available features are: "+test_target_dataset.features.inspect if test_target_dataset.features.index(prediction_feature)==nil
         else
-          test_target_dataset = OpenTox::Dataset.find test_target_dataset_uri
+          test_target_dataset = OpenTox::Dataset.find test_target_dataset_uri,subjectid
           raise "test target datset not found: '"+test_target_dataset_uri.to_s+"'" unless test_target_dataset
           if CHECK_VALUES
             test_dataset.compounds.each do |c|
@@ -56,7 +56,7 @@ module Lib
                 "available features are: "+test_target_dataset.features.inspect if test_target_dataset.features.keys.index(prediction_feature)==nil
         end
         
-        test_dataset.load_all
+        test_dataset.load_all(subjectid)
         @compounds = test_dataset.compounds
         LOGGER.debug "test dataset size: "+@compounds.size.to_s
         raise "test dataset is empty" unless @compounds.size>0
@@ -73,7 +73,7 @@ module Lib
         end
         task.progress(40) if task # loaded actual values
         
-        prediction_dataset = OpenTox::Dataset.find prediction_dataset_uri
+        prediction_dataset = OpenTox::Dataset.find prediction_dataset_uri,subjectid
         raise "prediction dataset not found: '"+prediction_dataset_uri.to_s+"'" unless prediction_dataset
         
         # TODO: remove LAZAR_PREDICTION_DATASET_HACK

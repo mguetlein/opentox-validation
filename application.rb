@@ -9,6 +9,8 @@ end
   #LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 #end
 
+#require "error_application.rb"
+
 require "example.rb"
 
 get '/examples/?' do

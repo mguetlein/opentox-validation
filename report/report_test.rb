@@ -148,7 +148,7 @@ end
 #      assert types.is_a?(String)
 #      assert types.split("\n").size == Reports::ReportFactory::REPORT_TYPES.size
 #      #Reports::ReportFactory::REPORT_TYPES.each{|t| rep.get_all_reports(t)}
-#      #assert_raise(Reports::NotFound){rep.get_all_reports("osterhase")}
+#      #assert_raise(OpenTox::NotFoundError){rep.get_all_reports("osterhase")}
 #      
 #      ### using ot_mock_layer (reporting component does not rely on ot validation webservice)
 #      
@@ -156,11 +156,11 @@ end
 #      #Reports::Validation.reset_validation_access
 #      
 ##      create_report(rep, "validation_uri_1", "validation")
-##      assert_raise(Reports::BadRequest){create_report(rep, ["validation_uri_1","validation_uri_2"], "validation")}
+##      assert_raise(OpenTox::BadRequestError){create_report(rep, ["validation_uri_1","validation_uri_2"], "validation")}
 ##      
 ##      create_report(rep, "crossvalidation_uri_1", "crossvalidation")
 ##      create_report(rep, ["validation_uri_1"]*Reports::OTMockLayer::NUM_FOLDS, "crossvalidation")
-##      assert_raise(Reports::BadRequest){create_report(rep, ["validation_uri_1"]*(Reports::OTMockLayer::NUM_FOLDS-1), "crossvalidation")}
+##      assert_raise(OpenTox::BadRequestError){create_report(rep, ["validation_uri_1"]*(Reports::OTMockLayer::NUM_FOLDS-1), "crossvalidation")}
 ##      
 ##      create_report(rep, ["crossvalidation_uri_1"]* (Reports::OTMockLayer::NUM_DATASETS * Reports::OTMockLayer::NUM_ALGS), "algorithm_comparison")
 ##      create_report(rep, ["validation_uri_1"]* (Reports::OTMockLayer::NUM_DATASETS * Reports::OTMockLayer::NUM_ALGS * Reports::OTMockLayer::NUM_FOLDS), "algorithm_comparison")
@@ -229,11 +229,11 @@ end
 #    
 #    #puts "created report with id "+id.to_s
 #    
-#    #assert_raise(Reports::BadRequest){report_service.get_report(type, id, "weihnachtsmann")}
+#    #assert_raise(OpenTox::BadRequestError){report_service.get_report(type, id, "weihnachtsmann")}
 #    
 #    report_service.get_report(type, id, "text/html")
 #    #report_service.get_report(type, id, "application/pdf")
-#    #assert_raise(Reports::NotFound){report_service.delete_report(type, 877658)}
+#    #assert_raise(OpenTox::NotFoundError){report_service.delete_report(type, 877658)}
 #
 ##      rep.delete_report(type, id)
 #  end

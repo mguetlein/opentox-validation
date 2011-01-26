@@ -355,7 +355,18 @@ module ValidationExamples
   end
   
   ########################################################################################################
-    
+ 
+  
+  class NtuaModel < ModelValidation
+    def initialize
+      @model_uri = "http://opentox.ntua.gr:4000/model/0d8a9a27-3481-4450-bca1-d420a791de9d" 
+      @test_dataset_uri = "http://apps.ideaconsult.net:8080/ambit2/dataset/54"
+      #@prediction_feature=http://apps.ideaconsult.net:8080/ambit2/feature/22200
+    end
+  end
+  
+   ########################################################################################################
+  
   @@list = {
       "1" => [ LazarHamsterSplit, MajorityHamsterSplit ],
       "1a" => [ LazarHamsterSplit ],
@@ -403,6 +414,8 @@ module ValidationExamples
       
       "14a" =>  [ LazarEPAFHMCrossvalidation ],
       "14b" =>  [ MajorityEPAFHMCrossvalidation ],
+      
+      "15a" =>  [ NtuaModel ],
     }
   
   def self.list

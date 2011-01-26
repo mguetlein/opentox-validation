@@ -23,7 +23,7 @@ module Reports::ReportFormat
     when /application\/x-yaml|\*\/\*/
       "application/x-yaml"
     else
-      raise Reports::BadRequest.new("Accept header '"+accept_header_value.to_s+
+      raise OpenTox::BadRequestError.new("Accept header '"+accept_header_value.to_s+
         "' not supported, supported types are "+
         "text/html"+", "+
         "application/rdf+xml"+", "+

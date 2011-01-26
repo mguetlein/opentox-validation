@@ -59,7 +59,7 @@ module Reports::ReportFactory
   
   def self.create_report_validation(validation_set, task=nil)
     
-    raise Reports::BadRequest.new("num validations is not equal to 1") unless validation_set.size==1
+    raise OpenTox::BadRequestError.new("num validations is not equal to 1") unless validation_set.size==1
     val = validation_set.validations[0]
     pre_load_predictions( validation_set, OpenTox::SubTask.create(task,0,80) )
 
@@ -84,14 +84,14 @@ module Reports::ReportFactory
   
   def self.create_report_crossvalidation(validation_set, task=nil)
     
-    raise Reports::BadRequest.new("num validations is not >1") unless validation_set.size>1
-    raise Reports::BadRequest.new("crossvalidation-id not unique and != nil: "+
+    raise OpenTox::BadRequestError.new("num validations is not >1") unless validation_set.size>1
+    raise OpenTox::BadRequestError.new("crossvalidation-id not unique and != nil: "+
       validation_set.get_values(:crossvalidation_id,false).inspect) if validation_set.unique_value(:crossvalidation_id)==nil
     validation_set.load_cv_attributes
-    raise Reports::BadRequest.new("num validations ("+validation_set.size.to_s+") is not equal to num folds ("+
+    raise OpenTox::BadRequestError.new("num validations ("+validation_set.size.to_s+") is not equal to num folds ("+
       validation_set.unique_value(:num_folds).to_s+")") unless validation_set.unique_value(:num_folds)==validation_set.size
-    raise Reports::BadRequest.new("num different folds is not equal to num validations") unless validation_set.num_different_values(:crossvalidation_fold)==validation_set.size
-    raise Reports::BadRequest.new("validations must have unique feature type, i.e. must be either all regression, "+
+    raise OpenTox::BadRequestError.new("num different folds is not equal to num validations") unless validation_set.num_different_values(:crossvalidation_fold)==validation_set.size
+    raise OpenTox::BadRequestError.new("validations must have unique feature type, i.e. must be either all regression, "+
       +"or all classification validations") unless validation_set.unique_feature_type  
     pre_load_predictions( validation_set, OpenTox::SubTask.create(task,0,80) )
     
@@ -125,16 +125,16 @@ module Reports::ReportFactory
   def self.create_report_compare_algorithms(validation_set, task=nil)
     
     #validation_set.to_array([:test_dataset_uri, :model_uri, :algorithm_uri], false).each{|a| puts a.inspect}
-    raise Reports::BadRequest.new("num validations is not >1") unless validation_set.size>1
-    raise Reports::BadRequest.new("validations must have unique feature type, i.e. must be either all regression, "+
+    raise OpenTox::BadRequestError.new("num validations is not >1") unless validation_set.size>1
+    raise OpenTox::BadRequestError.new("validations must have unique feature type, i.e. must be either all regression, "+
       +"or all classification validations") unless validation_set.unique_feature_type
-    raise Reports::BadRequest.new("number of different algorithms <2: "+
+    raise OpenTox::BadRequestError.new("number of different algorithms <2: "+
       validation_set.get_values(:algorithm_uri).inspect) if validation_set.num_different_values(:algorithm_uri)<2
       
     if validation_set.has_nil_values?(:crossvalidation_id)
-      raise Reports::BadRequest.new("algorithm comparison for non crossvalidation not yet implemented")
+      raise OpenTox::BadRequestError.new("algorithm comparison for non crossvalidation not yet implemented")
     else
-      raise Reports::BadRequest.new("num different cross-validation-ids <2") if validation_set.num_different_values(:crossvalidation_id)<2
+      raise OpenTox::BadRequestError.new("num different cross-validation-ids <2") if validation_set.num_different_values(:crossvalidation_id)<2
       validation_set.load_cv_attributes
       compare_algorithms_crossvalidation(validation_set, task)
     end
@@ -194,7 +194,7 @@ module Reports::ReportFactory
       end
       
     when "regression"
-      raise Reports::BadRequest.new("algorithm comparison for regression not yet implemented")
+      raise OpenTox::BadRequestError.new("algorithm comparison for regression not yet implemented")
     end
     task.progress(100) if task
     report

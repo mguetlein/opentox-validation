@@ -66,10 +66,10 @@ module Reports
       check_report_type(type)
       
       # step1: load validations
-      raise Reports::BadRequest.new("validation_uris missing") unless validation_uris
+      raise OpenTox::BadRequestError.new("validation_uris missing") unless validation_uris
       LOGGER.debug "validation_uri(s): '"+validation_uris.inspect+"'"
-      validation_set = Reports::ValidationSet.new(validation_uris)
-      raise Reports::BadRequest.new("cannot get validations from validation_uris '"+validation_uris.inspect+"'") unless validation_set and validation_set.size > 0
+      validation_set = Reports::ValidationSet.new(validation_uris, subjectid)
+      raise OpenTox::BadRequestError.new("cannot get validations from validation_uris '"+validation_uris.inspect+"'") unless validation_set and validation_set.size > 0
       LOGGER.debug "loaded "+validation_set.size.to_s+" validation/s"
       task.progress(10) if task
       
@@ -182,30 +182,8 @@ module Reports
     end
     
     def check_report_type(type)
-     raise Reports::NotFound.new("report type not found '"+type.to_s+"'") unless Reports::ReportFactory::REPORT_TYPES.index(type)
+     raise OpenTox::NotFoundError.new("report type not found '"+type.to_s+"'") unless Reports::ReportFactory::REPORT_TYPES.index(type)
     end
     
   end
 end
-
-class Reports::LoggedException < Exception
-  
-  def initialize(message)
-    super(message)
-    LOGGER.error(message)
-  end
-  
-end
-
-# corresponds to 400
-#
-class Reports::BadRequest < Reports::LoggedException
-  
-end
-
-# corresponds to 404
-#
-class Reports::NotFound < Reports::LoggedException
-  
-end
-
