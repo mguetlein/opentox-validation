@@ -66,12 +66,15 @@ module ValidationExamples
     end
     
     def self.validation_get(uri, accept_header='application/rdf+xml')
+      params = {}
+      params[:subjectid] = SUBJECTID if SUBJECTID
       if $test_case
         #puts "getting "+uri+","+accept_header
-        $test_case.get uri,nil,'HTTP_ACCEPT' => accept_header 
+        $test_case.get uri,params,'HTTP_ACCEPT' => accept_header 
         return wait($test_case.last_response.body)
       else
-        return OpenTox::RestClientWrapper.get(File.join(CONFIG[:services]["opentox-validation"],uri),{:accept => accept_header})
+        params[:accept] = accept_header
+        return OpenTox::RestClientWrapper.get(File.join(CONFIG[:services]["opentox-validation"],uri),params)
       end
     end
 
@@ -291,6 +294,7 @@ module ValidationExamples
     def report
       begin
         @report_uri = Util.validation_post '/report/'+report_type,{:validation_uris => @validation_uri}
+        Util.validation_get "/report/"+report_uri.split("/")[-2]+"/"+report_uri.split("/")[-1]
       rescue => ex
         puts "could not create report: "+ex.message
         raise ex

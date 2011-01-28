@@ -92,7 +92,7 @@ get '/report/:type/:id' do
   end
 end
 
-OpenTox::Authorization.whitelist( Regexp.new("/report/.*/[0-9]+/.*"),"GET")
+#OpenTox::Authorization.whitelist( Regexp.new("/report/.*/[0-9]+/.*"),"GET")
 
 get '/report/:type/:id/:resource' do
   perform do |rs|

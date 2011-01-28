@@ -156,6 +156,7 @@ module Validation
         #prediction_dataset_uri = model.predict_dataset(self.test_dataset_uri, OpenTox::SubTask.create(task, 0, 50))
         prediction_dataset_uri = model.run(
           {:dataset_uri => self.test_dataset_uri, :subjectid => self.subjectid},
+          "text/uri-list",
           OpenTox::SubTask.create(task, 0, 50))
       end
 #      self.attributes = { :prediction_dataset_uri => prediction_dataset_uri,

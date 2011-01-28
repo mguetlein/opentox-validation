@@ -41,7 +41,7 @@ module Lib
           raise "prediction_feature not found in test_dataset, specify a test_target_dataset\n"+
                 "prediction_feature: '"+prediction_feature.to_s+"'\n"+
                 "test_dataset: '"+test_target_dataset_uri.to_s+"'\n"+
-                "available features are: "+test_target_dataset.features.inspect if test_target_dataset.features.index(prediction_feature)==nil
+                "available features are: "+test_target_dataset.features.inspect if test_target_dataset.features.keys.index(prediction_feature)==nil
         else
           test_target_dataset = OpenTox::Dataset.find test_target_dataset_uri,subjectid
           raise "test target datset not found: '"+test_target_dataset_uri.to_s+"'" unless test_target_dataset
