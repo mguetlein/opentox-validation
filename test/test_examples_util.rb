@@ -6,7 +6,7 @@ module ValidationExamples
     @@dataset_uris = {}
     @@prediction_features = {}
 
-    def self.upload_dataset(file, dataset_service=CONFIG[:services]["opentox-dataset"]) #, file_type="application/x-yaml")
+    def self.upload_dataset(file, subjectid=nil, dataset_service=CONFIG[:services]["opentox-dataset"]) #, file_type="application/x-yaml")
       raise "File not found: "+file.path.to_s unless File.exist?(file.path)
       if @@dataset_uris[file.path.to_s]==nil
         LOGGER.debug "uploading file: "+file.path.to_s
@@ -15,12 +15,12 @@ module ValidationExamples
           #data_uri = OpenTox::RestClientWrapper.post(dataset_service,{:content_type => file_type},data).to_s.chomp
           #@@dataset_uris[file.path.to_s] = data_uri
           #LOGGER.debug "uploaded dataset: "+data_uri
-          d = OpenTox::Dataset.create(CONFIG[:services]["opentox-dataset"], SUBJECTID)
+          d = OpenTox::Dataset.create(CONFIG[:services]["opentox-dataset"], subjectid)
           d.load_yaml(data)
-          d.save( SUBJECTID )
+          d.save( subjectid )
           @@dataset_uris[file.path.to_s] = d.uri
         elsif (file.path =~ /csv$/)
-          d = OpenTox::Dataset.create_from_csv_file(file.path, SUBJECTID)
+          d = OpenTox::Dataset.create_from_csv_file(file.path, subjectid)
           raise "num features not 1 (="+d.features.keys.size.to_s+"), what to predict??" if d.features.keys.size != 1
           @@prediction_features[file.path.to_s] = d.features.keys[0]
           @@dataset_uris[file.path.to_s] = d.uri
@@ -38,7 +38,7 @@ module ValidationExamples
       @@prediction_features[file.path.to_s]
     end
     
-    def self.build_compare_report(validation_examples)
+    def self.build_compare_report(validation_examples, subjectid)
       
       @comp = validation_examples[0].algorithm_uri==nil ? :model_uri : :algorithm_uri
       return nil if @comp == :model_uri
@@ -48,15 +48,15 @@ module ValidationExamples
       end
       return nil if to_compare.size < 2
       begin
-        return validation_post "report/algorithm_comparison",{ :validation_uris => to_compare.join("\n") }
+        return validation_post "report/algorithm_comparison",{ :validation_uris => to_compare.join("\n") }, subjectid
       rescue => ex
         return "error creating comparison report "+ex.message
       end
     end
     
-    def self.validation_post(uri, params)
+    def self.validation_post(uri, params, subjectid )
       
-      params[:subjectid] = SUBJECTID if SUBJECTID and params[:subjectid]==nil
+      params[:subjectid] = subjectid if subjectid
       if $test_case
         $test_case.post uri,params
         return wait($test_case.last_response.body)
@@ -65,9 +65,9 @@ module ValidationExamples
       end
     end
     
-    def self.validation_get(uri, accept_header='application/rdf+xml')
+    def self.validation_get(uri, subjectid, accept_header='application/rdf+xml')
       params = {}
-      params[:subjectid] = SUBJECTID if SUBJECTID
+      params[:subjectid] = subjectid if subjectid
       if $test_case
         #puts "getting "+uri+","+accept_header
         $test_case.get uri,params,'HTTP_ACCEPT' => accept_header 
@@ -232,13 +232,14 @@ module ValidationExamples
                   :split_ratio,
                   :random_seed,
                   :num_folds,
-                  :stratified
+                  :stratified,
+                  :subjectid
     #results                  
     attr_accessor :validation_uri,
                   :report_uri,
                   :validation_error,
                   :report_error
-    
+                  
     def upload_files
       [[:test_dataset_uri, :test_dataset_file], 
        [:test_target_dataset_uri, :test_target_dataset_file],
@@ -247,7 +248,7 @@ module ValidationExamples
          uri = a[0]
          file = a[1]
          if send(uri)==nil and send(file)!=nil
-            dataset_uri = Util.upload_dataset(send(file))
+            dataset_uri = Util.upload_dataset(send(file), @subjectid)
             send("#{uri.to_s}=".to_sym, dataset_uri)
             @uploaded_datasets = [] unless @uploaded_datasets
             @uploaded_datasets << dataset_uri
@@ -293,8 +294,8 @@ module ValidationExamples
     
     def report
       begin
-        @report_uri = Util.validation_post '/report/'+report_type,{:validation_uris => @validation_uri}
-        Util.validation_get "/report/"+report_uri.split("/")[-2]+"/"+report_uri.split("/")[-1]
+        @report_uri = Util.validation_post '/report/'+report_type,{:validation_uris => @validation_uri}, @subjectid
+        Util.validation_get "/report/"+report_uri.split("/")[-2]+"/"+report_uri.split("/")[-1], @subjectid
       rescue => ex
         puts "could not create report: "+ex.message
         raise ex
@@ -304,7 +305,7 @@ module ValidationExamples
     
     def validate
       begin
-        @validation_uri = Util.validation_post '/'+validation_type, get_params
+        @validation_uri = Util.validation_post '/'+validation_type, get_params, @subjectid
       rescue => ex
         puts "could not validate: "+ex.message
         @validation_error = ex.message
@@ -314,15 +315,15 @@ module ValidationExamples
     
     def compare_yaml_vs_rdf
       if @validation_uri
-        yaml = YAML.load(Util.validation_get(@validation_uri.split("/")[-1],'application/x-yaml'))
-        owl = OpenTox::Owl.from_data(Util.validation_get(@validation_uri.split("/")[-1]),@validation_uri,"Validation")
+        yaml = YAML.load(Util.validation_get(@validation_uri.split("/")[-1],@subjectid,'application/x-yaml'))
+        owl = OpenTox::Owl.from_data(Util.validation_get(@validation_uri.split("/")[-1],@subjectid),@validation_uri,"Validation")
         Util.compare_yaml_and_owl(yaml,owl)
       end
       if @report_uri
-        yaml = YAML.load(Util.validation_get(@report_uri.split("/")[-3..-1].join("/"),'application/x-yaml'))
-        owl = OpenTox::Owl.from_data(Util.validation_get(@report_uri.split("/")[-3..-1].join("/")),@report_uri,"ValidationReport")
+        yaml = YAML.load(Util.validation_get(@report_uri.split("/")[-3..-1].join("/"),@subjectid,'application/x-yaml'))
+        owl = OpenTox::Owl.from_data(Util.validation_get(@report_uri.split("/")[-3..-1].join("/"),@subjectid),@report_uri,"ValidationReport")
         Util.compare_yaml_and_owl(yaml,owl)
-        Util.validation_get(@report_uri.split("/")[-3..-1].join("/"),'text/html')
+        Util.validation_get(@report_uri.split("/")[-3..-1].join("/"),@subjectid,'text/html')
       else
         puts "no report"
       end
@@ -336,7 +337,7 @@ module ValidationExamples
         Util.validation_get("crossvalidation/"+@validation_uri.split("/")[-1]+"/statistics",'application/x-yaml')
         Util.verify_validation(Util.validation_get("crossvalidation/"+@validation_uri.split("/")[-1]+"/statistics",'application/x-yaml'))
       else
-        Util.verify_validation(Util.validation_get(@validation_uri.split("/")[-1],'application/x-yaml'))
+        Util.verify_validation(Util.validation_get(@validation_uri.split("/")[-1],@subjectid,'application/x-yaml'))
       end
     end
     

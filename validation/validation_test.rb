@@ -140,7 +140,7 @@ class ValidationTest < Test::Unit::TestCase
       
       #puts OpenTox::Authorization.list_policy_uris(SUBJECTID).inspect
 
-      run_test("15a",nil,nil,false) #,{:dataset_uri=>"http://local-ot/dataset/45", :prediction_feature => "http://local-ot/dataset/45/feature/Hamster%20Carcinogenicity"})
+      run_test("1b",nil,nil,false) #,{:dataset_uri=>"http://local-ot/dataset/45", :prediction_feature => "http://local-ot/dataset/45/feature/Hamster%20Carcinogenicity"})
       
       #get "/12123123123123123"
       #get "/chain"
@@ -176,7 +176,7 @@ class ValidationTest < Test::Unit::TestCase
       #do_test_examples_ortona
       
     ensure
-      #OpenTox::Authorization.logout(SUBJECTID) if AA_SERVER
+      OpenTox::Authorization.logout(SUBJECTID) if AA_SERVER
     end
   end
 
@@ -195,6 +195,7 @@ class ValidationTest < Test::Unit::TestCase
     validationExamples.each do |vv|
       vv.each do |v| 
         ex = v.new
+        ex.subjectid = SUBJECTID
         
         ex.validation_uri = validation_uri
         overwrite.each do |k,v|
@@ -206,7 +207,7 @@ class ValidationTest < Test::Unit::TestCase
           ex.check_requirements
           ex.validate
           LOGGER.debug "validation done '"+ex.validation_uri.to_s+"'"
-          puts ex.validation_uri+"?subjectid="+CGI.escape(SUBJECTID)  if SUBJECTID and !delete
+          puts ex.validation_uri+"?subjectid="+CGI.escape(SUBJECTID) if SUBJECTID and !delete
         end
         ex.report_uri = report_uri
         unless ex.report_uri
