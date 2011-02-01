@@ -32,10 +32,10 @@ end
 post '/crossvalidation/?' do
   task = OpenTox::Task.create( "Perform crossvalidation", url_for("/crossvalidation", :full) ) do |task| #, params
     LOGGER.info "creating crossvalidation "+params.inspect
-    halt 400, "dataset_uri missing" unless params[:dataset_uri]
-    halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
-    halt 400, "prediction_feature missing" unless params[:prediction_feature]
-    halt 400, "illegal param-value num_folds: '"+params[:num_folds].to_s+"', must be integer >1" unless params[:num_folds]==nil or 
+    raise OpenTox::BadRequestError "dataset_uri missing" unless params[:dataset_uri]
+    raise OpenTox::BadRequestError "algorithm_uri missing" unless params[:algorithm_uri]
+    raise OpenTox::BadRequestError "prediction_feature missing" unless params[:prediction_feature]
+    raise OpenTox::BadRequestError "illegal param-value num_folds: '"+params[:num_folds].to_s+"', must be integer >1" unless params[:num_folds]==nil or 
       params[:num_folds].to_i>1
     
     cv_params = { :dataset_uri => params[:dataset_uri],  
@@ -47,8 +47,8 @@ post '/crossvalidation/?' do
     cv.crossvalidation_uri
   end
   content_type 'text/uri-list' 
-  halt 503,task.uri+"\n" if task.status == "Cancelled"
-  halt 202,task.uri
+  raise OpenTox::ServiceUnavailableError.new task.uri+"\n" if task.status == "Cancelled"
+  halt 202, task.uri
 end
 
 post '/crossvalidation/cleanup/?' do
@@ -72,11 +72,11 @@ post '/crossvalidation/cleanup/?' do
 end
 
 post '/crossvalidation/loo/?' do
-  halt 500, "not yet implemented"
+  raise "not yet implemented"
 end
 
 get '/crossvalidation/loo/?' do
-  halt 400, "GET operation not supported, use POST for performing a loo-crossvalidation, see "+url_for("/crossvalidation", :full)+" for crossvalidation results"
+  raise OpenTox::BadRequestError "GET operation not supported, use POST for performing a loo-crossvalidation, see "+url_for("/crossvalidation", :full)+" for crossvalidation results"
 end
 
 get '/crossvalidation/:id' do
@@ -84,10 +84,10 @@ get '/crossvalidation/:id' do
 #  begin
 #    #crossvalidation = Validation::Crossvalidation.find(params[:id])
 #  rescue ActiveRecord::RecordNotFound => ex
-#    halt 404, "Crossvalidation '#{params[:id]}' not found."
+#    raise OpenTox::NotFoundError.new "Crossvalidation '#{params[:id]}' not found."
 #  end
   crossvalidation = Validation::Crossvalidation.get(params[:id])
-  halt 404,"Crossvalidation '#{params[:id]}' not found." unless crossvalidation
+  raise OpenTox::NotFoundError.new "Crossvalidation '#{params[:id]}' not found." unless crossvalidation
   
   case request.env['HTTP_ACCEPT'].to_s
   when "application/rdf+xml"
@@ -108,7 +108,7 @@ get '/crossvalidation/:id' do
     content_type "application/x-yaml"
     crossvalidation.to_yaml
   else
-    halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported, valid Accept-Headers: \"application/rdf+xml\", \"application/x-yaml\", \"text/html\"."
+    raise OpenTox::BadRequestError.new "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported, valid Accept-Headers: \"application/rdf+xml\", \"application/x-yaml\", \"text/html\"."
   end
 end
 
@@ -117,13 +117,13 @@ get '/crossvalidation/:id/statistics' do
 #  begin
     #crossvalidation = Validation::Crossvalidation.find(params[:id])
 #  rescue ActiveRecord::RecordNotFound => ex
-#    halt 404, "Crossvalidation '#{params[:id]}' not found."
+#    raise OpenTox::NotFoundError.new "Crossvalidation '#{params[:id]}' not found."
 #  end
   #crossvalidation = Validation::Crossvalidation.find(params[:id])
   crossvalidation = Validation::Crossvalidation.get(params[:id])
   
-  halt 404,"Crossvalidation '#{params[:id]}' not found." unless crossvalidation
-  halt 400,"Crossvalidation '"+params[:id].to_s+"' not finished" unless crossvalidation.finished
+  raise OpenTox::NotFoundError.new "Crossvalidation '#{params[:id]}' not found." unless crossvalidation
+  raise OpenTox::BadRequestError.new "Crossvalidation '"+params[:id].to_s+"' not finished" unless crossvalidation.finished
   
   Lib::MergeObjects.register_merge_attributes( Validation::Validation,
     Lib::VAL_MERGE_AVG,Lib::VAL_MERGE_SUM,Lib::VAL_MERGE_GENERAL-[:date,:validation_uri,:crossvalidation_uri]) unless 
@@ -154,13 +154,13 @@ delete '/crossvalidation/:id/?' do
 #  begin
     #crossvalidation = Validation::Crossvalidation.find(params[:id])
 #  rescue ActiveRecord::RecordNotFound => ex
-#    halt 404, "Crossvalidation '#{params[:id]}' not found."
+#    raise OpenTox::NotFoundError.new "Crossvalidation '#{params[:id]}' not found."
 #  end
 #  Validation::Crossvalidation.delete(params[:id])
   
   cv = Validation::Crossvalidation.get(params[:id])
   cv.subjectid = @subjectid
-  halt 404,"Crossvalidation '#{params[:id]}' not found." unless cv
+  raise OpenTox::NotFoundError.new "Crossvalidation '#{params[:id]}' not found." unless cv
   cv.delete
 end
 
@@ -169,7 +169,7 @@ end
 #  begin
 #    crossvalidation = Validation::Crossvalidation.find(params[:id])
 #  rescue ActiveRecord::RecordNotFound => ex
-#    halt 404, "Crossvalidation '#{params[:id]}' not found."
+#    raise OpenTox::NotFoundError.new "Crossvalidation '#{params[:id]}' not found."
 #  end
 #  content_type "text/uri-list"
 #  Validation::Validation.find( :all, :conditions => { :crossvalidation_id => params[:id] } ).collect{ |v| v.validation_uri.to_s }.join("\n")+"\n"
@@ -181,9 +181,9 @@ get '/crossvalidation/:id/predictions' do
     #crossvalidation = Validation::Crossvalidation.find(params[:id])
     crossvalidation = Validation::Crossvalidation.get(params[:id])
   rescue ActiveRecord::RecordNotFound => ex
-    halt 404, "Crossvalidation '#{params[:id]}' not found."
+    raise OpenTox::NotFoundError.new "Crossvalidation '#{params[:id]}' not found."
   end
-  halt 400,"Crossvalidation '"+params[:id].to_s+"' not finished" unless crossvalidation.finished
+  raise OpenTox::BadRequestError.new "Crossvalidation '"+params[:id].to_s+"' not finished" unless crossvalidation.finished
   
   content_type "application/x-yaml"
   #validations = Validation::Validation.find( :all, :conditions => { :crossvalidation_id => params[:id] } )
@@ -236,7 +236,7 @@ get '/?' do
 end
 
 post '/?' do
-  halt 400, "Post not supported, to perfom a validation use '/test_set_validation', '/training_test_validation', 'bootstrapping', 'training_test_split'"
+  raise OpenTox::BadRequestError.new "Post not supported, to perfom a validation use '/test_set_validation', '/training_test_validation', 'bootstrapping', 'training_test_split'"
 end
 
 post '/test_set_validation' do
@@ -255,7 +255,7 @@ post '/test_set_validation' do
     end
     halt 202,task.uri+"\n"
   else
-    halt 400, "illegal parameters, pls specify model_uri and test_dataset_uri\n"+
+    raise OpenTox::BadRequestError.new "illegal parameters, pls specify model_uri and test_dataset_uri\n"+
       "params given: "+params.inspect
   end
 end
@@ -301,7 +301,7 @@ post '/training_test_validation/?' do
     content_type "text/uri-list"
     halt 202,task.uri+"\n"
   else
-    halt 400, "illegal parameters, pls specify algorithm_uri, training_dataset_uri, test_dataset_uri, prediction_feature\n"+
+    raise OpenTox::BadRequestError.new "illegal parameters, pls specify algorithm_uri, training_dataset_uri, test_dataset_uri, prediction_feature\n"+
         "params given: "+params.inspect
   end
 end
@@ -338,9 +338,9 @@ post '/bootstrapping' do
   content_type "text/uri-list"
   task = OpenTox::Task.create( "Perform bootstrapping validation", url_for("/bootstrapping", :full) ) do |task| #, params
     LOGGER.info "performing bootstrapping validation "+params.inspect
-    halt 400, "dataset_uri missing" unless params[:dataset_uri]
-    halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
-    halt 400, "prediction_feature missing" unless params[:prediction_feature]
+    raise OpenTox::BadRequestError.new "dataset_uri missing" unless params[:dataset_uri]
+    raise OpenTox::BadRequestError.new "algorithm_uri missing" unless params[:algorithm_uri]
+    raise OpenTox::BadRequestError.new "prediction_feature missing" unless params[:prediction_feature]
     
     params.merge!( Validation::Util.bootstrapping( params[:dataset_uri], 
       params[:prediction_feature], @subjectid, 
@@ -388,9 +388,9 @@ post '/training_test_split' do
   task = OpenTox::Task.create( "Perform training test split validation", url_for("/training_test_split", :full) )  do |task| #, params
     
     LOGGER.info "creating training test split "+params.inspect
-    halt 400, "dataset_uri missing" unless params[:dataset_uri]
-    halt 400, "algorithm_uri missing" unless params[:algorithm_uri]
-    halt 400, "prediction_feature missing" unless params[:prediction_feature]
+    raise OpenTox::BadRequestError.new "dataset_uri missing" unless params[:dataset_uri]
+    raise OpenTox::BadRequestError.new "algorithm_uri missing" unless params[:algorithm_uri]
+    raise OpenTox::BadRequestError.new "prediction_feature missing" unless params[:prediction_feature]
     
     params.merge!( Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:prediction_feature], 
       @subjectid, params[:split_ratio], params[:random_seed], OpenTox::SubTask.create(task,0,33)))
@@ -405,7 +405,7 @@ post '/training_test_split' do
     v.validation_uri
   end
   content_type 'text/uri-list' 
-  halt 503,task.uri+"\n" if task.status == "Cancelled"
+  raise OpenTox::ServiceUnavailableError.new task.uri+"\n" if task.status == "Cancelled"
   halt 202,task.uri
 
 end
@@ -456,7 +456,7 @@ end
 
 post '/plain_training_test_split' do
     LOGGER.info "creating pure training test split "+params.inspect
-    halt 400, "dataset_uri missing" unless params[:dataset_uri]
+    raise OpenTox::BadRequestError.new "dataset_uri missing" unless params[:dataset_uri]
     
     result = Validation::Util.train_test_dataset_split(params[:dataset_uri], params[:prediction_feature], params[:split_ratio], params[:random_seed])
     content_type "text/uri-list"
@@ -467,8 +467,8 @@ post '/validate_datasets' do
   content_type "text/uri-list"
   task = OpenTox::Task.create( "Perform dataset validation", url_for("/validate_datasets", :full) ) do |task| #, params
     LOGGER.info "validating values "+params.inspect
-    halt 400, "test_dataset_uri missing" unless params[:test_dataset_uri]
-    halt 400, "prediction_datset_uri missing" unless params[:prediction_dataset_uri]
+    raise OpenTox::BadRequestError.new "test_dataset_uri missing" unless params[:test_dataset_uri]
+    raise OpenTox::BadRequestError.new "prediction_datset_uri missing" unless params[:prediction_dataset_uri]
     params[:validation_type] = "validate_datasets" 
     
     if params[:model_uri]
@@ -476,9 +476,9 @@ post '/validate_datasets' do
       v.subjectid = @subjectid
       v.compute_validation_stats_with_model(nil,false,task)
     else
-      halt 400, "please specify 'model_uri' or 'prediction_feature'" unless params[:prediction_feature]
-      halt 400, "please specify 'model_uri' or 'predicted_feature'" unless params[:predicted_feature]
-      halt 400, "please specify 'model_uri' or set either 'classification' or 'regression' flag" unless 
+      raise OpenTox::BadRequestError.new "please specify 'model_uri' or 'prediction_feature'" unless params[:prediction_feature]
+      raise OpenTox::BadRequestError.new "please specify 'model_uri' or 'predicted_feature'" unless params[:predicted_feature]
+      raise OpenTox::BadRequestError.new "please specify 'model_uri' or set either 'classification' or 'regression' flag" unless 
             params[:classification] or params[:regression]
       
       predicted_feature = params.delete("predicted_feature")
@@ -499,9 +499,9 @@ get '/:id/predictions' do
     #validation = Validation::Validation.find(params[:id])
     validation = Validation::Validation.get(params[:id])
   rescue ActiveRecord::RecordNotFound => ex
-    halt 404, "Validation '#{params[:id]}' not found."
+    raise OpenTox::NotFoundError.new "Validation '#{params[:id]}' not found."
   end
-  halt 400,"Validation '"+params[:id].to_s+"' not finished" unless validation.finished
+  raise OpenTox::BadRequestError.new "Validation '"+params[:id].to_s+"' not finished" unless validation.finished
   p = validation.compute_validation_stats_with_model(nil, true)
   case request.env['HTTP_ACCEPT'].to_s
   when /text\/html/
@@ -523,12 +523,12 @@ end
 #  begin
 #    validation = Validation::Validation.find(params[:id])
 #  rescue ActiveRecord::RecordNotFound => ex
-#    halt 404, "Validation '#{params[:id]}' not found."
+#    raise OpenTox::NotFoundError.new "Validation '#{params[:id]}' not found."
 #  end
 #  begin
 #    raise unless validation.attribute_loaded?(params[:attribute])
 #  rescue
-#    halt 400, "Not a validation attribute: "+params[:attribute].to_s
+#    raise OpenTox::BadRequestError.new "Not a validation attribute: "+params[:attribute].to_s
 #  end
 #  content_type "text/plain"
 #  return validation.send(params[:attribute])
@@ -539,7 +539,7 @@ get '/:id' do
 #  begin
     #validation = Validation::Validation.find(params[:id])
 #  rescue ActiveRecord::RecordNotFound => ex
-#    halt 404, "Validation '#{params[:id]}' not found."
+#    raise OpenTox::NotFoundError.new "Validation '#{params[:id]}' not found."
 #  end
   validation = Validation::Validation.get(params[:id])
   raise OpenTox::NotFoundError.new "Validation '#{params[:id]}' not found." unless validation
@@ -562,7 +562,7 @@ get '/:id' do
     content_type "application/x-yaml"
     validation.to_yaml
   else
-    halt 400, "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported, valid Accept-Headers: \"application/rdf+xml\", \"application/x-yaml\", \"text/html\"."
+    raise OpenTox::BadRequestError.new "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported, valid Accept-Headers: \"application/rdf+xml\", \"application/x-yaml\", \"text/html\"."
   end
 end
 
@@ -571,11 +571,11 @@ delete '/:id' do
 #  begin
     #validation = Validation::Validation.find(params[:id])
 #  rescue ActiveRecord::RecordNotFound => ex
-#    halt 404, "Validation '#{params[:id]}' not found."
+#    raise OpenTox::NotFoundError.new "Validation '#{params[:id]}' not found."
 #  end
   validation = Validation::Validation.get(params[:id])
   validation.subjectid = @subjectid
-  halt 404, "Validation '#{params[:id]}' not found." unless validation
+  raise OpenTox::NotFoundError.new "Validation '#{params[:id]}' not found." unless validation
   content_type "text/plain"
   validation.delete
 end
