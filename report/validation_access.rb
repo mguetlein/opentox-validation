@@ -125,7 +125,6 @@ class Reports::ValidationDB < Reports::ValidationAccess
   end
   
   def feature_type( validation, subjectid=nil )
-    raise "subjectid is nil" unless subjectid
     OpenTox::Model::Generic.new(validation.model_uri).feature_type(subjectid)
     #get_model(validation).classification?
   end

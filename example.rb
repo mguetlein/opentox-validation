@@ -124,7 +124,7 @@ class Example
       log "done"
       @@summary
     end
-    task.uri
+    return_task(task)
   end
   
   # performs all curl calls listed in examples after ">>>", next line is added if line ends with "\"

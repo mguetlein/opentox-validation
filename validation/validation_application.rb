@@ -549,11 +549,9 @@ get '/:id' do
       "All validations:                 "+url_for("/",:full)+"\n"+
       "All validation reports:          "+url_for("/report/validation",:full)
     OpenTox.text_to_html validation.to_yaml,related_links,description
-  when /application\/x-yaml|\*\/\*/ 
+  else #default is yaml 
     content_type "application/x-yaml"
     validation.to_yaml
-  else
-    raise OpenTox::BadRequestError.new "MIME type '"+request.env['HTTP_ACCEPT'].to_s+"' not supported, valid Accept-Headers: \"application/rdf+xml\", \"application/x-yaml\", \"text/html\"."
   end
 end
 

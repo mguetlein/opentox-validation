@@ -132,10 +132,12 @@ module ReachReports
     val_datasets = []
     
     if algorithm
-      cvs = Lib::Crossvalidation.find_all_uniq({:algorithm_uri => algorithm.uri})
+      cvs = Lib::Crossvalidation.find_all_uniq({:algorithm_uri => algorithm.uri, :finished => true})
       # PENDING: cv classification/regression hack
       cvs = cvs.delete_if do |cv|
-        val = Validation::Validation.first( :all, :conditions => { :crossvalidation_id => cv.id } )
+        #val = Validation::Validation.first( :all, :conditions => { :crossvalidation_id => cv.id } )
+        val = Validation::Validation.first( :crossvalidation_id => cv.id )
+        raise "should not happen: no validations found for crossvalidation "+cv.id.to_s unless val
         (val.classification_statistics!=nil) != (feature_type=="classification")
       end
       
@@ -166,11 +168,11 @@ module ReachReports
             val  = YAML.load( OpenTox::RestClientWrapper.get File.join(cv.crossvalidation_uri,"statistics") )
             case feature_type
             when "classification"
-              lmo << "percent_correct: "+val[:classification_statistics][:percent_correct].to_s
-              lmo << "weighted AUC: "+val[:classification_statistics][:weighted_area_under_roc].to_s
+              lmo << "percent_correct: "+val[OT.classificationStatistics][OT.percentCorrect].to_s
+              lmo << "weighted AUC: "+val[OT.classificationStatistics][OT.weightedAreaUnderRoc].to_s
             when "regression"
-              lmo << "root_mean_squared_error: "+val[:regression_statistics][:root_mean_squared_error].to_s
-              lmo << "r_square "+val[:regression_statistics][:r_square].to_s
+              lmo << "root_mean_squared_error: "+val[OT.regressionStatistics][OT.rootMeanSquaredError].to_s
+              lmo << "r_square "+val[OT.regressionStatistics][OT.rSquare].to_s
             end
             reports = OpenTox::RestClientWrapper.get File.join(CONFIG[:services]["opentox-validation"],"report/crossvalidation?crossvalidation_uris="+cv.crossvalidation_uri)
             if reports and reports.chomp.size>0

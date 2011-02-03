@@ -165,7 +165,9 @@ module Lib
       end
       raise "no array" unless v.is_a?(Array)
       if v.size>1
-        raise "multiple values"
+        v.uniq!
+        raise "not yet implemented: multiple non-equal values "+compound.to_s+" "+v.inspect if v.size>1
+        v = v[0]
       elsif v.size==1
         v = v[0]
       else

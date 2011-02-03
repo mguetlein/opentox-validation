@@ -163,19 +163,36 @@ module Lib
     def percent_correct
       raise "no classification" unless @feature_type=="classification"
       return 0 if @num_with_actual_value==0
-      return 100 * @num_correct / @num_with_actual_value.to_f
+      return 100 * @num_correct / (@num_with_actual_value - @num_unpredicted).to_f
     end
     
     def percent_incorrect
       raise "no classification" unless @feature_type=="classification"
       return 0 if @num_with_actual_value==0
-      return 100 * @num_incorrect / @num_with_actual_value.to_f
+      return 100 * @num_incorrect / (@num_with_actual_value - @num_unpredicted).to_f
     end
     
     def accuracy
       return percent_correct / 100.0
     end
     
+    def weighted_accuracy
+      raise "no classification" unless @feature_type=="classification"
+      total = 0
+      correct = 0
+      (0..@predicted_values.size-1).each do |i|
+        if @predicted_values[i]!=nil
+          total += @confidence_values[i]
+          correct += @confidence_values[i] if @actual_values[i]==@predicted_values[i]
+        end
+      end
+      if total==0 || correct == 0
+        return 0  
+      else
+        return correct / total 
+      end
+    end
+
     def percent_unpredicted
       return 0 if @num_with_actual_value==0
       return 100 * @num_unpredicted / @num_with_actual_value.to_f

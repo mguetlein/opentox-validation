@@ -20,10 +20,10 @@ LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 LOGGER.formatter = Logger::Formatter.new
 
 if AA_SERVER
-  #TEST_USER = "mgtest"
-  #TEST_PW = "mgpasswd"
-  TEST_USER = "guest"
-  TEST_PW = "guest"
+  TEST_USER = "mgtest"
+  TEST_PW = "mgpasswd"
+#  TEST_USER = "guest"
+#  TEST_PW = "guest"
   SUBJECTID = OpenTox::Authorization.authenticate(TEST_USER,TEST_PW)
   raise "could not log in" unless SUBJECTID
   puts "logged in: "+SUBJECTID.to_s
@@ -59,6 +59,18 @@ class ValidationTest < Test::Unit::TestCase
   def test_it
     begin
       $test_case = self
+      
+#      begin
+#        #OpenTox::RestClientWrapper.get "http://local-ot/validation/runtime-error",{:accept => "application/rdf+xml"}
+#        puts OpenTox::RestClientWrapper.post "http://opentox.ntua.gr:4000/model/0d8a9a27-3481-4450-bca1-d420a791de9d",
+#          {:dataset=>"http://apps.ideaconsult.net:8080/ambit2/dataset/54"},{:accept => "text/uri-list", :subjectid => SUBJECTID} 
+#        #puts OpenTox::RestClientWrapper.post "http://opentox.ntua.gr:4000/model/0d8a9a27-3481-4450-bca1-d420a791de9d",{},{:accept => "text/uri-list", :subjectid => "AQIC5wM2LY4SfcwUNX97nTvaSTdYJ+nTUqZsR0UitJ4+jlc=@AAJTSQACMDE=#"}
+#      rescue => err
+#        rep = OpenTox::ErrorReport.create(err, "")
+#         puts rep.to_yaml
+#      end  
+        
+        # "http://opentox.ntua.gr:4000/model/0d8a9a27-3481-4450-bca1-d420a791de9d"
       
 #      get "/19999",nil,'HTTP_ACCEPT' => "text/html"
 #      exit
@@ -126,23 +138,41 @@ class ValidationTest < Test::Unit::TestCase
       # m = OpenTox::Model::Generic.find("http://local-ot/model/1323333")
       # puts m.to_yaml
   
-  #     post "/validate_datasets",{
-  #      :test_dataset_uri=>"http://local-ot/dataset/506",
-  #       :prediction_dataset_uri=>"http://local-ot/dataset/526",
-  #       :test_target_dataset_uri=>"http://local-ot/dataset/504",
-  #       :prediction_feature=>"http://local-ot/dataset/504/feature/LC50_mmol",
-  #       :model_uri=>"http://local-ot/model/48"}
-  #      #:regression=>"true"}
-  ##       :classification=>"true"}
-  #    puts last_response.body
+#     post "/validate_datasets",{
+#         :test_dataset_uri=>"http://local-ot/dataset/390",
+#         :prediction_dataset_uri=>"http://local-ot/dataset/392",
+#         :test_target_dataset_uri=>"http://local-ot/dataset/388",
+#         :prediction_feature=>"http://local-ot/dataset/388/feature/repdose_classification",
+#         :model_uri=>"http://local-ot/model/31"}
+#        #:regression=>"true"}
+#  #       :classification=>"true"}
+#      uri = last_response.body
+#      val = wait_for_task(uri)
+#      puts val
+#      get "/"+val.split("/")[-1]
       
-      #run_test("13a","http://local-ot/validation/39",nil,false) #,"http://local-ot/validation/28")#,"http://local-ot/validation/394");
-      
+      #run_test("17a") #,"http://local-ot/validation/39",nil,false) #,"http://local-ot/validation/28")#,"http://local-ot/validation/394");
+       
+#      p = {
+#        :dataset_uri=>"http://local-ot/dataset/388",
+#        :algorithm_uri => "http://local-ot/majority/class/algorithm",
+#        :prediction_feature=>"http://local-ot/dataset/388/feature/repdose_classification",
+#        :num_folds => 2 }
+      #cv = OpenTox::Crossvalidation.create(p)
+#      cv = OpenTox::Crossvalidation.find("http://local-ot/validation/crossvalidation/14")
+#      puts cv.uri
+#      puts cv.find_or_create_report.uri
+#      puts cv.summary.inspect
+
       #puts OpenTox::Authorization.list_policy_uris(SUBJECTID).inspect
       
       #puts OpenTox::Authorization.list_policy_uris(SUBJECTID).inspect
 
-      run_test("15a",nil,nil,false) #,{:dataset_uri=>"http://local-ot/dataset/45", :prediction_feature => "http://local-ot/dataset/45/feature/Hamster%20Carcinogenicity"})
+      #run_test("1b") #,{:dataset_uri => "http://local-ot/dataset/313", :prediction_feature => "http://local-ot/dataset/313/feature/repdose_classification"})
+      
+      model = OpenTox::Model::Generic.find("http://local-ot/majority/class/model/58")
+      OpenTox::QMRFReport.create(model)
+      
       
       #get "/12123123123123123"
       #get "/chain"
@@ -176,9 +206,12 @@ class ValidationTest < Test::Unit::TestCase
       #prepare_examples
       #do_test_examples # USES CURL, DO NOT FORGET TO RESTART VALIDATION SERVICE
       #do_test_examples_ortona
-      
+    
+    rescue => ex
+      rep = OpenTox::ErrorReport.create(ex, "")
+      puts rep.to_yaml
     ensure
-      OpenTox::Authorization.logout(SUBJECTID) if AA_SERVER
+      #OpenTox::Authorization.logout(SUBJECTID) if AA_SERVER
     end
   end
 
@@ -186,7 +219,7 @@ class ValidationTest < Test::Unit::TestCase
     Sinatra::Application
   end
   
-  def run_test(select=nil, validation_uri=nil, report_uri=nil, delete=false, overwrite={})
+  def run_test(select=nil, overwrite={}, delete=false )
     
     if AA_SERVER && SUBJECTID && delete
       policies_before = OpenTox::Authorization.list_policy_uris(SUBJECTID)
@@ -199,7 +232,6 @@ class ValidationTest < Test::Unit::TestCase
         ex = v.new
         ex.subjectid = SUBJECTID
         
-        ex.validation_uri = validation_uri
         overwrite.each do |k,v|
           ex.send(k.to_s+"=",v)
         end
@@ -208,13 +240,26 @@ class ValidationTest < Test::Unit::TestCase
           ex.upload_files
           ex.check_requirements
           ex.validate
+            
           LOGGER.debug "validation done '"+ex.validation_uri.to_s+"'"
-          puts ex.validation_uri+"?subjectid="+CGI.escape(SUBJECTID) if SUBJECTID and !delete and ex.validation_uri
+          if !delete and ex.validation_uri
+            if SUBJECTID
+              puts ex.validation_uri+"?subjectid="+CGI.escape(SUBJECTID)
+            else
+              puts ex.validation_uri
+            end
+          end
+            
         end
-        ex.report_uri = report_uri
         unless ex.report_uri
           ex.report
-          puts ex.report_uri+"?subjectid="+CGI.escape(SUBJECTID)  if SUBJECTID and !delete and ex.report_uri
+          if !delete and ex.report_uri
+            if SUBJECTID  
+              puts ex.report_uri+"?subjectid="+CGI.escape(SUBJECTID)
+            else
+              puts ex.report_uri
+            end
+          end
         end
         ##ex.verify_yaml
         ##ex.compare_yaml_vs_rdf

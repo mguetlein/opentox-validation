@@ -13,8 +13,6 @@ end
 
 require "example.rb"
 
-# this allows GET access to all validation URIS that do NOT end with /<number> or /<number>/
-OpenTox::Authorization.whitelist( /\/[0-9]+(\/?)$/, "GET", true )
 
 get '/examples/?' do
   LOGGER.info "list examples"

@@ -10,8 +10,6 @@ module Validation
     # the hash is directly printed in to_yaml, or added to the owl-structure
     def get_content_as_hash()
       
-      LOGGER.debug self.validation_uri
-      
       h = {}
       (Lib::VAL_PROPS - [:validation_uri]).each do |p|
          h[p] = self.send(p)

@@ -355,15 +355,85 @@ module ValidationExamples
   end
   
   ########################################################################################################
- 
   
   class NtuaModel < ModelValidation
     def initialize
-      @model_uri = "http://opentox.ntua.gr:4000/model/0d8a9a27-3481-4450-bca1-d420a791de9d" 
+      @model_uri = "http://opentox.ntua.gr:4000/model/0d8a9a27-3481-4450-bca1-d420a791de9d"
       @test_dataset_uri = "http://apps.ideaconsult.net:8080/ambit2/dataset/54"
       #@prediction_feature=http://apps.ideaconsult.net:8080/ambit2/feature/22200
     end
   end
+  
+   ########################################################################################################
+   
+  class HamsterTrainingTest < TrainingTestValidation
+    def initialize
+#      @test_target_dataset_file = File.new("data/hamster_carcinogenicity.yaml","r")
+#      @training_dataset_file = File.new("data/hamster_carcinogenicity.train.yaml","r")
+#      @test_dataset_file = File.new("data/hamster_carcinogenicity.test.yaml","r")
+      
+      @test_target_dataset_file = File.new("data/hamster_carcinogenicity.csv","r")
+      @training_dataset_file = File.new("data/hamster_carcinogenicity.train.csv","r")
+      @test_dataset_file = File.new("data/hamster_carcinogenicity.test.csv","r")
+      
+      
+      #@prediction_feature = "http://local-ot/toxmodel/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+      #@prediction_feature = "http://local-ot/dataset/1/feature/hamster_carcinogenicity"
+    end
+  end
+  
+  class MajorityHamsterTrainingTest < HamsterTrainingTest
+    def initialize
+      @algorithm_uri = File.join(CONFIG[:services]["opentox-majority"],"/class/algorithm")
+      super
+    end
+  end
+  
+  ########################################################################################################
+  
+  class RepdoseSplit < SplitTestValidation
+    def initialize
+      @dataset_file = File.new("data/repdose_classification.csv","r")
+    end
+  end
+  
+  class LazarRepdoseSplit < RepdoseSplit
+    def initialize
+      @algorithm_uri = File.join(CONFIG[:services]["opentox-algorithm"],"lazar")
+      @algorithm_params = "feature_generation_uri="+File.join(CONFIG[:services]["opentox-algorithm"],"fminer/bbrc")
+      super
+    end
+  end
+  
+  class MajorityRepdoseSplit < RepdoseSplit
+    def initialize
+      @algorithm_uri = File.join(CONFIG[:services]["opentox-majority"],"/class/algorithm")
+      super
+    end
+  end  
+  
+    ########################################################################################################
+  
+  class RepdoseCrossValidation < CrossValidation
+    def initialize
+      @dataset_file = File.new("data/repdose_classification.csv","r")
+    end
+  end
+  
+  class LazarRepdoseCrossValidation < RepdoseCrossValidation
+    def initialize
+      @algorithm_uri = File.join(CONFIG[:services]["opentox-algorithm"],"lazar")
+      @algorithm_params = "feature_generation_uri="+File.join(CONFIG[:services]["opentox-algorithm"],"fminer/bbrc")
+      super
+    end
+  end
+  
+  class MajorityRepdoseCrossValidation < RepdoseCrossValidation
+    def initialize
+      @algorithm_uri = File.join(CONFIG[:services]["opentox-majority"],"/class/algorithm")
+      super
+    end
+  end  
   
    ########################################################################################################
   
@@ -416,6 +486,14 @@ module ValidationExamples
       "14b" =>  [ MajorityEPAFHMCrossvalidation ],
       
       "15a" =>  [ NtuaModel ],
+      
+      "16" => [ LazarRepdoseSplit, MajorityRepdoseSplit ],
+      "16a" => [ LazarRepdoseSplit ],
+      "16b" => [ MajorityRepdoseSplit ],      
+      
+      "17" => [ LazarRepdoseCrossValidation, MajorityRepdoseCrossValidation ],
+      "17a" => [ LazarRepdoseCrossValidation ],
+      "17b" => [ MajorityRepdoseCrossValidation ],  
     }
   
   def self.list

@@ -115,7 +115,15 @@ class ReachTest < Test::Unit::TestCase
 #    puts last_response.body
     
     #model_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/model/173393"
-    model_uri = "http://local-ot/model/1"
+    
+    model_uri = "http://local-ot/majority/class/model/58"
+#    m = OpenTox::Model::Generic.find(model_uri)
+#    puts m.metadata[OT.algorithm] if m
+#    a = OpenTox::Algorithm::Generic.find(m.metadata[OT.algorithm])
+#    puts a.metadata.inspect
+#    exit
+    
+#    model_uri = "http://local-ot/model/1"
     #http://local-ot/majority/class/model/15
     #model_uri = "http://local-ot/majority/class/model/15"
    # model_uri = "http://local-ot/majority/class/model/91"

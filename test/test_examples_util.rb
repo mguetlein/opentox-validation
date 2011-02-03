@@ -47,11 +47,11 @@ module ValidationExamples
         to_compare << v.validation_uri if v.validation_uri and v.validation_error==nil
       end
       return nil if to_compare.size < 2
-      begin
+      #begin
         return validation_post "report/algorithm_comparison",{ :validation_uris => to_compare.join("\n") }, subjectid
-      rescue => ex
-        return "error creating comparison report "+ex.message
-      end
+      #rescue => ex
+        #return "error creating comparison report "+ex.message
+      #end
     end
     
     def self.validation_post(uri, params, subjectid )
@@ -92,9 +92,9 @@ module ValidationExamples
     def self.wait(uri)
       if uri.task_uri?
         task = OpenTox::Task.find(uri.to_s.chomp)
-        task.wait_for_completion nil,5
+        task.wait_for_completion
         #raise "task failed: "+uri.to_s+", description: '"+task.description.to_s+"'" if task.error?
-        LOGGER.error "task failed:\n"+task.errorReport.to_yaml if task.error?
+        LOGGER.error "task failed :\n"+task.to_yaml if task.error?
         uri = task.result_uri
       end
       uri
@@ -267,50 +267,50 @@ module ValidationExamples
     end
     
     def delete
-      begin
+      #begin
         if @validation_uri =~ /crossvalidation/
           cv = "crossvalidation/"
         else
           cv = ""
         end
         Util.validation_delete '/'+cv+@validation_uri.split('/')[-1] if @validation_uri
-      rescue => ex
-        puts "Could not delete validation: "+ex.message
-      end
-      begin
+      #rescue => ex
+        #puts "Could not delete validation: "+ex.message
+      #end
+      #begin
         Util.validation_delete '/report/'+report_type+'/'+@report_uri.split('/')[-1] if @report_uri
-      rescue => ex
-        puts "Could not delete report:' "+@report_uri+" "+ex.message
-      end
+      #rescue => ex
+        #puts "Could not delete report:' "+@report_uri+" "+ex.message
+      #end
       @uploaded_datasets.each do |d|
-        begin
+       # begin
           puts "deleting dataset "+d
           OpenTox::RestClientWrapper.delete(d,{:subjectid => SUBJECTID})
-        rescue => ex
-          puts "Could not delete dataset:' "+d+" "+ex.message
-        end
+#        rescue => ex
+          #puts "Could not delete dataset:' "+d+" "+ex.message
+        #end
       end
     end
     
     def report
-      begin
+      #begin
         @report_uri = Util.validation_post '/report/'+report_type,{:validation_uris => @validation_uri}, @subjectid if @validation_uri
         Util.validation_get "/report/"+report_uri.split("/")[-2]+"/"+report_uri.split("/")[-1], @subjectid if @report_uri
-      rescue => ex
-        puts "could not create report: "+ex.message
-        raise ex
-        @report_error = ex.message
-      end
+      #rescue => ex
+        #puts "could not create report: "+ex.message
+        #raise ex
+        #@report_error = ex.message
+      #end
     end
     
     def validate
-      begin
+      #begin
         @validation_uri = Util.validation_post '/'+validation_type, get_params, @subjectid
-      rescue => ex
-        puts "could not validate: "+ex.message
-        @validation_error = ex.message
-        LOGGER.error ex.message
-      end
+      #rescue => ex
+        #puts "could not validate: "+ex.message
+        #@validation_error = ex.message
+        #LOGGER.error ex.message
+      #end
     end
     
     def compare_yaml_vs_rdf
