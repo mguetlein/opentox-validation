@@ -181,7 +181,7 @@ module Validation
       prediction_feature = self.prediction_feature ? nil : dependentVariables
       algorithm_uri = self.algorithm_uri ? nil : model.metadata[OT.algorithm]
       predictedVariables = model.metadata[OT.predictedVariables]
-      compute_validation_stats( model.feature_type, predictedVariables, 
+      compute_validation_stats( model.feature_type(self.subjectid), predictedVariables, 
         prediction_feature, algorithm_uri, dry_run, task )
     end
       

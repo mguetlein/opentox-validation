@@ -116,6 +116,5 @@ post '/report/:type' do
       rs.create_report(params[:type],params[:validation_uris]?params[:validation_uris].split(/\n|,/):nil,@subjectid,task)
     end
   end
-  content_type "text/uri-list"
-  halt 202,task.uri+"\n"
+  return_task(task)
 end

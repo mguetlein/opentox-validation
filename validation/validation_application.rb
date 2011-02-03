@@ -32,10 +32,10 @@ end
 post '/crossvalidation/?' do
   task = OpenTox::Task.create( "Perform crossvalidation", url_for("/crossvalidation", :full) ) do |task| #, params
     LOGGER.info "creating crossvalidation "+params.inspect
-    raise OpenTox::BadRequestError "dataset_uri missing" unless params[:dataset_uri]
-    raise OpenTox::BadRequestError "algorithm_uri missing" unless params[:algorithm_uri]
-    raise OpenTox::BadRequestError "prediction_feature missing" unless params[:prediction_feature]
-    raise OpenTox::BadRequestError "illegal param-value num_folds: '"+params[:num_folds].to_s+"', must be integer >1" unless params[:num_folds]==nil or 
+    raise OpenTox::BadRequestError.new "dataset_uri missing" unless params[:dataset_uri]
+    raise OpenTox::BadRequestError.new "algorithm_uri missing" unless params[:algorithm_uri]
+    raise OpenTox::BadRequestError.new "prediction_feature missing" unless params[:prediction_feature]
+    raise OpenTox::BadRequestError.new "illegal param-value num_folds: '"+params[:num_folds].to_s+"', must be integer >1" unless params[:num_folds]==nil or 
       params[:num_folds].to_i>1
     
     cv_params = { :dataset_uri => params[:dataset_uri],  
@@ -46,9 +46,7 @@ post '/crossvalidation/?' do
     cv.perform_cv( params[:prediction_feature], params[:algorithm_params], task )
     cv.crossvalidation_uri
   end
-  content_type 'text/uri-list' 
-  raise OpenTox::ServiceUnavailableError.new task.uri+"\n" if task.status == "Cancelled"
-  halt 202, task.uri
+  return_task(task)
 end
 
 post '/crossvalidation/cleanup/?' do
@@ -76,7 +74,7 @@ post '/crossvalidation/loo/?' do
 end
 
 get '/crossvalidation/loo/?' do
-  raise OpenTox::BadRequestError "GET operation not supported, use POST for performing a loo-crossvalidation, see "+url_for("/crossvalidation", :full)+" for crossvalidation results"
+  raise OpenTox::BadRequestError.new "GET operation not supported, use POST for performing a loo-crossvalidation, see "+url_for("/crossvalidation", :full)+" for crossvalidation results"
 end
 
 get '/crossvalidation/:id' do
@@ -240,7 +238,6 @@ post '/?' do
 end
 
 post '/test_set_validation' do
-  content_type "text/uri-list"
   LOGGER.info "creating test-set-validation "+params.inspect
   if params[:model_uri] and params[:test_dataset_uri] and !params[:training_dataset_uri] and !params[:algorithm_uri]
     task = OpenTox::Task.create( "Perform test-set-validation", url_for("/", :full) ) do |task| #, params
@@ -253,7 +250,7 @@ post '/test_set_validation' do
       v.validate_model( task )
       v.validation_uri
     end
-    halt 202,task.uri+"\n"
+    return_task(task)
   else
     raise OpenTox::BadRequestError.new "illegal parameters, pls specify model_uri and test_dataset_uri\n"+
       "params given: "+params.inspect
@@ -298,8 +295,7 @@ post '/training_test_validation/?' do
       v.validate_algorithm( params[:algorithm_params], task ) 
       v.validation_uri
     end
-    content_type "text/uri-list"
-    halt 202,task.uri+"\n"
+    return_task(task)
   else
     raise OpenTox::BadRequestError.new "illegal parameters, pls specify algorithm_uri, training_dataset_uri, test_dataset_uri, prediction_feature\n"+
         "params given: "+params.inspect
@@ -335,7 +331,6 @@ get '/training_test_validation' do
 end
 
 post '/bootstrapping' do
-  content_type "text/uri-list"
   task = OpenTox::Task.create( "Perform bootstrapping validation", url_for("/bootstrapping", :full) ) do |task| #, params
     LOGGER.info "performing bootstrapping validation "+params.inspect
     raise OpenTox::BadRequestError.new "dataset_uri missing" unless params[:dataset_uri]
@@ -353,7 +348,7 @@ post '/bootstrapping' do
     v.validate_algorithm( params[:algorithm_params], OpenTox::SubTask.create(task,33,100))
     v.validation_uri
   end
-  halt 202,task.uri+"\n"
+  return_task(task)
 end
 
 get '/bootstrapping' do
@@ -386,7 +381,6 @@ end
 post '/training_test_split' do
   
   task = OpenTox::Task.create( "Perform training test split validation", url_for("/training_test_split", :full) )  do |task| #, params
-    
     LOGGER.info "creating training test split "+params.inspect
     raise OpenTox::BadRequestError.new "dataset_uri missing" unless params[:dataset_uri]
     raise OpenTox::BadRequestError.new "algorithm_uri missing" unless params[:algorithm_uri]
@@ -404,9 +398,7 @@ post '/training_test_split' do
     v.validate_algorithm( params[:algorithm_params], OpenTox::SubTask.create(task,33,100))
     v.validation_uri
   end
-  content_type 'text/uri-list' 
-  raise OpenTox::ServiceUnavailableError.new task.uri+"\n" if task.status == "Cancelled"
-  halt 202,task.uri
+  return_task(task)
 
 end
 
@@ -464,7 +456,6 @@ post '/plain_training_test_split' do
 end
 
 post '/validate_datasets' do
-  content_type "text/uri-list"
   task = OpenTox::Task.create( "Perform dataset validation", url_for("/validate_datasets", :full) ) do |task| #, params
     LOGGER.info "validating values "+params.inspect
     raise OpenTox::BadRequestError.new "test_dataset_uri missing" unless params[:test_dataset_uri]
@@ -490,7 +481,7 @@ post '/validate_datasets' do
     end
     v.validation_uri
   end
-  halt 202,task.uri+"\n"
+  return_task(task)
 end
 
 get '/:id/predictions' do

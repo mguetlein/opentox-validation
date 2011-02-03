@@ -100,11 +100,7 @@ class Nightly
       #benchmarks.collect{|b| b.uris}.join(",")
       File.join(CONFIG[:services]["opentox-validation"],"nightly")
     end
-    if defined?(halt)
-      halt 202,task.uri+"\n"
-    else
-      return task.uri+"\n"
-    end
+    return_task(task)
   end
   
   class ValidationBenchmark
