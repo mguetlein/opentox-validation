@@ -37,6 +37,11 @@ task :install_gems do
   end
 end
 
+desc "Perform unit tests"
+task :test do
+  require 'test/unit_test.rb'
+end
+
 =begin
 
 desc "Installs gems and inits db migration"
