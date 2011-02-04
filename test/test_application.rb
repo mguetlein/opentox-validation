@@ -18,6 +18,6 @@ post '/test_validation/?' do
       ex.validation_uri
     end
   end
-  task.uri
+  return_task(task)
 end
 

@@ -5,9 +5,9 @@ VAL_ATTR_TRAIN_TEST = [ :model_uri, :training_dataset_uri, :test_dataset_uri, :p
 VAL_ATTR_CV = [ :algorithm_uri, :dataset_uri, :num_folds, :crossvalidation_fold ]
 
 # selected attributes of interest when performing classification
-VAL_ATTR_CLASS = [ :accuracy, :weighted_accuracy, :weighted_area_under_roc, 
+VAL_ATTR_CLASS = [ :num_instances, :num_unpredicted, :accuracy, :weighted_accuracy, :weighted_area_under_roc,
   :area_under_roc, :f_measure, :true_positive_rate, :true_negative_rate ]
-VAL_ATTR_REGR = [ :root_mean_squared_error, :mean_absolute_error, :r_square ]
+VAL_ATTR_REGR = [ :num_instances, :num_unpredicted, :root_mean_squared_error, :mean_absolute_error, :r_square ]
 
 VAL_ATTR_BAR_PLOT_CLASS = [ :accuracy, :weighted_area_under_roc, 
   :area_under_roc, :f_measure, :true_positive_rate, :true_negative_rate ]
