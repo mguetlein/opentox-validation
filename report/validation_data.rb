@@ -64,8 +64,8 @@ module Reports
       @@validation_access = validation_access
     end
     
-    def self.resolve_cv_uris(validation_uris)
-      @@validation_access.resolve_cv_uris(validation_uris)
+    def self.resolve_cv_uris(validation_uris, subjectid)
+      @@validation_access.resolve_cv_uris(validation_uris, subjectid)
     end
     
     # create member variables for all validation properties
@@ -160,7 +160,7 @@ module Reports
     
     def initialize(validation_uris=nil, subjectid=nil)
       @unique_values = {}
-      validation_uris = Reports::Validation.resolve_cv_uris(validation_uris) if validation_uris
+      validation_uris = Reports::Validation.resolve_cv_uris(validation_uris, subjectid) if validation_uris
       @validations = Array.new
       validation_uris.each{|u| @validations.push(Reports::Validation.new(u, subjectid))} if validation_uris
     end
