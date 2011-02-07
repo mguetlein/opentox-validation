@@ -130,7 +130,6 @@ module Validation
       #model = OpenTox::Model::PredictionModel.find(self.model_uri)
       #raise OpenTox::NotFoundError.new "model not found: "+self.model_uri.to_s unless model
       model = OpenTox::Model::Generic.find(self.model_uri, self.subjectid)
-      raise OpenTox::NotFoundError.new "model not found: "+self.model_uri.to_s unless model
       
       unless self.algorithm_uri
 #        self.attributes = { :algorithm_uri => model.algorithm }

@@ -76,6 +76,10 @@ class ReachTest < Test::Unit::TestCase
 
   def test_it
     
+    delete '/reach_report/QMRF/3'
+    puts last_response.body
+    
+    exit
 #    testResource = TestResource.new
 #    
 #    TestResource.info

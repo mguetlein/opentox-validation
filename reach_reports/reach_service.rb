@@ -21,7 +21,7 @@ module ReachReports
     end
   end 
   
-  def self.create_report( type, params, xml_data=nil )
+  def self.create_report( type, params, subjectid, xml_data=nil )
     
     case type
     when /(?i)QMRF/
@@ -30,12 +30,14 @@ module ReachReports
           $url_provider.url_for("/reach_report/"+type, :full) ) do |task| #, params
             
           report = ReachReports::QmrfReport.new :model_uri => params[:model_uri]
+          report.subjectid = subjectid
           build_qmrf_report(report, task)
           report.report_uri
         end
         result_uri = task.uri
       elsif xml_data and (input = xml_data.read).to_s.size>0
         report = ReachReports::QmrfReport.new
+        report.subjectid = subjectid
         ReachReports::QmrfReport.from_xml(report,input)
         result_uri = report.report_uri
       else
@@ -57,14 +59,11 @@ module ReachReports
     result_uri
   end
   
-
-  
   def self.build_qmrf_report(r, task=nil)
     
     #puts r.model_uri
-    model = OpenTox::Model::Generic.find(r.model_uri)
-    raise "model not found "+r.model_uri.to_s unless model
-    feature_type = model.feature_type
+    model = OpenTox::Model::Generic.find(r.model_uri, r.subjectid)
+    feature_type = model.feature_type(r.subjectid)
     
     # chapter 1
     r.qsar_identifier = QsarIdentifier.new
@@ -132,7 +131,7 @@ module ReachReports
     val_datasets = []
     
     if algorithm
-      cvs = Lib::Crossvalidation.find_all_uniq({:algorithm_uri => algorithm.uri, :finished => true})
+      cvs = Lib::Crossvalidation.find_all_uniq({:algorithm_uri => algorithm.uri, :finished => true},r.subjectid)
       # PENDING: cv classification/regression hack
       cvs = cvs.delete_if do |cv|
         #val = Validation::Validation.first( :all, :conditions => { :crossvalidation_id => cv.id } )
@@ -165,7 +164,8 @@ module ReachReports
             lmo << "dataset (see 9.3 Validation data): "+cv.dataset_uri
             val_datasets << cv.dataset_uri
             lmo << "settings: num-folds="+cv.num_folds.to_s+", random-seed="+cv.random_seed.to_s+", stratified:"+cv.stratified.to_s
-            val  = YAML.load( OpenTox::RestClientWrapper.get File.join(cv.crossvalidation_uri,"statistics") )
+
+            val  = YAML.load( OpenTox::RestClientWrapper.get(File.join(cv.crossvalidation_uri,"statistics"),{:subjectid => r.subjectid}) )
             case feature_type
             when "classification"
               lmo << "percent_correct: "+val[OT.classificationStatistics][OT.percentCorrect].to_s
@@ -174,7 +174,8 @@ module ReachReports
               lmo << "root_mean_squared_error: "+val[OT.regressionStatistics][OT.rootMeanSquaredError].to_s
               lmo << "r_square "+val[OT.regressionStatistics][OT.rSquare].to_s
             end
-            reports = OpenTox::RestClientWrapper.get File.join(CONFIG[:services]["opentox-validation"],"report/crossvalidation?crossvalidation_uris="+cv.crossvalidation_uri)
+            reports = OpenTox::RestClientWrapper.get(File.join(CONFIG[:services]["opentox-validation"],
+              "report/crossvalidation?crossvalidation_uris="+cv.crossvalidation_uri),{:subjectid => r.subjectid})
             if reports and reports.chomp.size>0
               lmo << "for more info see report: "+reports.split("\n")[0]
             else
@@ -226,10 +227,11 @@ module ReachReports
           v << "root_mean_squared_error: "+validation.regression_statistics[:root_mean_squared_error].to_s
           v << "r_square "+validation.regression_statistics[:r_square].to_s
         end
-        reports = OpenTox::RestClientWrapper.get(File.join(CONFIG[:services]["opentox-validation"],
-          "report/validation?validation_uris="+validation.validation_uri))
-        if reports and reports.size>0
-          v << "for more info see report: "+reports.split("\n")[0]
+        report = OpenTox::ValidationReport.find_for_validation(validation.validation_uri,r.subjectid)
+        #reports = OpenTox::RestClientWrapper.get(File.join(CONFIG[:services]["opentox-validation"],
+        #  "report/validation?validation_uris="+validation.validation_uri),{:subjectid => r.subjectid})
+        if report
+          v << "for more info see report: "+report.uri
         else
           v << "for more info see report: not yet created for '"+validation.validation_uri+"'"
         end
@@ -299,4 +301,18 @@ module ReachReports
     raise OpenTox::NotFoundError.new type+" report with id '#{id}' not found." unless report
     return report
   end
+
+  def self.delete_report(type, id, subjectid=nil)
+    
+    case type
+    when /(?i)QMRF/
+      report = ReachReports::QmrfReport.get(id)
+    when /(?i)QPRF/
+      report = ReachReports::QprfReport.get(id)
+    end
+    raise OpenTox::NotFoundError.new type+" report with id '#{id}' not found." unless report
+    OpenTox::Authorization.delete_policies_from_uri(report.report_uri, subjectid) if subjectid
+    return report.destroy
+  end
+  
 end 

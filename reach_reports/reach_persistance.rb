@@ -1001,6 +1001,17 @@ module ReachReports
                
     CHAPTERS.each{ |c,clazz| has 1, c }
     
+    attr_accessor :subjectid
+    
+    after :save, :check_policy
+    private
+    def check_policy
+      raise "no id" unless @id
+      #raise "no subjectid" unless subjectid
+      OpenTox::Authorization.check_policy(report_uri, subjectid)
+    end
+    
+    public
     def to_yaml
       super(:methods => CHAPTERS)
     end

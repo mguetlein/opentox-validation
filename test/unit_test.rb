@@ -49,9 +49,10 @@ class ValidationTest < Test::Unit::TestCase
   
   def global_teardown
     puts "delete and logout"
-    OpenTox::Dataset.find(@@data_class_mini,@@subjectid).delete(@@subjectid)
+    OpenTox::Dataset.find(@@data_class_mini,@@subjectid).delete(@@subjectid) if defined?@@data_class_mini
     @@cv.delete(@@subjectid) if defined?@@cv
     @@report.delete(@@subjectid) if defined?@@report
+    @@qmrfReport.delete(@@subjectid) if defined?@@qmrfReport
     OpenTox::Authorization.logout(@@subjectid) if AA_SERVER
   end
  
@@ -86,18 +87,20 @@ class ValidationTest < Test::Unit::TestCase
   end
     
   def test_crossvalidation_report
+    #@@cv = OpenTox::Crossvalidation.find("http://local-ot/validation/crossvalidation/47", @@subjectid)
+    
     puts "test_crossvalidation_report"
     assert defined?@@cv,"no crossvalidation defined"
     assert_kind_of OpenTox::Crossvalidation,@@cv
     assert_rest_call_error OpenTox::NotFoundError do 
-      OpenTox::CrossvalidationReport.find_for_crossvalidation(@@cv)
+      OpenTox::CrossvalidationReport.find_for_crossvalidation(@@cv.uri)
     end
     if @@subjectid
       assert_rest_call_error OpenTox::NotAuthorizedError do
-        OpenTox::CrossvalidationReport.create(@@cv)
+        OpenTox::CrossvalidationReport.create(@@cv.uri)
       end
     end
-    report = OpenTox::CrossvalidationReport.create(@@cv,@@subjectid)
+    report = OpenTox::CrossvalidationReport.create(@@cv.uri,@@subjectid)
     assert report.uri.uri?
     if @@subjectid
       assert_rest_call_error OpenTox::NotAuthorizedError do
@@ -106,11 +109,33 @@ class ValidationTest < Test::Unit::TestCase
     end
     report = OpenTox::CrossvalidationReport.find(report.uri,@@subjectid)
     assert report.uri.uri?
-    report2 = OpenTox::CrossvalidationReport.find_for_crossvalidation(@@cv,@@subjectid)
+    report2 = OpenTox::CrossvalidationReport.find_for_crossvalidation(@@cv.uri,@@subjectid)
     assert_equal report.uri,report2.uri
     report3 = @@cv.find_or_create_report(@@subjectid)
     assert_equal report.uri,report3.uri
     @report = report
+  end
+  
+  def test_qmrf_report
+   #@@cv = OpenTox::Crossvalidation.find("http://local-ot/validation/crossvalidation/47", @@subjectid)
+    
+    puts "test_qmrf_report"
+    assert defined?@@cv,"no crossvalidation defined"
+    
+    validations = @@cv.metadata[OT.validation]
+    assert_kind_of Array,validations
+    assert validations.size==@@cv.metadata[OT.numFolds]
+    
+    val = OpenTox::Validation.find(validations[0], @@subjectid)
+    model_uri = val.metadata[OT.model]
+    model = OpenTox::Model::Generic.find(model_uri, @@subjectid)
+    assert model!=nil
+    
+    assert_rest_call_error OpenTox::NotFoundError do 
+      OpenTox::QMRFReport.find_for_model(model_uri, @@subjectid)
+    end
+    
+    @@qmrfReport = OpenTox::QMRFReport.create(model_uri, @@subjectid)
   end
   
   ################### utils and overrides ##########################

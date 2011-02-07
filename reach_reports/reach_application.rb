@@ -65,7 +65,7 @@ post '/reach_report/:type' do
   
   LOGGER.info "creating "+type+" report "+params.inspect
   #puts "creating "+type+" report "+params.inspect
-  result_uri = ReachReports.create_report(type,params,request.env["rack.input"])
+  result_uri = ReachReports.create_report(type,params,@subjectid,request.env["rack.input"])
   
   if result_uri and result_uri.task_uri?
     halt 202,result_uri+"\n"   
@@ -123,6 +123,11 @@ post '/reach_report/:type/:id' do
   #f.puts rep.to_xml
 end
 
+delete '/reach_report/:type/:id' do
+  type = extract_type(params)
+  LOGGER.info "delete "+type+" report with id '"+params[:id].to_s+"'"
+  ReachReports.delete_report(type, params[:id], @subjectid)
+end
 
 
 #get '/reach_report/:type/:id/:section' do

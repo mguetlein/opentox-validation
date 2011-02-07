@@ -150,11 +150,12 @@ module Lib
     # convenience method to list all crossvalidations that are unique 
     # in terms of dataset_uri,num_folds,stratified,random_seed
     # further conditions can be specified in __conditions__
-    def self.find_all_uniq(conditions={})
+    def self.find_all_uniq(conditions={}, subjectid=nil )
       #cvs = Lib::Crossvalidation.find(:all, :conditions => conditions)
       cvs = Lib::Crossvalidation.all(:conditions => conditions)
       uniq = []
       cvs.each do |cv|
+        next if AA_SERVER and !OpenTox::Authorization.authorized?(cv.crossvalidation_uri,"GET",subjectid)
         match = false
         uniq.each do |cv2|
           if cv.dataset_uri == cv2.dataset_uri and cv.num_folds == cv2.num_folds and 
