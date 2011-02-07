@@ -310,9 +310,13 @@ module ValidationExamples
   
   class LR_AmbitCacoModel < ModelValidation
     def initialize
-      @model_uri = "http://apps.ideaconsult.net:8080/ambit2/model/33"
-      @test_dataset_uri = "http://apps.ideaconsult.net:8080/ambit2/dataset/R545"
+#      @model_uri = "http://apps.ideaconsult.net:8080/ambit2/model/33"
+#      @test_dataset_uri = "http://apps.ideaconsult.net:8080/ambit2/dataset/R545"
       #@prediction_feature=http://apps.ideaconsult.net:8080/ambit2/feature/22200
+      
+      @model_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/model/33"
+      @test_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R545"
+      
     end
   end
   

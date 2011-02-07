@@ -61,7 +61,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
         cv = nil
         
         raise OpenTox::NotAuthorizedError.new "Not authorized: GET "+u.to_s if
-          subjectid and !OpenTox::Authorization.authorized?(u,"GET",subjectid)
+          AA_SERVER and !OpenTox::Authorization.authorized?(u,"GET",subjectid)
 #        begin
 #          #cv = Lib::Crossvalidation.find( cv_id )
 #        rescue => ex
@@ -87,7 +87,7 @@ class Reports::ValidationDB < Reports::ValidationAccess
       (validation_id.to_i > 0 || validation_id.to_s=="0" )
     v = nil
     raise OpenTox::NotAuthorizedError.new "Not authorized: GET "+uri.to_s if
-      subjectid and !OpenTox::Authorization.authorized?(uri,"GET",subjectid)
+      AA_SERVER and !OpenTox::Authorization.authorized?(uri,"GET",subjectid)
     v = Lib::Validation.get(validation_id)
     raise OpenTox::NotFoundError.new "validation with id "+validation_id.to_s+" not found" unless v
     raise OpenTox::BadRequestError.new "validation with id "+validation_id.to_s+" is not finished yet" unless v.finished

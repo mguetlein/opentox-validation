@@ -112,11 +112,14 @@ class ValidationTest < Test::Unit::TestCase
     assert_equal report.uri,report3.uri
     @report = report
   end
+  
+  ################### utils and overrides ##########################
 
   def app
     Sinatra::Application
   end
   
+  # checks RestCallError type
   def assert_rest_call_error( ex )
     if ex==OpenTox::NotAuthorizedError and @@subjectid==nil
       puts "AA disabled: skipping test for not authorized"
@@ -133,12 +136,12 @@ class ValidationTest < Test::Unit::TestCase
     end
   end
   
+  # hack to have a global_setup and global_teardown 
   def teardown
     if((@@expected_test_count-=1) == 0)
       global_teardown
     end
   end
-
   def setup
     unless defined?@@expected_test_count
       @@expected_test_count = (self.class.instance_methods.reject{|method| method[0..3] != 'test'}).length

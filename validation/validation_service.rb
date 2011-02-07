@@ -273,10 +273,13 @@ module Validation
     end
     
     # creates the cv folds
-    # PENDING copying datasets of an equal (same dataset, same params) crossvalidation is disabled for now 
     def create_cv_datasets( prediction_feature, task=nil )
-  
-       create_new_cv_datasets( prediction_feature, task ) #unless copy_cv_datasets( prediction_feature )
+      if copy_cv_datasets( prediction_feature )
+        # dataset folds of a previous crossvalidaiton could be used 
+        task.progress(100) if task
+      else
+        create_new_cv_datasets( prediction_feature, task )
+      end
     end
     
     # executes the cross-validation (build models and validates them)
@@ -307,30 +310,38 @@ module Validation
     # returns true if successfull, false otherwise
     def copy_cv_datasets( prediction_feature )
       
-      equal_cvs = Crossvalidation.all( { :dataset_uri => self.dataset_uri, :num_folds => self.num_folds, 
-                                          :stratified => self.stratified, :random_seed => self.random_seed } ).reject{ |cv| cv.id == self.id }
-      return false if equal_cvs.size == 0 
-      cv = equal_cvs[0]
-      Validation.all( :crossvalidation_id => cv.id ).each do |v|
-        
-        if self.stratified and v.prediction_feature != prediction_feature
-          return false;
+      cvs = Crossvalidation.all( { 
+        :dataset_uri => self.dataset_uri, 
+        :num_folds => self.num_folds, 
+        :stratified => self.stratified, 
+        :random_seed => self.random_seed,
+        :finished => true} ).reject{ |cv| cv.id == self.id }
+      cvs.each do |cv|
+        next if AA_SERVER and !OpenTox::Authorization.authorized?(cv.crossvalidation_uri,"GET",self.subjectid)
+        tmp_val = []
+        Validation.all( :crossvalidation_id => cv.id ).each do |v|
+          break unless 
+            v.prediction_feature == prediction_feature and
+            OpenTox::Dataset.exist?(v.training_dataset_uri,self.subjectid) and 
+            OpenTox::Dataset.exist?(v.test_dataset_uri,self.subjectid)
+          #make sure self.id is set
+          self.save if self.new?
+          tmp_val << { :validation_type => "crossvalidation",
+                       :training_dataset_uri => v.training_dataset_uri, 
+                       :test_dataset_uri => v.test_dataset_uri,
+                       :test_target_dataset_uri => self.dataset_uri,
+                       :crossvalidation_id => self.id,
+                       :crossvalidation_fold => v.crossvalidation_fold,
+                       :prediction_feature => prediction_feature,
+                       :algorithm_uri => self.algorithm_uri }
         end
-        unless (OpenTox::Dataset.find(v.training_dataset_uri) and 
-              OpenTox::Dataset.find(v.test_dataset_uri))
-          LOGGER.debug "dataset uris obsolete, aborting copy of datasets"
-          Validation.all( :crossvalidation_id => self.id ).each{ |v| v.delete }
-          return false
+        if tmp_val.size == self.num_folds
+          @tmp_validations = tmp_val
+          LOGGER.debug "copied dataset uris from cv "+cv.crossvalidation_uri.to_s #+":\n"+tmp_val.inspect
+          return true
         end
-        validation = Validation.new :validation_type => "crossvalidation", 
-                                    :crossvalidation_id => self.id,
-                                    :crossvalidation_fold => v.crossvalidation_fold,
-                                    :training_dataset_uri => v.training_dataset_uri, 
-                                    :test_dataset_uri => v.test_dataset_uri,
-                                    :algorithm_uri => self.algorithm_uri
       end
-      LOGGER.debug "copied dataset uris from cv "+cv.crossvalidation_uri.to_s
-      return true
+      false
     end
     
     # creates cv folds (training and testdatasets)
