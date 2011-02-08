@@ -20,10 +20,10 @@ LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 LOGGER.formatter = Logger::Formatter.new
 
 if AA_SERVER
-#  TEST_USER = "mgtest"
-#  TEST_PW = "mgpasswd"
-  TEST_USER = "guest"
-  TEST_PW = "guest"
+  TEST_USER = "mgtest"
+  TEST_PW = "mgpasswd"
+#  TEST_USER = "guest"
+#  TEST_PW = "guest"
   SUBJECTID = OpenTox::Authorization.authenticate(TEST_USER,TEST_PW)
   raise "could not log in" unless SUBJECTID
   puts "logged in: "+SUBJECTID.to_s
@@ -152,9 +152,9 @@ class ValidationTest < Test::Unit::TestCase
 #      puts val
 #      get "/"+val.split("/")[-1]
       
-      #run_test("1a",:validation_uri=>"http://local-ot/validation/119") #,"http://local-ot/validation/28")#,"http://local-ot/validation/394");
+      run_test("1a") #,:validation_uri=>"http://local-ot/validation/119") #,"http://local-ot/validation/28")#,"http://local-ot/validation/394");
       
-      run_test("3b",:validation_uri=>"http://local-ot/validation/crossvalidation/45") #,{:dataset_uri => "http://local-ot/dataset/773", :prediction_feature => "http://local-ot/dataset/773/feature/Hamster%20Carcinogenicity"})
+      #run_test("3b",:validation_uri=>"http://local-ot/validation/crossvalidation/45") #,{:dataset_uri => "http://local-ot/dataset/773", :prediction_feature => "http://local-ot/dataset/773/feature/Hamster%20Carcinogenicity"})
       
 #      p = {
 #        :dataset_uri=>"http://local-ot/dataset/527",

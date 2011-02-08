@@ -71,7 +71,7 @@ module ReachReports
     # TODO QSAR_models -> sparql same endpoint     
     r.qsar_identifier.qsar_software << QsarSoftware.new( :url => model.uri, 
       :name => model.metadata[DC.title], :contact => model.metadata[DC.creator] )
-    algorithm = OpenTox::Algorithm::Generic.find(model.metadata[OT.algorithm]) if model.metadata[OT.algorithm]
+    algorithm = OpenTox::Algorithm::Generic.find(model.metadata[OT.algorithm], r.subjectid) if model.metadata[OT.algorithm]
     r.qsar_identifier.qsar_software << QsarSoftware.new( :url => algorithm.uri, :name => algorithm.metadata[DC.title] )
     task.progress(10) if task
 
@@ -108,9 +108,11 @@ module ReachReports
     # TODO app_domain_description, app_domain_method, app_domain_software, applicability_limits
 
     #training_dataset = model.trainingDataset ? OpenTox::Dataset.find(model.trainingDataset+"/metadata") : nil
-    begin
-      training_dataset = model.metadata[OT.trainingDataset] ? OpenTox::Dataset.find(model.metadata[OT.trainingDataset]) : nil
-    rescue
+    if ( OpenTox::Dataset.exist?(model.metadata[OT.trainingDataset]) )
+      training_dataset = OpenTox::Dataset.new( model.metadata[OT.trainingDataset] )
+      training_dataset.load_metadata( r.subjectid )
+    else
+      training_dataset = nil
       LOGGER.warn "build qmrf: training_dataset not found "+model.metadata[OT.trainingDataset].to_s
     end
     task.progress(50) if task
@@ -264,14 +266,13 @@ module ReachReports
         :url => training_dataset.uri} ) if training_dataset
         
     val_datasets.each do |data_uri|
-      begin
-        d = OpenTox::Dataset.find(data_uri) #+"/metadata")
+      if OpenTox::Dataset.exist?(data_uri, r.subjectid)
+        d = OpenTox::Dataset.new(data_uri)
+        d.load_metadata( r.subjectid)
         r.qsar_miscellaneous.attachment_validation_data << AttachmentValidationData.new( 
           { :description => d.title, 
             :filetype => "owl-dl", 
-            :url => data_uri} ) if d
-      rescue
-        LOGGER.warn "could not add dataset: "+data_uri.to_s
+            :url => data_uri} )
       end
     end
     task.progress(90) if task

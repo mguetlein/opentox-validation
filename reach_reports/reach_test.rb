@@ -1,3 +1,11 @@
+
+require "rubygems"
+require "sinatra"
+before {
+  request.env['HTTP_HOST']="local-ot/validation"
+  request.env["REQUEST_URI"]=request.env["PATH_INFO"]
+}
+
 require "uri"
 require "yaml"
 ENV['RACK_ENV'] = 'test'
@@ -10,6 +18,19 @@ require 'test/test_examples.rb'
 LOGGER = OTLogger.new(STDOUT)
 LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 LOGGER.formatter = Logger::Formatter.new
+
+if AA_SERVER
+  TEST_USER = "mgtest"
+  TEST_PW = "mgpasswd"
+#  TEST_USER = "guest"
+#  TEST_PW = "guest"
+  SUBJECTID = OpenTox::Authorization.authenticate(TEST_USER,TEST_PW)
+  raise "could not log in" unless SUBJECTID
+  puts "logged in: "+SUBJECTID.to_s
+else
+  puts "AA disabled"
+  SUBJECTID = nil
+end
 
 #Rack::Test::DEFAULT_HOST = "local-ot/validation"
 module Sinatra
@@ -24,7 +45,10 @@ module Sinatra
       "#{BASE}#{url_fragment}"
     end
   end
+  set :raise_errors, false
+  set :show_exceptions, false
 end
+
 
 #DataMapper::Model.raise_on_save_failure = true
 #
@@ -76,10 +100,12 @@ class ReachTest < Test::Unit::TestCase
 
   def test_it
     
-    delete '/reach_report/QMRF/3'
-    puts last_response.body
+    begin
     
-    exit
+   # delete '/reach_report/QMRF/3'
+   # puts last_response.body
+    
+    #exit
 #    testResource = TestResource.new
 #    
 #    TestResource.info
@@ -120,7 +146,10 @@ class ReachTest < Test::Unit::TestCase
     
     #model_uri = "http://ambit.uni-plovdiv.bg:8080/ambit2/model/173393"
     
-    model_uri = "http://local-ot/majority/class/model/58"
+    #model_uri = "http://local-ot/majority/class/model/58"
+    
+    model_uri = "http://local-ot/model/104"
+    
 #    m = OpenTox::Model::Generic.find(model_uri)
 #    puts m.metadata[OT.algorithm] if m
 #    a = OpenTox::Algorithm::Generic.find(m.metadata[OT.algorithm])
@@ -132,13 +161,15 @@ class ReachTest < Test::Unit::TestCase
     #model_uri = "http://local-ot/majority/class/model/15"
    # model_uri = "http://local-ot/majority/class/model/91"
     #model_uri = "http://apps.ideaconsult.net:8080/ambit2/model/2"
-    post '/reach_report/qmrf',:model_uri=>model_uri #http://local-ot/model/1"
+    post '/reach_report/qmrf', {:model_uri=>model_uri}, {:subjectid => SUBJECTID} #http://local-ot/model/1"
     ##post '/reach_report/qprf',:compound_uri=>"http://local-ot/compound/XYZ"
     uri = last_response.body
     puts "task: "+uri.to_s
     uri = Lib::TestUtil.wait_for_task(uri)
-    id = uri.split("/")[-1]
-    puts uri
+    if uri
+      id = uri.split("/")[-1]
+      puts uri
+    end
 
 #    id = "8"
 
@@ -164,6 +195,13 @@ class ReachTest < Test::Unit::TestCase
     #File.new("/home/martin/tmp/qmr_rep_del_me.xml","w").puts last_response.body
     #File.new("/home/martin/win/home/qmr_rep_del_me.xml","w").puts last_response.body
     #File.new("/home/martin/info_home/.public_html/qmr_rep_del_me.xml","w").puts last_response.body
+    
+    rescue => ex
+      rep = OpenTox::ErrorReport.create(ex, "")
+      puts rep.to_yaml
+    end
+      
+      
   end
 end
 

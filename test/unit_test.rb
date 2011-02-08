@@ -1,9 +1,11 @@
+#TEST_USER = "mgtest"
+#TEST_PW = "mgpasswd"
+#ENV['RACK_ENV'] = 'test'
 
 require "rubygems"
 require "sinatra"
 require "uri"
 require "yaml"
-ENV['RACK_ENV'] = 'test'
 require 'application.rb'
 require 'test/unit'
 require 'rack/test'
@@ -12,7 +14,7 @@ require 'test/test_examples.rb'
 
 TEST_USER = "guest"
 TEST_PW = "guest"
-  
+
 #LOGGER = OTLogger.new(STDOUT)
 #LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 #LOGGER.formatter = Logger::Formatter.new
@@ -58,16 +60,23 @@ class ValidationTest < Test::Unit::TestCase
  
   def test_crossvalidation
     puts "test_crossvalidation"
-    assert_rest_call_error OpenTox::NotFoundError do 
-      OpenTox::Crossvalidation.find(File.join(CONFIG[:services]["opentox-validation"],"crossvalidation/noexistingid"))
-    end
+    #assert_rest_call_error OpenTox::NotFoundError do 
+    #  OpenTox::Crossvalidation.find(File.join(CONFIG[:services]["opentox-validation"],"crossvalidation/noexistingid"))
+    #end
     p = { 
       :dataset_uri => @@data_class_mini,
       :algorithm_uri => File.join(CONFIG[:services]["opentox-algorithm"],"lazar"),
       :algorithm_params => "feature_generation_uri="+File.join(CONFIG[:services]["opentox-algorithm"],"fminer/bbrc"),
       :prediction_feature => @@feat_class_mini,
       :num_folds => 2 }
-    cv = OpenTox::Crossvalidation.create(p, @@subjectid)
+    t = OpenTox::SubTask.new(nil,0,1)
+    def t.progress(pct)
+      if !defined?@last_msg or @last_msg+3<Time.new
+        puts "waiting for crossvalidation: "+pct.to_s
+        @last_msg=Time.new
+      end
+    end
+    cv = OpenTox::Crossvalidation.create(p, @@subjectid, t)
     assert cv.uri.uri?
     if @@subjectid
       assert_rest_call_error OpenTox::NotAuthorizedError do
@@ -92,9 +101,9 @@ class ValidationTest < Test::Unit::TestCase
     puts "test_crossvalidation_report"
     assert defined?@@cv,"no crossvalidation defined"
     assert_kind_of OpenTox::Crossvalidation,@@cv
-    assert_rest_call_error OpenTox::NotFoundError do 
-      OpenTox::CrossvalidationReport.find_for_crossvalidation(@@cv.uri)
-    end
+    #assert_rest_call_error OpenTox::NotFoundError do 
+    #  OpenTox::CrossvalidationReport.find_for_crossvalidation(@@cv.uri)
+    #end
     if @@subjectid
       assert_rest_call_error OpenTox::NotAuthorizedError do
         OpenTox::CrossvalidationReport.create(@@cv.uri)
@@ -117,7 +126,7 @@ class ValidationTest < Test::Unit::TestCase
   end
   
   def test_qmrf_report
-   #@@cv = OpenTox::Crossvalidation.find("http://local-ot/validation/crossvalidation/47", @@subjectid)
+    #@@cv = OpenTox::Crossvalidation.find("http://local-ot/validation/crossvalidation/47", @@subjectid)
     
     puts "test_qmrf_report"
     assert defined?@@cv,"no crossvalidation defined"
@@ -131,15 +140,15 @@ class ValidationTest < Test::Unit::TestCase
     model = OpenTox::Model::Generic.find(model_uri, @@subjectid)
     assert model!=nil
     
-    assert_rest_call_error OpenTox::NotFoundError do 
-      OpenTox::QMRFReport.find_for_model(model_uri, @@subjectid)
-    end
+    #assert_rest_call_error OpenTox::NotFoundError do 
+    #  OpenTox::QMRFReport.find_for_model(model_uri, @@subjectid)
+    #end
     
     @@qmrfReport = OpenTox::QMRFReport.create(model_uri, @@subjectid)
   end
   
   ################### utils and overrides ##########################
-
+  
   def app
     Sinatra::Application
   end
@@ -175,3 +184,5 @@ class ValidationTest < Test::Unit::TestCase
   end
 
 end
+
+  
