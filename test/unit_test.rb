@@ -76,6 +76,7 @@ class ValidationTest < Test::Unit::TestCase
         @last_msg=Time.new
       end
     end
+    def t.waiting_for(task_uri); end
     cv = OpenTox::Crossvalidation.create(p, @@subjectid, t)
     assert cv.uri.uri?
     if @@subjectid
