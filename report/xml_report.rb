@@ -168,7 +168,7 @@ module Reports
         row = Element.new("row")
         table_head_values.each do |v|
           entry = Element.new("entry")
-          if auto_link_urls && v.to_s =~ /^http:\/\//
+          if auto_link_urls && v.to_s =~ /^http(s?):\/\//
             add_url(entry, v.to_s)
           else
             entry.text = v.to_s
@@ -186,7 +186,7 @@ module Reports
           entry = Element.new("entry")
           if auto_link_urls && v.to_s =~ /depict/ || v.to_s =~ /image$/ #PENDING 
             add_image(entry, v.to_s)
-          elsif auto_link_urls && v.to_s =~ /^http:\/\//
+          elsif auto_link_urls && v.to_s =~ /^http(s?):\/\//
            add_url(entry, v.to_s, v.to_s)
           else
            entry.text = v.to_s

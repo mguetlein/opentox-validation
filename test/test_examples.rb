@@ -368,6 +368,17 @@ module ValidationExamples
     end
   end
   
+  ########################################################################################################
+  
+  class TumModel < ModelValidation
+    def initialize
+      @model_uri = "http://opentox-dev.informatik.tu-muenchen.de:8080/OpenTox-sec/sec/model/TUMOpenToxModel_M5P_5"
+      @test_dataset_uri = "http://apps.ideaconsult.net:8080/ambit2/dataset/99488"
+    end
+  end  
+  
+  
+  
    ########################################################################################################
    
   class HamsterTrainingTest < TrainingTestValidation
@@ -497,7 +508,9 @@ module ValidationExamples
       
       "17" => [ LazarRepdoseCrossValidation, MajorityRepdoseCrossValidation ],
       "17a" => [ LazarRepdoseCrossValidation ],
-      "17b" => [ MajorityRepdoseCrossValidation ],  
+      "17b" => [ MajorityRepdoseCrossValidation ],
+      
+      "18a" =>  [ TumModel ],
     }
   
   def self.list
