@@ -54,14 +54,14 @@ module ValidationExamples
       #end
     end
     
-    def self.validation_post(uri, params, subjectid )
+    def self.validation_post(uri, params, subjectid, waiting_task=nil )
       
       params[:subjectid] = subjectid if subjectid
       if $test_case
         $test_case.post uri,params
         return wait($test_case.last_response.body)
       else
-        return OpenTox::RestClientWrapper.post(File.join(CONFIG[:services]["opentox-validation"],uri),params).to_s
+        return OpenTox::RestClientWrapper.post(File.join(CONFIG[:services]["opentox-validation"],uri),params,nil,waiting_task).to_s
       end
     end
     
@@ -292,9 +292,9 @@ module ValidationExamples
       end
     end
     
-    def report
+    def report( waiting_task=nil )
       #begin
-        @report_uri = Util.validation_post '/report/'+report_type,{:validation_uris => @validation_uri}, @subjectid if @validation_uri
+        @report_uri = Util.validation_post '/report/'+report_type,{:validation_uris => @validation_uri},@subjectid,waiting_task if @validation_uri
         Util.validation_get "/report/"+report_uri.split("/")[-2]+"/"+report_uri.split("/")[-1], @subjectid if @report_uri
       #rescue => ex
         #puts "could not create report: "+ex.message
@@ -303,9 +303,9 @@ module ValidationExamples
       #end
     end
     
-    def validate
+    def validate( waiting_task=nil )
       #begin
-        @validation_uri = Util.validation_post '/'+validation_type, get_params, @subjectid
+        @validation_uri = Util.validation_post '/'+validation_type, get_params, @subjectid, waiting_task
       #rescue => ex
         #puts "could not validate: "+ex.message
         #@validation_error = ex.message

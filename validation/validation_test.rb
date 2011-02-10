@@ -156,7 +156,7 @@ class ValidationTest < Test::Unit::TestCase
 #      puts d.compounds.inspect
 #      exit
       
-      run_test("5a",:validation_uri=>"http://local-ot/validation/253") #,"http://local-ot/validation/28")#,"http://local-ot/validation/394");
+      run_test("21a")#,:validation_uri=>"http://local-ot/validation/253") #,"http://local-ot/validation/28")#,"http://local-ot/validation/394");
       
       #run_test("3b",:validation_uri=>"http://local-ot/validation/crossvalidation/45") #,{:dataset_uri => "http://local-ot/dataset/773", :prediction_feature => "http://local-ot/dataset/773/feature/Hamster%20Carcinogenicity"})
       

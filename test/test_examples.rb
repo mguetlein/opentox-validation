@@ -387,6 +387,30 @@ module ValidationExamples
   end    
   
   
+    ########################################################################################################
+  
+  class AmbitTrainingTest < TrainingTestValidation
+    def initialize
+      #@model_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/model/29139"
+      @training_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401560"
+      @test_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401560"
+      @prediction_feature = "https://ambit.uni-plovdiv.bg:8443/ambit2/feature/22190"
+      @algorithm_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/algorithm/LR"
+    end
+  end   
+  
+      ########################################################################################################
+  
+  class AmbitTrainingTestSplit < SplitTestValidation
+    def initialize
+      #@model_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/model/29139"
+      @dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401560"
+      #@test_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401560"
+      @prediction_feature = "https://ambit.uni-plovdiv.bg:8443/ambit2/feature/22190"
+      @algorithm_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/algorithm/LR"
+    end
+  end  
+  
   
    ########################################################################################################
    
@@ -522,6 +546,10 @@ module ValidationExamples
       "18a" =>  [ TumModel ],
       
       "19a" =>  [ AmbitModel ],
+      
+      "20a" =>  [ AmbitTrainingTest ],
+      
+      "21a" =>  [ AmbitTrainingTestSplit ],
     }
   
   def self.list
