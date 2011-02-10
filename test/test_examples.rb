@@ -377,6 +377,15 @@ module ValidationExamples
     end
   end  
   
+  ########################################################################################################
+  
+  class AmbitModel < ModelValidation
+    def initialize
+      @model_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/model/29139"
+      @test_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401560"
+    end
+  end    
+  
   
   
    ########################################################################################################
@@ -511,6 +520,8 @@ module ValidationExamples
       "17b" => [ MajorityRepdoseCrossValidation ],
       
       "18a" =>  [ TumModel ],
+      
+      "19a" =>  [ AmbitModel ],
     }
   
   def self.list
