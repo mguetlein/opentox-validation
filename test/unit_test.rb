@@ -117,13 +117,13 @@ class ValidationTest < Test::Unit::TestCase
         OpenTox::CrossvalidationReport.find(report.uri)
       end
     end
-    report = OpenTox::CrossvalidationReport.find(report.uri,@@subjectid)
-    assert report.uri.uri?
+    report_uri = OpenTox::CrossvalidationReport.find(report.uri,@@subjectid)
+    assert report_uri.uri?
     report2 = OpenTox::CrossvalidationReport.find_for_crossvalidation(@@cv.uri,@@subjectid)
-    assert_equal report.uri,report2.uri
+    assert_equal report_uri,report2.uri
     report3 = @@cv.find_or_create_report(@@subjectid)
-    assert_equal report.uri,report3.uri
-    @report = report
+    assert_equal report_uri,report3.uri
+    @report = report2
   end
   
   def test_qmrf_report
