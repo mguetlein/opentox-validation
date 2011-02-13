@@ -12,23 +12,15 @@ module Reports::ReportFormat
   
   # returns report-format, according to header value
   def self.get_format(accept_header_value)
-    
     case accept_header_value
-    when /text\/html/
-      "text/html"
     when /application\/rdf\+xml/
       "application/rdf+xml"
     when /text\/xml/
       "text/xml"
-    when /application\/x-yaml|\*\/\*/
+    when /application\/x-yaml/
       "application/x-yaml"
     else
-      raise OpenTox::BadRequestError.new("Accept header '"+accept_header_value.to_s+
-        "' not supported, supported types are "+
-        "text/html"+", "+
-        "application/rdf+xml"+", "+
-        "text/xml"+", "+
-        "application/x-yaml")
+      "text/html"
     end
   end
   
