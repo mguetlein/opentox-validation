@@ -24,11 +24,6 @@ module Lib
           "', prediction_feature: '"+prediction_feature.to_s+"' "+
           "', predicted_variable: '"+predicted_variable.to_s+"'")
           
-        if prediction_feature =~ /ambit.uni-plovdiv.bg.*feature.*264185/
-          LOGGER.warn "HACK for report example"  
-          prediction_feature = "http://ambit.uni-plovdiv.bg:8080/ambit2/feature/264187"
-        end
-         
         predicted_variable=prediction_feature if predicted_variable==nil
         
         test_dataset = OpenTox::Dataset.find test_dataset_uri,subjectid
@@ -92,6 +87,14 @@ module Lib
             LOGGER.warn msg
           else
             raise msg
+          end
+        end
+
+        #AMBIT HACK
+        if @compounds[0]=~/ambit/ and @compounds[0]=~/conformer/
+          LOGGER.warn "AMBIT HACK, removing conformer endings in test-datset"
+          @compounds.each do |c|
+            c.gsub!(/\/conformer.*/,"")
           end
         end
         
