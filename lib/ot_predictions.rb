@@ -90,14 +90,6 @@ module Lib
           end
         end
 
-        #AMBIT HACK
-        if @compounds[0]=~/ambit/ and @compounds[0]=~/conformer/
-          LOGGER.warn "AMBIT HACK, removing conformer endings in test-datset"
-          @compounds.each do |c|
-            c.gsub!(/\/conformer.*/,"")
-          end
-        end
-        
         raise "more predicted than test compounds test:"+@compounds.size.to_s+" < prediction:"+
           prediction_dataset.compounds.size.to_s if @compounds.size < prediction_dataset.compounds.size
         if CHECK_VALUES
