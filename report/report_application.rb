@@ -76,7 +76,6 @@ end
 
 
 get '/report/:type/:id' do
-  
   perform do |rs| 
     
     accept_header = request.env['HTTP_ACCEPT']
@@ -90,6 +89,8 @@ get '/report/:type/:id' do
       result = body(File.new(report))
     end
   end
+
+  response.set_cookie("subjectid", @subjectid)
 end
 
 #OpenTox::Authorization.whitelist( Regexp.new("/report/.*/[0-9]+/.*"),"GET")

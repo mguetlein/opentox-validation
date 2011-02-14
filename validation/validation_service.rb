@@ -138,16 +138,20 @@ module Validation
         self.algorithm_uri = model.metadata[OT.algorithm]
       end
       
-      dependentVariables = model.metadata[OT.dependentVariables]
-      if self.prediction_feature
-        raise OpenTox::NotFoundError.new "error validating model: model.dependent_variable != validation.prediction_feature ("+
-          dependentVariables.to_s+" != "+self.prediction_feature+"), model-metadata is "+model.metadata.inspect if self.prediction_feature!=dependentVariables
+      if self.prediction_feature and model.uri=~/ambit2\/model/
+        LOGGER.warn "REMOVE AMBIT HACK TO __NOT__ RELY ON DEPENDENT VARIABLE"        
       else
-        raise OpenTox::NotFoundError.new "model has no dependentVariables specified, please give prediction feature for model validation" unless dependentVariables
-        #self.attributes = { :prediction_feature => model.dependentVariables }
-        #self.save!
-        #self.update :prediction_feature => model.dependentVariables
-        self.prediction_feature = model.metadata[OT.dependentVariables]
+        dependentVariables = model.metadata[OT.dependentVariables]
+        if self.prediction_feature
+          raise OpenTox::NotFoundError.new "error validating model: model.dependent_variable != validation.prediction_feature ("+
+            dependentVariables.to_s+" != "+self.prediction_feature+"), model-metadata is "+model.metadata.inspect if self.prediction_feature!=dependentVariables
+        else
+          raise OpenTox::NotFoundError.new "model has no dependentVariables specified, please give prediction feature for model validation" unless dependentVariables
+          #self.attributes = { :prediction_feature => model.dependentVariables }
+          #self.save!
+          #self.update :prediction_feature => model.dependentVariables
+          self.prediction_feature = model.metadata[OT.dependentVariables]
+        end
       end
       
       prediction_dataset_uri = ""

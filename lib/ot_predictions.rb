@@ -55,7 +55,7 @@ module Lib
         @compounds = test_dataset.compounds
         LOGGER.debug "test dataset size: "+@compounds.size.to_s
         raise "test dataset is empty "+test_dataset_uri.to_s unless @compounds.size>0
-        class_values = feature_type=="classification" ? OpenTox::Feature.new(prediction_feature).domain : nil
+        class_values = feature_type=="classification" ? OpenTox::Feature.find(prediction_feature, subjectid).domain : nil
         
         actual_values = []
         @compounds.each do |c|
@@ -147,12 +147,13 @@ module Lib
     def classification_value(dataset, compound, feature, class_values)
       v = value(dataset, compound, feature)
       i = class_values.index(v)
-      raise "illegal class_value of predicted value "+v.to_s+" class: "+v.class.to_s unless v==nil or i!=nil
+      raise "illegal class_value of prediction (value is '"+v.to_s+"', class is '"+v.class.to_s+"'), possible values are "+
+        class_values.inspect unless v==nil or i!=nil
       i
     end
     
     def value(dataset, compound, feature)
-      
+      return nil if dataset.data_entries[compound]==nil
       if feature==nil
         v = dataset.data_entries[compound].values[0]
       else
