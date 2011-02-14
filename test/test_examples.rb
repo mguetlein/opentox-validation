@@ -379,27 +379,47 @@ module ValidationExamples
   
   ########################################################################################################
   
-  class AmbitModel < ModelValidation
+  class AmbitModelValidation < ModelValidation
     def initialize
       @model_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/model/29139"
       @test_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401560"
     end
   end    
   
-  
-    ########################################################################################################
+  class AmbitBursiModelValidation < ModelValidation
+    def initialize
+      @model_uri =  "https://ambit.uni-plovdiv.bg:8443/ambit2/model/35194"
+      @test_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401577"
+    end
+  end
   
   class AmbitTrainingTest < TrainingTestValidation
     def initialize
-      #@model_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/model/29139"
       @training_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401560"
+      #@training_dataset_uri = "http://opentox.informatik.uni-freiburg.de/dataset/317"
       @test_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401560"
       @prediction_feature = "https://ambit.uni-plovdiv.bg:8443/ambit2/feature/22190"
       @algorithm_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/algorithm/LR"
     end
   end   
   
-      ########################################################################################################
+  class AmbitBursiTrainingTest < TrainingTestValidation
+    def initialize
+      @test_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401577"
+      @training_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401577"
+      @prediction_feature = "https://ambit.uni-plovdiv.bg:8443/ambit2/feature/26221"
+      @algorithm_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/algorithm/J48"
+    end
+  end    
+  
+  class AmbitJ48TrainingTest < TrainingTestValidation
+    def initialize
+      @test_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/39914"
+      @training_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/39914"
+      @prediction_feature = "https://ambit.uni-plovdiv.bg:8443/ambit2/feature/221726"
+      @algorithm_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/algorithm/J48"
+    end
+  end  
   
   class AmbitTrainingTestSplit < SplitTestValidation
     def initialize
@@ -410,6 +430,14 @@ module ValidationExamples
       @algorithm_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/algorithm/LR"
     end
   end  
+  
+  class AmbitBursiTrainingTestSplit < SplitTestValidation
+    def initialize
+      @dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401577"
+      @prediction_feature = "https://ambit.uni-plovdiv.bg:8443/ambit2/feature/26221"
+      @algorithm_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/algorithm/J48"
+    end
+  end    
   
   
    ########################################################################################################
@@ -545,11 +573,14 @@ module ValidationExamples
       
       "18a" =>  [ TumModel ],
       
-      "19a" =>  [ AmbitModel ],
+      "19a" =>  [ AmbitModelValidation ],
+      "19b" =>  [ AmbitTrainingTest ],
+      "19c" =>  [ AmbitTrainingTestSplit ],
+      "19d" => [ AmbitBursiTrainingTest ],
+      "19e" => [ AmbitBursiModelValidation ],
+      "19f" => [ AmbitBursiTrainingTestSplit ],
+      "19g" => [ AmbitJ48TrainingTest ],
       
-      "20a" =>  [ AmbitTrainingTest ],
-      
-      "21a" =>  [ AmbitTrainingTestSplit ],
     }
   
   def self.list

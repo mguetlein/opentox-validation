@@ -24,6 +24,11 @@ module ValidationExamples
           raise "num features not 1 (="+d.features.keys.size.to_s+"), what to predict??" if d.features.keys.size != 1
           @@prediction_features[file.path.to_s] = d.features.keys[0]
           @@dataset_uris[file.path.to_s] = d.uri
+        elsif (file.path =~ /rdf$/)
+          d = OpenTox::Dataset.create(CONFIG[:services]["opentox-dataset"], subjectid)
+          d.load_rdfxml_file(file, subjectid)
+          d.save(subjectid)
+          @@dataset_uris[file.path.to_s] = d.uri
         else
           raise "unknown file type: "+file.path.to_s
         end
