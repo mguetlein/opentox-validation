@@ -439,6 +439,14 @@ module ValidationExamples
     end
   end    
   
+  class AmbitJ48TrainingTestSplit < TrainingTestValidation
+    def initialize
+      @dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/39914"
+      @prediction_feature = "https://ambit.uni-plovdiv.bg:8443/ambit2/feature/221726"
+      @algorithm_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/algorithm/J48"
+    end
+  end    
+  
   
    ########################################################################################################
    
@@ -580,6 +588,7 @@ module ValidationExamples
       "19e" => [ AmbitBursiModelValidation ],
       "19f" => [ AmbitBursiTrainingTestSplit ],
       "19g" => [ AmbitJ48TrainingTest ],
+      "19h" => [ AmbitJ48TrainingTestSplit ],
       
     }
   
