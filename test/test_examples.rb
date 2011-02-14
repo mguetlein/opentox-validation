@@ -439,7 +439,7 @@ module ValidationExamples
     end
   end    
   
-  class AmbitJ48TrainingTestSplit < TrainingTestValidation
+  class AmbitJ48TrainingTestSplit < SplitTestValidation
     def initialize
       @dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/39914"
       @prediction_feature = "https://ambit.uni-plovdiv.bg:8443/ambit2/feature/221726"
