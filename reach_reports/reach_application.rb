@@ -212,10 +212,10 @@ get '/reach_report/:type/:id/editor' do
 
 </resources>
 <application-desc main-class="ambit.applications.qmrf.QMRFEditor">
-<argument>-x http://opentox.informatik.uni-freiburg.de/validation/reach_report/QMRF/
+<argument>-x 
 EOF
   jnlp.chomp!
-  jnlp += params[:id].to_s
+  jnlp += File.join(url_for("/reach_report/QMRF",:full),params[:id])
 
   jnlp += <<EOF 
 </argument>
