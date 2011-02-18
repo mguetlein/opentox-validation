@@ -219,7 +219,7 @@ EOF
 
   jnlp += <<EOF 
 </argument>
-<argument>-s 
+<argument>--subjectid=
 EOF
   jnlp.chomp!
   jnlp += @subjectid
