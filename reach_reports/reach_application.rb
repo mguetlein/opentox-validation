@@ -219,6 +219,13 @@ EOF
 
   jnlp += <<EOF 
 </argument>
+<argument>-s 
+EOF
+  jnlp.chomp!
+  jnlp += @subjectid
+
+  jnlp += <<EOF 
+</argument>
 <argument>-d http://opentox.informatik.uni-freiburg.de/qmrfedit2/qmrf.dtd</argument>
 <argument>-t http://opentox.informatik.uni-freiburg.de/qmrfedit2/verdana.ttf</argument>
 
