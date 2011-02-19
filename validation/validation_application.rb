@@ -22,7 +22,7 @@ get '/crossvalidation/?' do
       "Use the POST method to perform a crossvalidation."
     post_params = [[:dataset_uri,:algorithm_uri,:prediction_feature,[:num_folds,10],[:random_seed,1],[:stratified,false],[:algorithm_params,""]]]
     content_type "text/html"
-    OpenTox.text_to_html uri_list,related_links,description,post_params
+    OpenTox.text_to_html uri_list,@subjectid,related_links,description,post_params
   else
     content_type "text/uri-list"
     uri_list
@@ -101,7 +101,7 @@ get '/crossvalidation/:id' do
     description = 
         "A crossvalidation resource."
     content_type "text/html"
-    OpenTox.text_to_html crossvalidation.to_yaml,related_links,description
+    OpenTox.text_to_html crossvalidation.to_yaml,@subjectid,related_links,description
   when /application\/x-yaml|\*\/\*/
     content_type "application/x-yaml"
     crossvalidation.to_yaml
@@ -139,7 +139,7 @@ get '/crossvalidation/:id/statistics' do
     description = 
        "The averaged statistics for the crossvalidation."
     content_type "text/html"
-    OpenTox.text_to_html v.to_yaml,related_links,description
+    OpenTox.text_to_html v.to_yaml,@subjectid,related_links,description
   else
     content_type "application/x-yaml"
     v.to_yaml
@@ -196,7 +196,7 @@ get '/crossvalidation/:id/predictions' do
     related_links = 
       "All crossvalidations:         "+url_for("/crossvalidation",:full)+"\n"+
       "Correspoding crossvalidation: "+url_for("/crossvalidation/"+params[:id],:full)
-    OpenTox.text_to_html p, related_links, description
+    OpenTox.text_to_html p,@subjectid, related_links, description
   else
     content_type "text/x-yaml"
     p
@@ -226,7 +226,7 @@ get '/?' do
         "A validation web service for the OpenTox project ( http://opentox.org ).\n"+
         "In the root directory (this is where you are now), a list of all validation resources is returned."
     content_type "text/html"
-    OpenTox.text_to_html uri_list,related_links,description
+    OpenTox.text_to_html uri_list,@subjectid,related_links,description
   else
     content_type "text/uri-list"
     uri_list
@@ -274,7 +274,7 @@ get '/test_set_validation' do
         "To perform a test-set-validation use the POST method."
     post_params = [[:model_uri, :test_dataset_uri, [:test_target_dataset_uri,"same-as-test_dataset_uri"], [:prediction_feature, "dependent-variable-of-model"]]]
     content_type "text/html"
-    OpenTox.text_to_html uri_list,related_links,description,post_params
+    OpenTox.text_to_html uri_list,@subjectid,related_links,description,post_params
   else
     content_type "text/uri-list"
     uri_list
@@ -323,7 +323,7 @@ get '/training_test_validation' do
                     :prediction_feature, 
                     [:algorithm_params, ""]]]
     content_type "text/html"
-    OpenTox.text_to_html uri_list,related_links,description,post_params
+    OpenTox.text_to_html uri_list,@subjectid,related_links,description,post_params
   else
     content_type "text/uri-list"
     uri_list
@@ -371,7 +371,7 @@ get '/bootstrapping' do
                     [:algorithm_params, ""],
                     [:random_seed, 1]]]
     content_type "text/html"
-    OpenTox.text_to_html uri_list,related_links,description,post_params
+    OpenTox.text_to_html uri_list,@subjectid,related_links,description,post_params
   else
     content_type "text/uri-list"
     uri_list
@@ -423,7 +423,7 @@ get '/training_test_split' do
                     [:random_seed, 1],
                     [:split_ratio, 0.66]]]
     content_type "text/html"
-    OpenTox.text_to_html uri_list,related_links,description,post_params
+    OpenTox.text_to_html uri_list,@subjectid,related_links,description,post_params
   else
     content_type "text/uri-list"
     uri_list
@@ -502,7 +502,7 @@ get '/:id/predictions' do
     related_links = 
       "All validations:         "+url_for("/",:full)+"\n"+
       "Correspoding validation: "+url_for("/"+params[:id],:full)
-    OpenTox.text_to_html p.to_array.to_yaml, related_links, description
+    OpenTox.text_to_html p.to_array.to_yaml,@subjectid, related_links, description
   else
     content_type "text/x-yaml"
     p.to_array.to_yaml
@@ -548,7 +548,7 @@ get '/:id' do
       "Get validation predictions:      "+url_for("/"+params[:id]+"/predictions",:full)+"\n"+
       "All validations:                 "+url_for("/",:full)+"\n"+
       "All validation reports:          "+url_for("/report/validation",:full)
-    OpenTox.text_to_html validation.to_yaml,related_links,description
+    OpenTox.text_to_html validation.to_yaml,@subjectid,related_links,description
   else #default is yaml 
     content_type "application/x-yaml"
     validation.to_yaml

@@ -20,10 +20,10 @@ LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 LOGGER.formatter = Logger::Formatter.new
 
 if AA_SERVER
-  #TEST_USER = "mgtest"
-  #TEST_PW = "mgpasswd"
-  TEST_USER = "guest"
-  TEST_PW = "guest"
+  TEST_USER = "mgtest"
+  TEST_PW = "mgpasswd"
+  #TEST_USER = "guest"
+  #TEST_PW = "guest"
   SUBJECTID = OpenTox::Authorization.authenticate(TEST_USER,TEST_PW)
   raise "could not log in" unless SUBJECTID
   puts "logged in: "+SUBJECTID.to_s
@@ -60,6 +60,10 @@ class ValidationTest < Test::Unit::TestCase
     begin
       $test_case = self
       
+#    prediction_feature = "https://ambit.uni-plovdiv.bg:8443/ambit2/feature/26221"
+#    puts OpenTox::Feature.find(prediction_feature).domain.inspect
+#      exit
+
 #      begin
 #        #OpenTox::RestClientWrapper.get "http://local-ot/validation/runtime-error",{:accept => "application/rdf+xml"}
 #        puts OpenTox::RestClientWrapper.post "http://opentox.ntua.gr:4000/model/0d8a9a27-3481-4450-bca1-d420a791de9d",
@@ -151,12 +155,61 @@ class ValidationTest < Test::Unit::TestCase
 #      val = wait_for_task(uri)
 #      puts val
 #      get "/"+val.split("/")[-1]
-      
+
+#     post "/validate_datasets",{
+#         :test_dataset_uri=>"http://opentox.informatik.uni-freiburg.de/dataset/409",
+#         :prediction_dataset_uri=>"http://opentox.informatik.uni-freiburg.de/dataset/410",
+#         :test_target_dataset_uri=>"https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401560",
+#         :prediction_feature=>"https://ambit.uni-plovdiv.bg:8443/ambit2/feature/22190",
+#         :predicted_feature=>"https://ambit.uni-plovdiv.bg:8443/ambit2/feature/218304",
+#         :regression=>"true",
+#         :subjectid=>SUBJECTID}
+#         #:model_uri=>"http://local-ot/model/31"}
+#        #:regression=>"true"}
+#  #       :classification=>"true"}
+#      uri = last_response.body
+#      val = wait_for_task(uri)
+#      puts val
+#      #get "/"+val.split("/")[-1]
+     
+     
+
+     #ambit_service = "https://ambit.uni-plovdiv.bg:8443/ambit2"
+      #https%3A%2F%2Fambit.uni-plovdiv.bg%3A8443%2Fambit2
+
+#     post "/validate_datasets",{
+#         :test_dataset_uri=>ambit_service+"/dataset/R401577?max=50",
+#         :prediction_dataset_uri=>ambit_service+"/dataset/R401577?max=50&feature_uris[]="+CGI.escape(ambit_service)+"%2Fmodel%2F35194%2Fpredicted",
+#         #:test_target_dataset_uri=>ambit_service+"/dataset/R401560",
+#         :prediction_feature=>ambit_service+"/feature/26221",
+#         :predicted_feature=>ambit_service+"/feature/218699",
+#         :classification=>"true",
+#         :subjectid=>SUBJECTID}
+#         #:model_uri=>"http://local-ot/model/31"}
+#        #:regression=>"true"}
+#  #       :classification=>"true"}
+#      uri = last_response.body
+#      val = wait_for_task(uri)
+#      puts val
+#      #get "/"+val.split("/")[-1]
+
+
 #      d = OpenTox::Dataset.find("https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R545",SUBJECTID)
 #      puts d.compounds.inspect
 #      exit
+
+#      f = File.new("data/ambit-dataset.rdf")
+#      d = ValidationExamples::Util.upload_dataset(f, SUBJECTID)
+#      puts d
       
-      run_test("21a")#,:validation_uri=>"http://local-ot/validation/253") #,"http://local-ot/validation/28")#,"http://local-ot/validation/394");
+#      d = OpenTox::Dataset.find("https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401560",SUBJECTID)
+#      #puts d.compounds.to_yaml
+#      #puts d.features.keys.to_yaml
+#      puts d.to_yaml
+#      d2 = d.split(d.compounds[0..5], d.features.keys[0..1], {}, SUBJECTID)
+#      puts d2.to_yaml
+      
+      run_test("1b")#,:validation_uri=>"http://local-ot/validation/253") #,"http://local-ot/validation/28")#,"http://local-ot/validation/394");
       
       #run_test("3b",:validation_uri=>"http://local-ot/validation/crossvalidation/45") #,{:dataset_uri => "http://local-ot/dataset/773", :prediction_feature => "http://local-ot/dataset/773/feature/Hamster%20Carcinogenicity"})
       
@@ -175,7 +228,7 @@ class ValidationTest < Test::Unit::TestCase
       
       #puts OpenTox::Authorization.list_policy_uris(SUBJECTID).inspect
 
-#      run_test("16b") #,{:dataset_uri => "http://local-ot/dataset/313", :prediction_feature => "http://local-ot/dataset/313/feature/repdose_classification"})
+      #run_test("19d") #,{:dataset_uri => "http://local-ot/dataset/313", :prediction_feature => "http://local-ot/dataset/313/feature/repdose_classification"})
       
 #      model = OpenTox::Model::Generic.find("http://local-ot/majority/class/model/58")
 #      OpenTox::QMRFReport.create(model)

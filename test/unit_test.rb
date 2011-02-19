@@ -97,7 +97,7 @@ class ValidationTest < Test::Unit::TestCase
   end
     
   def test_crossvalidation_report
-    #@@cv = OpenTox::Crossvalidation.find("http://local-ot/validation/crossvalidation/47", @@subjectid)
+    #@@cv = OpenTox::Crossvalidation.find("http://local-ot/validation/crossvalidation/48", @@subjectid)
     
     puts "test_crossvalidation_report"
     assert defined?@@cv,"no crossvalidation defined"
@@ -117,12 +117,12 @@ class ValidationTest < Test::Unit::TestCase
         OpenTox::CrossvalidationReport.find(report.uri)
       end
     end
-    report_uri = OpenTox::CrossvalidationReport.find(report.uri,@@subjectid)
-    assert report_uri.uri?
+    report = OpenTox::CrossvalidationReport.find(report.uri,@@subjectid)
+    assert report.uri.uri?
     report2 = OpenTox::CrossvalidationReport.find_for_crossvalidation(@@cv.uri,@@subjectid)
-    assert_equal report_uri,report2.uri
-    report3 = @@cv.find_or_create_report(@@subjectid)
-    assert_equal report_uri,report3.uri
+    assert_equal report.uri,report2.uri
+    report3_uri = @@cv.find_or_create_report(@@subjectid)
+    assert_equal report.uri,report3_uri
     @report = report2
   end
   

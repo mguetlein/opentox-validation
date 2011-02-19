@@ -51,7 +51,6 @@ module Lib
                 "available features are: "+test_target_dataset.features.inspect if test_target_dataset.features.keys.index(prediction_feature)==nil
         end
         
-        test_dataset.load_all(subjectid)
         @compounds = test_dataset.compounds
         LOGGER.debug "test dataset size: "+@compounds.size.to_s
         raise "test dataset is empty "+test_dataset_uri.to_s unless @compounds.size>0

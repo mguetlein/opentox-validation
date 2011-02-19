@@ -38,7 +38,7 @@ get '/report/?' do
       description = 
         "A list of all report types."
       content_type "text/html"
-      OpenTox.text_to_html rs.get_report_types,related_links,description
+      OpenTox.text_to_html rs.get_report_types,@subjectid,related_links,description
     else
       content_type "text/uri-list"
       rs.get_report_types
@@ -58,7 +58,7 @@ get '/report/:report_type' do
         "A list of all "+params[:report_type]+" reports. To create a report, use the POST method."
       post_params = [[:validation_uris]]
       content_type "text/html"
-      OpenTox.text_to_html rs.get_all_reports(params[:report_type], params),related_links,description,post_params
+      OpenTox.text_to_html rs.get_all_reports(params[:report_type], params),@subjectid,related_links,description,post_params
     else
       content_type "text/uri-list"
       rs.get_all_reports(params[:report_type], params)
@@ -89,8 +89,6 @@ get '/report/:type/:id' do
       result = body(File.new(report))
     end
   end
-
-  response.set_cookie("subjectid", @subjectid)
 end
 
 #OpenTox::Authorization.whitelist( Regexp.new("/report/.*/[0-9]+/.*"),"GET")

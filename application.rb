@@ -19,7 +19,7 @@ get '/examples/?' do
   
   if request.env['HTTP_ACCEPT'] =~ /text\/html/
     content_type "text/html"
-    OpenTox.text_to_html Example.transform_example
+    OpenTox.text_to_html Example.transform_example,@subjectid
   else
     content_type "text/plain"
     Example.transform_example

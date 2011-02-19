@@ -20,10 +20,10 @@ LOGGER.datetime_format = "%Y-%m-%d %H:%M:%S "
 LOGGER.formatter = Logger::Formatter.new
 
 if AA_SERVER
-  TEST_USER = "mgtest"
-  TEST_PW = "mgpasswd"
-#  TEST_USER = "guest"
-#  TEST_PW = "guest"
+  #TEST_USER = "mgtest"
+  #TEST_PW = "mgpasswd"
+  TEST_USER = "guest"
+  TEST_PW = "guest"
   SUBJECTID = OpenTox::Authorization.authenticate(TEST_USER,TEST_PW)
   raise "could not log in" unless SUBJECTID
   puts "logged in: "+SUBJECTID.to_s
@@ -148,7 +148,10 @@ class ReachTest < Test::Unit::TestCase
     
     #model_uri = "http://local-ot/majority/class/model/58"
     
-    model_uri = "http://local-ot/model/104"
+    
+    #model_uri = "http://local-ot/model/104"
+    model_uri = "http://local-ot/majority/class/model/125"
+    
     
 #    m = OpenTox::Model::Generic.find(model_uri)
 #    puts m.metadata[OT.algorithm] if m
@@ -156,12 +159,14 @@ class ReachTest < Test::Unit::TestCase
 #    puts a.metadata.inspect
 #    exit
     
+    puts SUBJECTID
+
 #    model_uri = "http://local-ot/model/1"
     #http://local-ot/majority/class/model/15
     #model_uri = "http://local-ot/majority/class/model/15"
    # model_uri = "http://local-ot/majority/class/model/91"
     #model_uri = "http://apps.ideaconsult.net:8080/ambit2/model/2"
-    post '/reach_report/qmrf', {:model_uri=>model_uri}, {:subjectid => SUBJECTID} #http://local-ot/model/1"
+    post '/reach_report/qmrf',{:model_uri=>model_uri, :subjectid => SUBJECTID} #http://local-ot/model/1"
     ##post '/reach_report/qprf',:compound_uri=>"http://local-ot/compound/XYZ"
     uri = last_response.body
     puts "task: "+uri.to_s

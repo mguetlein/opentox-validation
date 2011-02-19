@@ -24,7 +24,7 @@ get '/reach_report' do
       "Validation reporting: "+url_for("/report",:full)
     description = 
         "A list of all suported REACH reporting types."
-    OpenTox.text_to_html uri_list,related_links,description
+    OpenTox.text_to_html uri_list,related_links,description, @subjectid
   else
     content_type "text/uri-list"
     uri_list
@@ -51,7 +51,7 @@ get '/reach_report/:type' do
     when /(?i)QPRF/
       #TODO
     end
-    OpenTox.text_to_html ReachReports.list_reports(type),related_links,description,post_params
+    OpenTox.text_to_html ReachReports.list_reports(type),@subjectid,related_links,description,post_params
   else
     content_type "text/uri-list"
     ReachReports.list_reports(type)
@@ -98,7 +98,7 @@ get '/reach_report/:type/:id' do
         "All "+type+" reports:           "+url_for("/reach_report/"+type,:full)
     description = 
         "A QMRF report."
-    OpenTox.text_to_html rep.to_yaml,related_links,description
+    OpenTox.text_to_html rep.to_yaml,@subjectid,related_links,description
   when /application\/x-yaml|\*\/\*|^$/ # matches 'application/x-yaml', '*/*', ''
     content_type "application/x-yaml"
     rep.to_yaml

@@ -381,8 +381,9 @@ module ValidationExamples
   
   class AmbitModelValidation < ModelValidation
     def initialize
-      @model_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/model/29139"
-      @test_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401560"
+      @model_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/model/39319"
+      #@model_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/model/29139"
+      @test_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401577?max=3"
     end
   end    
   
