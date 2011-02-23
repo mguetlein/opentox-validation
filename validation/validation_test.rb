@@ -115,6 +115,14 @@ class ValidationTest < Test::Unit::TestCase
   #    get "/crossvalidation/2",nil,'HTTP_ACCEPT' => "application/rdf+xml" 
      #puts last_response.body
      #exit
+
+#    OpenTox::Crossvalidation.create( 
+#      :dataset_uri=>"http://local-ot/dataset/1874", 
+#      :algorithm_uri=>"http://local-ot/algorithm/lazar", 
+#      :prediction_feature=>"http://local-ot/dataset/1874/feature/Hamster%20Carcinogenicity", 
+#      :algorithm_params=>"feature_generation_uri=http://local-ot/algorithm/fminer/bbrc")
+
+#http://local-ot/dataset/1878
       
       #get "/crossvalidation?model_uri=lazar"
   #    post "/test_validation",:select=>"6d" #,:report=>"yes,please"
@@ -209,7 +217,7 @@ class ValidationTest < Test::Unit::TestCase
 #      d2 = d.split(d.compounds[0..5], d.features.keys[0..1], {}, SUBJECTID)
 #      puts d2.to_yaml
       
-      run_test("1b")#,:validation_uri=>"http://local-ot/validation/253") #,"http://local-ot/validation/28")#,"http://local-ot/validation/394");
+     # run_test("1b")#,:validation_uri=>"http://local-ot/validation/253") #,"http://local-ot/validation/28")#,"http://local-ot/validation/394");
       
       #run_test("3b",:validation_uri=>"http://local-ot/validation/crossvalidation/45") #,{:dataset_uri => "http://local-ot/dataset/773", :prediction_feature => "http://local-ot/dataset/773/feature/Hamster%20Carcinogenicity"})
       
@@ -249,7 +257,7 @@ class ValidationTest < Test::Unit::TestCase
 
       #delete "/1",:subjectid=>SUBJECTID
       
-      #run_test("7b","http://local-ot/validation/21")
+      run_test("19i")
       
       #run_test("3a","http://local-ot/validation/crossvalidation/4")
       #run_test("3b","http://local-ot/validation/crossvalidation/3")

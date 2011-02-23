@@ -158,7 +158,8 @@ module Lib
       else
         v = dataset.data_entries[compound][feature]
       end
-      raise "no array" unless v.is_a?(Array)
+      return nil if v==nil 
+      raise "no array "+v.class.to_s+" : '"+v.to_s+"'" unless v.is_a?(Array)
       if v.size>1
         v.uniq!
         raise "not yet implemented: multiple non-equal values "+compound.to_s+" "+v.inspect if v.size>1

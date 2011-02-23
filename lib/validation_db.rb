@@ -58,14 +58,14 @@ module Lib
     include DataMapper::Resource
   
     property :id, Serial
-    property :validation_type, String, :length => 255
-    property :model_uri, String, :length => 255
-    property :algorithm_uri, String, :length => 255
-    property :training_dataset_uri, String, :length => 255
-    property :test_target_dataset_uri, String, :length => 255
-    property :test_dataset_uri, String, :length => 255
-    property :prediction_dataset_uri, String, :length => 255
-    property :prediction_feature, String, :length => 255
+    property :validation_type, String, :length => 512
+    property :model_uri, String, :length => 512
+    property :algorithm_uri, String, :length => 512
+    property :training_dataset_uri, String, :length => 512
+    property :test_target_dataset_uri, String, :length => 512
+    property :test_dataset_uri, String, :length => 512
+    property :prediction_dataset_uri, String, :length => 512
+    property :prediction_feature, String, :length => 512
     property :created_at, DateTime
     property :num_instances, Integer
     property :num_without_class, Integer
@@ -121,8 +121,8 @@ module Lib
     include DataMapper::Resource
   
     property :id, Serial
-    property :algorithm_uri, String, :length => 255
-    property :dataset_uri, String, :length => 255
+    property :algorithm_uri, String, :length => 512
+    property :dataset_uri, String, :length => 512
     property :created_at, DateTime
     property :num_folds, Integer, :default => 10
     property :random_seed, Integer, :default => 1

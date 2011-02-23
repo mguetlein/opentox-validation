@@ -228,7 +228,11 @@ module Validation
                :num_unpredicted => prediction.num_unpredicted,
                :percent_unpredicted => prediction.percent_unpredicted,
                :finished => true}
-         self.save
+        begin 
+          self.save
+        rescue DataMapper::SaveFailureError => e
+           raise "could not save validation: "+e.resource.errors.inspect
+        end
       end
       
       task.progress(100) if task

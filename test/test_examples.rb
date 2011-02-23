@@ -394,6 +394,14 @@ module ValidationExamples
     end
   end
   
+  class AmbitAquaticModelValidation < ModelValidation
+    def initialize
+      @model_uri =  "http://apps.ideaconsult.net:8080/ambit2/model/130668"
+      @test_dataset_uri = "http://apps.ideaconsult.net:8080/ambit2/dataset/186293?feature_uris[]=http://apps.ideaconsult.net:8080/ambit2/feature/430904&feature_uris[]=http://apps.ideaconsult.net:8080/ambit2/feature/430905"
+      @prediction_feature = "http://apps.ideaconsult.net:8080/ambit2/feature/430905"
+    end
+  end  
+  
   class AmbitTrainingTest < TrainingTestValidation
     def initialize
       @training_dataset_uri = "https://ambit.uni-plovdiv.bg:8443/ambit2/dataset/R401560"
@@ -590,6 +598,8 @@ module ValidationExamples
       "19f" => [ AmbitBursiTrainingTestSplit ],
       "19g" => [ AmbitJ48TrainingTest ],
       "19h" => [ AmbitJ48TrainingTestSplit ],
+      "19i" => [ AmbitAquaticModelValidation ],
+      
       
     }
   
