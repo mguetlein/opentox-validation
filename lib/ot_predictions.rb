@@ -29,6 +29,8 @@ module Lib
         test_dataset = OpenTox::Dataset.find test_dataset_uri,subjectid
         raise "test dataset not found: '"+test_dataset_uri.to_s+"'" unless test_dataset
         raise "prediction_feature missing" unless prediction_feature
+        #puts test_dataset.to_yaml
+        #exit
         
         if test_target_dataset_uri == nil || test_target_dataset_uri.strip.size==0 || test_target_dataset_uri==test_dataset_uri
           test_target_dataset_uri = test_dataset_uri
@@ -162,8 +164,12 @@ module Lib
       raise "no array "+v.class.to_s+" : '"+v.to_s+"'" unless v.is_a?(Array)
       if v.size>1
         v.uniq!
-        raise "not yet implemented: multiple non-equal values "+compound.to_s+" "+v.inspect if v.size>1
-        v = v[0]
+        if v.size>1
+          v = nil
+          LOGGER.warn "not yet implemented: multiple non-equal values "+compound.to_s+" "+v.inspect
+        else
+          v = v[0]
+        end
       elsif v.size==1
         v = v[0]
       else
