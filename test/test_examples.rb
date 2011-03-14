@@ -248,7 +248,7 @@ module ValidationExamples
   class ISTLazarISTHamsterCrossvalidation < ISTHamsterCrossvalidation
     def initialize
       @algorithm_uri = "http://ot-test.in-silico.ch/algorithm/lazar"
-      @algorithm_params = "feature_generation_uri=http://webservices.in-silico.ch/algorithm/fminer/bbrc"
+      @algorithm_params = "feature_generation_uri=http://ot-test.in-silico.ch/algorithm/fminer/bbrc"
       super
     end
   end
