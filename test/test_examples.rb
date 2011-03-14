@@ -225,8 +225,8 @@ module ValidationExamples
 
   class ISTHamsterCrossvalidation < CrossValidation
     def initialize
-      @dataset_uri = "http://webservices.in-silico.ch/dataset/108"
-      @prediction_feature = "http://toxcreate.org/feature#Hamster%20Carcinogenicity%20(DSSTOX/CPDB)"
+      @dataset_uri = "http://ot-test.in-silico.ch/dataset/1"
+      @prediction_feature = "http://ot-test.in-silico.ch/dataset/1/feature/Hamster%20Carcinogenicity"
     end
   end
   
@@ -240,15 +240,15 @@ module ValidationExamples
   class LazarISTHamsterCrossvalidation < ISTHamsterCrossvalidation
     def initialize
       @algorithm_uri = File.join(CONFIG[:services]["opentox-algorithm"],"lazar")
-      @algorithm_params = "feature_generation_uri="+File.join(CONFIG[:services]["opentox-algorithm"],"fminer")
+      @algorithm_params = "feature_generation_uri="+File.join(CONFIG[:services]["opentox-algorithm"],"fminer/bbrc")
       super
     end
   end
   
   class ISTLazarISTHamsterCrossvalidation < ISTHamsterCrossvalidation
     def initialize
-      @algorithm_uri = "http://webservices.in-silico.ch/algorithm/lazar"
-      @algorithm_params = "feature_generation_uri=http://webservices.in-silico.ch/algorithm/fminer"
+      @algorithm_uri = "http://ot-test.in-silico.ch/algorithm/lazar"
+      @algorithm_params = "feature_generation_uri=http://webservices.in-silico.ch/algorithm/fminer/bbrc"
       super
     end
   end
@@ -305,6 +305,14 @@ module ValidationExamples
   
   ########################################################################################################
 
+
+  class ISTHamsterModel < ModelValidation
+    def initialize
+      @model_uri = "http://ot-test.in-silico.ch/model/2"
+      @test_dataset_uri = "http://opentox.informatik.uni-freiburg.de/dataset/167"
+      @test_target_dataset_uri = "http://ot-test.in-silico.ch/dataset/1"
+    end
+  end
   
   ########################################################################################################
   
@@ -599,6 +607,9 @@ module ValidationExamples
       "19g" => [ AmbitJ48TrainingTest ],
       "19h" => [ AmbitJ48TrainingTestSplit ],
       "19i" => [ AmbitAquaticModelValidation ],
+      
+      "20" => [ ISTHamsterModel ],
+      
       
       
     }
